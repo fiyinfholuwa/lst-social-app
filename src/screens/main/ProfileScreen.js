@@ -45,7 +45,7 @@ import { useFriendships } from '../../context/FriendshipsContext';
                 <Text style={[styles.value, { color: theme.secondaryText }]}>{profile.joinedCommunities?.length || 0}</Text>
               </View>
 
-              <View style={styles.themeRow}>
+              <View style={[styles.themeRow, { borderColor: theme.border }]}>
                 <Text style={[styles.label, { color: theme.text }]}>Dark Mode</Text>
                 <Switch value={isDark} onValueChange={toggleTheme} trackColor={{ false: '#767577', true: theme.primary }} />
               </View>
@@ -89,7 +89,7 @@ import { useFriendships } from '../../context/FriendshipsContext';
           infoRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingVertical: 8, borderTopWidth: 1, marginBottom: 8 },
           label: { fontSize: 16 },
           value: { fontSize: 16 },
-          themeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingVertical: 12, borderTopWidth: 1, borderColor: '#e1e1e1' },
+          themeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingVertical: 12, borderTopWidth: 1 },
           menuRow: { flexDirection: 'row', alignItems: 'center', width: '100%', gap: 10, paddingVertical: 14, borderTopWidth: 1 },
           menuText: { flex: 1, fontSize: 15, fontWeight: '600' },
           menuValue: { fontSize: 13, fontWeight: '700' },

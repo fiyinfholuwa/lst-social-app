@@ -24,6 +24,10 @@ export const COLORS = {
   darkText: '#F4F7FB',
   darkMuted: '#A7B3C4',
   darkBorder: '#25364C',
+  darkPrimary: '#7FB3E8',
+  darkPrimarySoft: '#162A43',
+  darkAccent: '#FF6473',
+  darkAccentSoft: '#3A1C25',
 
   transparent: 'transparent',
   white68: 'rgba(255,255,255,0.68)',

@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   commentMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   commentUser: { fontWeight: '800', fontSize: 13 },
   commentText: { fontSize: 13, lineHeight: 20, marginTop: 6 },
-  commentTime: { fontSize: 10 },
+  commentTime: { fontSize: 11 },
   commentActions: { flexDirection: 'row', gap: 16, alignItems: 'center', marginTop: 9 },
   replyText: { fontSize: 11, fontWeight: '800' },
   empty: { alignItems: 'center', paddingVertical: 34, paddingHorizontal: 30 },

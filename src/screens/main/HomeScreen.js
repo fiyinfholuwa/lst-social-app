@@ -90,7 +90,7 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
           container: { flex: 1 },
           feedContent: { paddingBottom: 94 },
           verseCard: { marginHorizontal: 14, padding: 20, borderRadius: 22, marginBottom: 12 },
-          verseLabel: { color: 'rgba(255,255,255,.68)', fontSize: 10, fontWeight: '800', letterSpacing: 1.6 },
+          verseLabel: { color: 'rgba(255,255,255,.82)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
           verse: { color: '#fff', fontSize: 21, fontWeight: '700', lineHeight: 29, marginTop: 11 },
           reference: { color: 'rgba(255,255,255,.76)', fontSize: 13, marginTop: 8 },
           composer: { marginHorizontal: 14, padding: 12, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },

@@ -83,12 +83,19 @@ import {
           joinCommunity: async (communityId) => {
             await delay(500);
             const community = mockCommunities.find(c => c.id === communityId);
-            if (community) community.memberCount += 1;
+            if (community && !mockUser.joinedCommunities.includes(communityId)) {
+              community.memberCount += 1;
+              mockUser.joinedCommunities.push(communityId);
+            }
             return { success: true };
           },
           getChats: async () => {
             await delay(400);
             return mockChats;
+          },
+          getChat: async (chatId) => {
+            await delay(200);
+            return mockChats.find(item => item.id === chatId) || null;
           },
           getOrCreateChat: async (otherUser) => {
             await delay(250);
@@ -111,6 +118,20 @@ import {
           sendMessage: async (chatId, text) => {
             await delay(300);
             const msg = { id: 'm' + Date.now(), senderId: mockUser.id, text, timestamp: 'Just now' };
+            if (!mockMessages[chatId]) mockMessages[chatId] = [];
+            mockMessages[chatId].push(msg);
+            return msg;
+          },
+          sendVoiceMessage: async (chatId, audioUri, duration) => {
+            await delay(300);
+            const msg = {
+              id: 'm' + Date.now(),
+              senderId: mockUser.id,
+              type: 'voice',
+              audioUri,
+              duration,
+              timestamp: 'Just now',
+            };
             if (!mockMessages[chatId]) mockMessages[chatId] = [];
             mockMessages[chatId].push(msg);
             return msg;

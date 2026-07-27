@@ -7,6 +7,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { SavedPostsProvider } from './src/context/SavedPostsContext';
 import { FriendshipsProvider } from './src/context/FriendshipsContext';
+import { CommunityApplicationsProvider } from './src/context/CommunityApplicationsContext';
 
         export default function App() {
           return (
@@ -14,12 +15,14 @@ import { FriendshipsProvider } from './src/context/FriendshipsContext';
       <OnboardingProvider>
         <SavedPostsProvider>
           <FriendshipsProvider>
-            <AuthProvider>
+            <CommunityApplicationsProvider>
+              <AuthProvider>
                 <NavigationContainer>
                   <AppNavigator />
           <StatusBar style="auto" />
                 </NavigationContainer>
-            </AuthProvider>
+              </AuthProvider>
+            </CommunityApplicationsProvider>
           </FriendshipsProvider>
         </SavedPostsProvider>
       </OnboardingProvider>

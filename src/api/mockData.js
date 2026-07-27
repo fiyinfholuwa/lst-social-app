@@ -286,7 +286,7 @@ export const mockPosts = [
           email: 'grace@example.com',
           avatar: 'https://i.pravatar.cc/200?img=1',
           bio: 'Lover of Jesus. Wife. Mom. Worship leader.',
-          joinedCommunities: ['comm1', 'comm7'],
+          joinedCommunities: ['comm7'],
         };
 
         export const mockUsers = [

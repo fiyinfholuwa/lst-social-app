@@ -1,77 +1,192 @@
-import React, { useState, useEffect } from 'react';
-        import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
-        import { useTheme } from '../../context/ThemeContext';
+import React, { useEffect, useState } from 'react';
+import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
+import AppIcon from '../../components/AppIcon';
+import Loader from '../../components/Loader';
+import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
 
-        export default function CommunityDetailScreen({ route, navigation }) {
-          const { communityId } = route.params;
-          const [community, setCommunity] = useState(null);
-          const { theme } = useTheme();
-          const [members, setMembers] = useState([]);
-          const { blockedUserIds } = useFriendships();
+export default function CommunityDetailScreen({ route, navigation }) {
+  const { communityId } = route.params;
+  const [community, setCommunity] = useState(null);
+  const [members, setMembers] = useState([]);
+  const { theme } = useTheme();
+  const { user } = useAuth();
+  const { blockedUserIds } = useFriendships();
+  const [joined, setJoined] = useState(user.joinedCommunities?.includes(communityId));
+  const { getApplication, withdrawApplication } = useCommunityApplications();
+  const application = getApplication(communityId);
 
-          useEffect(() => { loadCommunity(); }, []);
+  useEffect(() => {
+    Promise.all([
+      apiService.getCommunity(communityId),
+      apiService.getCommunityMembers(communityId),
+    ]).then(([communityData, memberData]) => {
+      setCommunity(communityData);
+      setMembers(memberData);
+    });
+  }, [communityId]);
 
-          const loadCommunity = async () => {
-            const data = await apiService.getCommunity(communityId);
-            setCommunity(data);
-            const communityMembers = await apiService.getCommunityMembers(communityId);
-            setMembers(communityMembers);
-          };
+  if (!community) return <Loader />;
 
-          if (!community) return null;
+  const visibleMembers = members.filter(member => !blockedUserIds.includes(member.id));
 
-          return (
-            <View style={[styles.container, { backgroundColor: theme.background }]}>
-              <Text style={[styles.title, { color: theme.text }]}>{community.name}</Text>
-              <Text style={[styles.desc, { color: theme.secondaryText }]}>{community.description}</Text>
-              <Text style={[styles.rules, { color: theme.secondaryText }]}>Rules: {community.rules}</Text>
-              <Text style={[styles.admin, { color: theme.secondaryText }]}>Admin: {community.admin}</Text>
-              <View style={styles.memberHeader}>
-                <Text style={[styles.postHeader, { color: theme.text }]}>People in this circle</Text>
-                <Text style={[styles.memberCount, { color: theme.secondaryText }]}>{community.memberCount} members</Text>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.members} contentContainerStyle={styles.membersContent}>
-                {members.filter(member => !blockedUserIds.includes(member.id)).map(member => (
-                  <TouchableOpacity key={member.id} style={styles.member} onPress={() => navigation.navigate('UserProfile', { userId: member.id })}>
-                    <Image source={{ uri: member.avatar }} style={styles.memberAvatar} />
-                    <Text style={[styles.memberName, { color: theme.text }]} numberOfLines={1}>{member.name.split(' ')[0]}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <Text style={[styles.postHeader, { color: theme.text }]}>Community Posts</Text>
-              <FlatList
-                data={community.posts}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View style={[styles.postItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                    <Text style={[styles.postContent, { color: theme.text }]}>{item.content}</Text>
-                    <Text style={[styles.postTime, { color: theme.secondaryText }]}>{item.timestamp}</Text>
-                  </View>
-                )}
-                ListEmptyComponent={<Text style={{ color: theme.secondaryText, marginTop: 20 }}>No posts yet.</Text>}
-              />
+  const Header = () => (
+    <>
+      <Image source={{ uri: community.image }} style={styles.cover} />
+      <View style={styles.intro}>
+        <Text style={[styles.title, { color: theme.text }]}>{community.name}</Text>
+        <Text style={[styles.description, { color: theme.secondaryText }]}>{community.description}</Text>
+
+        <View style={styles.overview}>
+          <View style={styles.overviewItem}>
+            <Text style={[styles.overviewValue, { color: theme.text }]}>{community.memberCount}</Text>
+            <Text style={[styles.overviewLabel, { color: theme.secondaryText }]}>Members</Text>
+          </View>
+          <View style={[styles.overviewItem, styles.overviewMiddle, { borderColor: theme.border }]}>
+            <Text style={[styles.overviewValue, { color: theme.text }]}>{community.posts.length}</Text>
+            <Text style={[styles.overviewLabel, { color: theme.secondaryText }]}>Posts</Text>
+          </View>
+          <View style={styles.overviewItem}>
+            <Text style={[styles.overviewValue, { color: theme.text }]} numberOfLines={1}>{community.admin.split(' ')[0]}</Text>
+            <Text style={[styles.overviewLabel, { color: theme.secondaryText }]}>Admin</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.joinButton, { backgroundColor: joined || application ? theme.primarySoft : theme.primary }]}
+          onPress={() => navigation.navigate('CommunityApplication', { communityId })}
+          disabled={joined || Boolean(application)}
+        >
+          <AppIcon name={joined ? 'check' : application ? 'clock' : 'file-alt'} size={14} color={joined || application ? theme.primary : '#FFFFFF'} />
+          <Text style={[styles.joinText, { color: joined || application ? theme.primary : '#FFFFFF' }]}>
+            {joined ? 'You are a member' : application ? 'Application under review' : 'View requirements & apply'}
+          </Text>
+        </TouchableOpacity>
+
+        {application ? (
+          <View style={styles.applicationMeta}>
+            <Text style={[styles.applicationDate, { color: theme.secondaryText }]}>
+              Submitted {new Date(application.submittedAt).toLocaleDateString()}
+            </Text>
+            <TouchableOpacity onPress={() => withdrawApplication(communityId)}>
+              <Text style={[styles.withdrawText, { color: theme.danger }]}>Withdraw</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        <View style={[styles.rules, { backgroundColor: theme.primarySoft }]}>
+          <AppIcon name="shield-alt" size={16} color={theme.primary} />
+          <View style={styles.rulesCopy}>
+            <Text style={[styles.rulesTitle, { color: theme.primary }]}>Community guideline</Text>
+            <Text style={[styles.rulesText, { color: theme.primary }]}>{community.rules}</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeading}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>People</Text>
+            <Text style={[styles.sectionMeta, { color: theme.secondaryText }]}>Connect after becoming friends</Text>
+          </View>
+          <Text style={[styles.sectionLink, { color: theme.primary }]}>{community.memberCount} members</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.members}>
+          {visibleMembers.map(member => (
+            <TouchableOpacity key={member.id} style={styles.member} onPress={() => navigation.navigate('UserProfile', { userId: member.id })}>
+              <Image source={{ uri: member.avatar }} style={styles.memberAvatar} />
+              <Text style={[styles.memberName, { color: theme.text }]} numberOfLines={1}>{member.name.split(' ')[0]}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={[styles.sectionHeading, styles.postsHeading]}>
+        <View>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Latest posts</Text>
+          <Text style={[styles.sectionMeta, { color: theme.secondaryText }]}>Updates from this community</Text>
+        </View>
+      </View>
+    </>
+  );
+
+  return (
+    <FlatList
+      style={{ backgroundColor: theme.background }}
+      data={community.posts}
+      keyExtractor={item => item.id}
+      ListHeaderComponent={<Header />}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      renderItem={({ item }) => (
+        <View style={[styles.post, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={styles.postTop}>
+            <Image source={{ uri: community.image }} style={styles.postAvatar} />
+            <View>
+              <Text style={[styles.postAuthor, { color: theme.text }]}>{community.name}</Text>
+              <Text style={[styles.postTime, { color: theme.secondaryText }]}>{item.timestamp}</Text>
             </View>
-          );
-        }
+          </View>
+          <Text style={[styles.postContent, { color: theme.text }]}>{item.content}</Text>
+          <View style={[styles.postActions, { borderTopColor: theme.border }]}>
+            <AppIcon name="heart" size={15} color={theme.secondaryText} />
+            <AppIcon name="comment" size={15} color={theme.secondaryText} />
+            <AppIcon name="bookmark" size={15} color={theme.secondaryText} />
+          </View>
+        </View>
+      )}
+      ListEmptyComponent={
+        <View style={styles.empty}>
+          <AppIcon name="comments" size={26} color={theme.secondaryText} />
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>No posts yet</Text>
+          <Text style={[styles.emptyText, { color: theme.secondaryText }]}>Community updates will appear here.</Text>
+        </View>
+      }
+    />
+  );
+}
 
-        const styles = StyleSheet.create({
-          container: { flex: 1, padding: 16 },
-          title: { fontSize: 22, fontWeight: '700' },
-          desc: { fontSize: 14, marginVertical: 4 },
-          rules: { fontSize: 14, fontStyle: 'italic', marginVertical: 4 },
-          admin: { fontSize: 14, marginVertical: 4 },
-          postHeader: { fontSize: 18, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-          memberHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-          memberCount: { fontSize: 11, marginBottom: 9 },
-          members: { marginHorizontal: -16 },
-          membersContent: { paddingHorizontal: 16, gap: 14 },
-          member: { width: 58, alignItems: 'center' },
-          memberAvatar: { width: 50, height: 50, borderRadius: 25 },
-          memberName: { fontSize: 11, fontWeight: '600', marginTop: 5, maxWidth: 58 },
-          postItem: { padding: 10, borderRadius: 8, borderWidth: 1, marginBottom: 8 },
-          postContent: { fontSize: 14 },
-          postTime: { fontSize: 12, marginTop: 4 },
-        });
-      
+const styles = StyleSheet.create({
+  content: { paddingBottom: 30 },
+  cover: { width: '100%', height: 210, resizeMode: 'cover' },
+  intro: { padding: 18 },
+  title: { fontSize: 22, lineHeight: 28, fontWeight: '800', letterSpacing: -0.4 },
+  description: { fontSize: 13, lineHeight: 20, marginTop: 8 },
+  overview: { flexDirection: 'row', marginTop: 20 },
+  overviewItem: { flex: 1, alignItems: 'center' },
+  overviewMiddle: { borderLeftWidth: 1, borderRightWidth: 1 },
+  overviewValue: { fontSize: 15, fontWeight: '800', maxWidth: 80 },
+  overviewLabel: { fontSize: 10, marginTop: 3 },
+  joinButton: { height: 50, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 },
+  joinText: { fontSize: 14, fontWeight: '800' },
+  applicationMeta: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, marginTop: 9 },
+  applicationDate: { fontSize: 10 },
+  withdrawText: { fontSize: 10, fontWeight: '700' },
+  rules: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14, borderRadius: 15, marginTop: 14 },
+  rulesCopy: { flex: 1 },
+  rulesTitle: { fontSize: 11, fontWeight: '800' },
+  rulesText: { fontSize: 11, lineHeight: 17, marginTop: 3 },
+  section: { paddingTop: 8 },
+  sectionHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 18, marginBottom: 13 },
+  sectionTitle: { fontSize: 15, fontWeight: '800' },
+  sectionMeta: { fontSize: 10, marginTop: 3 },
+  sectionLink: { fontSize: 11, fontWeight: '700' },
+  members: { paddingHorizontal: 18, gap: 14 },
+  member: { width: 58, alignItems: 'center' },
+  memberAvatar: { width: 52, height: 52, borderRadius: 26 },
+  memberName: { fontSize: 11, fontWeight: '600', marginTop: 6, maxWidth: 58 },
+  postsHeading: { marginTop: 28 },
+  post: { marginHorizontal: 18, marginBottom: 10, padding: 14, borderWidth: 1, borderRadius: 17 },
+  postTop: { flexDirection: 'row', alignItems: 'center' },
+  postAvatar: { width: 34, height: 34, borderRadius: 10, marginRight: 9 },
+  postAuthor: { fontSize: 12, fontWeight: '800' },
+  postTime: { fontSize: 10, marginTop: 2 },
+  postContent: { fontSize: 13, lineHeight: 20, marginTop: 12 },
+  postActions: { flexDirection: 'row', gap: 24, borderTopWidth: 1, marginTop: 12, paddingTop: 10 },
+  empty: { alignItems: 'center', paddingVertical: 32 },
+  emptyTitle: { fontSize: 15, fontWeight: '800', marginTop: 10 },
+  emptyText: { fontSize: 11, marginTop: 4 },
+});

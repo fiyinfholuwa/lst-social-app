@@ -6,12 +6,14 @@ import apiService from '../../api/apiService';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useOnboarding } from '../../context/OnboardingContext';
 import Icon from '../../components/AppIcon';
+import { useSavedPosts } from '../../context/SavedPostsContext';
 
-        export default function ProfileScreen() {
+        export default function ProfileScreen({ navigation }) {
           const { user, logout } = useAuth();
           const { theme, isDark, toggleTheme } = useTheme();
           const [profile, setProfile] = useState(user);
           const { replayOnboarding } = useOnboarding();
+          const { savedPostIds } = useSavedPosts();
 
           useEffect(() => { loadProfile(); }, []);
 
@@ -45,6 +47,12 @@ import Icon from '../../components/AppIcon';
                 <Text style={[styles.label, { color: theme.text }]}>Dark Mode</Text>
                 <Switch value={isDark} onValueChange={toggleTheme} trackColor={{ false: '#767577', true: theme.primary }} />
               </View>
+              <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={() => navigation.navigate('SavedPosts')}>
+                <Icon name="bookmark" size={20} color={theme.primary} />
+                <Text style={[styles.menuText, { color: theme.text }]}>Saved posts</Text>
+                <Text style={[styles.menuValue, { color: theme.secondaryText }]}>{savedPostIds.length}</Text>
+                <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
+              </TouchableOpacity>
               <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={replayOnboarding}>
                 <Icon name="play-circle-outline" size={21} color={theme.primary} />
                 <Text style={[styles.menuText, { color: theme.text }]}>Replay welcome experience</Text>
@@ -70,6 +78,7 @@ import Icon from '../../components/AppIcon';
           themeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingVertical: 12, borderTopWidth: 1, borderColor: '#e1e1e1' },
           menuRow: { flexDirection: 'row', alignItems: 'center', width: '100%', gap: 10, paddingVertical: 14, borderTopWidth: 1 },
           menuText: { flex: 1, fontSize: 15, fontWeight: '600' },
+          menuValue: { fontSize: 13, fontWeight: '700' },
           logoutButton: { paddingVertical: 12, paddingHorizontal: 40, borderRadius: 8, marginTop: 24 },
           logoutText: { color: '#fff', fontWeight: '600', fontSize: 16 },
         });

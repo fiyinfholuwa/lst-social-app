@@ -5,17 +5,20 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { OnboardingProvider } from './src/context/OnboardingContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
+import { SavedPostsProvider } from './src/context/SavedPostsContext';
 
         export default function App() {
           return (
     <ThemeProvider>
       <OnboardingProvider>
-        <AuthProvider>
+        <SavedPostsProvider>
+          <AuthProvider>
                 <NavigationContainer>
                   <AppNavigator />
           <StatusBar style="auto" />
                 </NavigationContainer>
-        </AuthProvider>
+          </AuthProvider>
+        </SavedPostsProvider>
       </OnboardingProvider>
             </ThemeProvider>
           );

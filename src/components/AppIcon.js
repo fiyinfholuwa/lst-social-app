@@ -29,7 +29,7 @@ const ICON_ALIASES = {
   'sparkles-outline': 'magic',
 };
 
-export default function AppIcon({ name, solid = false, ...props }) {
+export default function AppIcon({ name, solid = true, ...props }) {
   const fontAwesomeName = ICON_ALIASES[name] || name;
   return <FontAwesome5 name={fontAwesomeName} solid={solid} {...props} />;
 }

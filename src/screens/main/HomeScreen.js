@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, ScrollView, Share } from 'react-native';
         import { useTheme } from '../../context/ThemeContext';
         import { useAuth } from '../../context/AuthContext';
         import apiService from '../../api/apiService';
@@ -7,6 +7,7 @@ import { View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, Scr
 import Loader from '../../components/Loader';
 import ScreenHeader from '../../components/ScreenHeader';
 import Icon from '../../components/AppIcon';
+import { useSavedPosts } from '../../context/SavedPostsContext';
 
 const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
 
@@ -17,6 +18,12 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
           const { theme } = useTheme();
           const { user } = useAuth();
           const [activeFilter, setActiveFilter] = useState('For you');
+          const { isPostSaved, toggleSavedPost } = useSavedPosts();
+
+          const sharePost = post => Share.share({
+            title: `${post.userName} on LST Social`,
+            message: `${post.userName} shared on LST Social:\n\n${post.content}`,
+          });
 
           const loadPosts = useCallback(async () => {
             try {
@@ -38,11 +45,15 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
               <FlatList
                 data={posts}
                 keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.feedContent}
                 renderItem={({ item }) => (
                   <PostCard
                     post={item}
                     onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
                     onLike={() => apiService.likePost(item.id).then(loadPosts)}
+                    onShare={() => sharePost(item)}
+                    onSave={() => toggleSavedPost(item.id)}
+                    isSaved={isPostSaved(item.id)}
                   />
                 )}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.tint} />}
@@ -74,6 +85,7 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
 
         const styles = StyleSheet.create({
           container: { flex: 1 },
+          feedContent: { paddingBottom: 94 },
           verseCard: { marginHorizontal: 14, padding: 20, borderRadius: 22, marginBottom: 12 },
           verseLabel: { color: 'rgba(255,255,255,.68)', fontSize: 10, fontWeight: '800', letterSpacing: 1.6 },
           verse: { color: '#fff', fontSize: 21, fontWeight: '700', lineHeight: 29, marginTop: 11 },

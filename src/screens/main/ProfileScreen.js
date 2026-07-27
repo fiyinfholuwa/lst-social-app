@@ -7,6 +7,7 @@ import ScreenHeader from '../../components/ScreenHeader';
 import { useOnboarding } from '../../context/OnboardingContext';
 import Icon from '../../components/AppIcon';
 import { useSavedPosts } from '../../context/SavedPostsContext';
+import { useFriendships } from '../../context/FriendshipsContext';
 
         export default function ProfileScreen({ navigation }) {
           const { user, logout } = useAuth();
@@ -14,6 +15,7 @@ import { useSavedPosts } from '../../context/SavedPostsContext';
           const [profile, setProfile] = useState(user);
           const { replayOnboarding } = useOnboarding();
           const { savedPostIds } = useSavedPosts();
+          const { blockedUserIds, friendIds } = useFriendships();
 
           useEffect(() => { loadProfile(); }, []);
 
@@ -53,9 +55,21 @@ import { useSavedPosts } from '../../context/SavedPostsContext';
                 <Text style={[styles.menuValue, { color: theme.secondaryText }]}>{savedPostIds.length}</Text>
                 <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
               </TouchableOpacity>
+              <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={() => navigation.navigate('Friends')}>
+                <Icon name="users" size={19} color={theme.primary} />
+                <Text style={[styles.menuText, { color: theme.text }]}>Friends</Text>
+                <Text style={[styles.menuValue, { color: theme.secondaryText }]}>{friendIds.length}</Text>
+                <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
+              </TouchableOpacity>
               <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={replayOnboarding}>
                 <Icon name="play-circle-outline" size={21} color={theme.primary} />
                 <Text style={[styles.menuText, { color: theme.text }]}>Replay welcome experience</Text>
+                <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={() => navigation.navigate('BlockedAccounts')}>
+                <Icon name="ban" size={19} color={theme.danger} />
+                <Text style={[styles.menuText, { color: theme.text }]}>Blocked accounts</Text>
+                <Text style={[styles.menuValue, { color: theme.secondaryText }]}>{blockedUserIds.length}</Text>
                 <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
               </TouchableOpacity>
 

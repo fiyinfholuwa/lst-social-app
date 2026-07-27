@@ -4,6 +4,7 @@ import {
           mockChats,
           mockMessages,
           mockUser,
+          mockUsers,
         } from './mockData';
 
         const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
@@ -70,6 +71,15 @@ import {
             await delay(300);
             return mockCommunities.find(c => c.id === communityId) || null;
           },
+          getCommunityMembers: async (communityId) => {
+            await delay(300);
+            const community = mockCommunities.find(c => c.id === communityId);
+            return mockUsers.filter(user => community?.memberIds?.includes(user.id));
+          },
+          getUser: async (userId) => {
+            await delay(250);
+            return mockUsers.find(user => user.id === userId) || null;
+          },
           joinCommunity: async (communityId) => {
             await delay(500);
             const community = mockCommunities.find(c => c.id === communityId);
@@ -79,6 +89,20 @@ import {
           getChats: async () => {
             await delay(400);
             return mockChats;
+          },
+          getOrCreateChat: async (otherUser) => {
+            await delay(250);
+            let chat = mockChats.find(item => item.withUser.id === otherUser.id);
+            if (!chat) {
+              chat = {
+                id: `chat-${otherUser.id}`,
+                withUser: { id: otherUser.id, name: otherUser.name, avatar: otherUser.avatar },
+                lastMessage: 'Start a conversation',
+                timestamp: 'New',
+              };
+              mockChats.unshift(chat);
+            }
+            return chat;
           },
           getMessages: async (chatId) => {
             await delay(300);

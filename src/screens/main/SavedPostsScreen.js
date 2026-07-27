@@ -6,12 +6,14 @@ import Loader from '../../components/Loader';
 import PostCard from '../../components/PostCard';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useFriendships } from '../../context/FriendshipsContext';
 
 export default function SavedPostsScreen({ navigation }) {
   const { theme } = useTheme();
   const { savedPostIds, savedPostsLoading, isPostSaved, toggleSavedPost } = useSavedPosts();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { blockedUserIds } = useFriendships();
 
   const loadSavedPosts = useCallback(async () => {
     const results = await Promise.all(savedPostIds.map(id => apiService.getPost(id)));
@@ -31,13 +33,14 @@ export default function SavedPostsScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
-        data={posts}
+        data={posts.filter(post => !blockedUserIds.includes(post.userId))}
         keyExtractor={item => item.id}
         contentContainerStyle={[styles.content, posts.length === 0 && styles.emptyContent]}
         renderItem={({ item }) => (
           <PostCard
             post={item}
             onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
+            onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
             onLike={() => apiService.likePost(item.id).then(loadSavedPosts)}
             onShare={() => sharePost(item)}
             onSave={() => toggleSavedPost(item.id)}

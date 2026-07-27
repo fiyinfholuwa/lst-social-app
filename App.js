@@ -6,18 +6,21 @@ import { OnboardingProvider } from './src/context/OnboardingContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { SavedPostsProvider } from './src/context/SavedPostsContext';
+import { FriendshipsProvider } from './src/context/FriendshipsContext';
 
         export default function App() {
           return (
     <ThemeProvider>
       <OnboardingProvider>
         <SavedPostsProvider>
-          <AuthProvider>
+          <FriendshipsProvider>
+            <AuthProvider>
                 <NavigationContainer>
                   <AppNavigator />
           <StatusBar style="auto" />
                 </NavigationContainer>
-          </AuthProvider>
+            </AuthProvider>
+          </FriendshipsProvider>
         </SavedPostsProvider>
       </OnboardingProvider>
             </ThemeProvider>

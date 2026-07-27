@@ -8,6 +8,7 @@ import Loader from '../../components/Loader';
 import ScreenHeader from '../../components/ScreenHeader';
 import Icon from '../../components/AppIcon';
 import { useSavedPosts } from '../../context/SavedPostsContext';
+import { useFriendships } from '../../context/FriendshipsContext';
 
 const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
 
@@ -19,6 +20,7 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
           const { user } = useAuth();
           const [activeFilter, setActiveFilter] = useState('For you');
           const { isPostSaved, toggleSavedPost } = useSavedPosts();
+          const { blockedUserIds } = useFriendships();
 
           const sharePost = post => Share.share({
             title: `${post.userName} on LST Social`,
@@ -43,13 +45,14 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
             <View style={[styles.container, { backgroundColor: theme.background }]}>
               <ScreenHeader eyebrow="GOOD TO SEE YOU" title={`Hello, ${user?.name?.split(' ')[0] || 'friend'}`} actionIcon="notifications-outline" />
               <FlatList
-                data={posts}
+                data={posts.filter(post => !blockedUserIds.includes(post.userId))}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.feedContent}
                 renderItem={({ item }) => (
                   <PostCard
                     post={item}
                     onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
+                    onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
                     onLike={() => apiService.likePost(item.id).then(loadPosts)}
                     onShare={() => sharePost(item)}
                     onSave={() => toggleSavedPost(item.id)}

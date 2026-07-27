@@ -178,6 +178,7 @@ export const mockPosts = [
             memberCount: 128,
             image: 'https://picsum.photos/200/200?random=10',
             admin: 'Pastor Michael',
+            memberIds: ['u4', 'u2', 'u3', 'u9'],
             posts: [
               { id: 'p1', content: 'Weekly purity challenge: spend 30 minutes in prayer daily.', timestamp: '1d ago' },
             ],
@@ -190,6 +191,7 @@ export const mockPosts = [
             memberCount: 93,
             image: 'https://picsum.photos/200/200?random=11',
             admin: 'Brother James',
+            memberIds: ['u5', 'u11', 'u2'],
             posts: [
               { id: 'p2', content: 'Celebrate your milestones! Share your testimony.', timestamp: '2d ago' },
             ],
@@ -202,6 +204,7 @@ export const mockPosts = [
             memberCount: 76,
             image: 'https://picsum.photos/200/200?random=12',
             admin: 'Sister Ruth',
+            memberIds: ['u7', 'u10', 'u3'],
             posts: [],
           },
           {
@@ -212,6 +215,7 @@ export const mockPosts = [
             memberCount: 45,
             image: 'https://picsum.photos/200/200?random=13',
             admin: 'Elder Peter',
+            memberIds: ['u4', 'u9'],
             posts: [],
           },
           {
@@ -222,6 +226,7 @@ export const mockPosts = [
             memberCount: 62,
             image: 'https://picsum.photos/200/200?random=14',
             admin: 'Pastor David',
+            memberIds: ['u9', 'u3', 'u10'],
             posts: [],
           },
           {
@@ -232,6 +237,7 @@ export const mockPosts = [
             memberCount: 18,
             image: 'https://picsum.photos/200/200?random=15',
             admin: 'Apostle John',
+            memberIds: ['u4', 'u11'],
             posts: [],
           },
           {
@@ -242,6 +248,7 @@ export const mockPosts = [
             memberCount: 210,
             image: 'https://picsum.photos/200/200?random=16',
             admin: 'Sister Mary',
+            memberIds: ['u12', 'u3', 'u9'],
             posts: [],
           },
         ];
@@ -281,4 +288,17 @@ export const mockPosts = [
           bio: 'Lover of Jesus. Wife. Mom. Worship leader.',
           joinedCommunities: ['comm1', 'comm7'],
         };
+
+        export const mockUsers = [
+          mockUser,
+          { id: 'u2', name: 'David Eze', email: 'david@example.com', avatar: 'https://i.pravatar.cc/200?img=2', bio: 'Growing in grace. Prayer team volunteer.', joinedCommunities: ['comm1', 'comm2'] },
+          { id: 'u3', name: 'Sarah Williams', email: 'sarah@example.com', avatar: 'https://i.pravatar.cc/200?img=3', bio: 'Wife, sister, and lover of honest community.', joinedCommunities: ['comm1', 'comm3', 'comm5'] },
+          { id: 'u4', name: 'Pastor Michael', email: 'michael@example.com', avatar: 'https://i.pravatar.cc/200?img=4', bio: 'Pastor and mentor helping people grow with wisdom.', joinedCommunities: ['comm1', 'comm4', 'comm6'], role: 'Community leader' },
+          { id: 'u5', name: 'Daniel Okafor', email: 'daniel@example.com', avatar: 'https://i.pravatar.cc/200?img=11', bio: 'Recovery advocate. One day at a time.', joinedCommunities: ['comm2'] },
+          { id: 'u7', name: 'Ruth Mensah', email: 'ruth@example.com', avatar: 'https://i.pravatar.cc/200?img=32', bio: 'Marriage mentor and family-life facilitator.', joinedCommunities: ['comm3'], role: 'Community leader' },
+          { id: 'u9', name: 'David Eze', email: 'davideze@example.com', avatar: 'https://i.pravatar.cc/200?img=12', bio: 'Serving, learning, and preparing for marriage.', joinedCommunities: ['comm1', 'comm4', 'comm5'] },
+          { id: 'u10', name: 'Mary Adeyemi', email: 'mary@example.com', avatar: 'https://i.pravatar.cc/200?img=25', bio: 'Grateful for ordinary grace and meaningful friendships.', joinedCommunities: ['comm3', 'comm5'] },
+          { id: 'u11', name: 'James Cole', email: 'james@example.com', avatar: 'https://i.pravatar.cc/200?img=14', bio: 'Helping others find courage for the next right step.', joinedCommunities: ['comm2', 'comm6'] },
+          { id: 'u12', name: 'Esther Bello', email: 'esther@example.com', avatar: 'https://i.pravatar.cc/200?img=47', bio: 'Living a full life of faith, purpose, and service.', joinedCommunities: ['comm7'] },
+        ];
       

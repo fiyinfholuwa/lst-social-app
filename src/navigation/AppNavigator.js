@@ -12,6 +12,10 @@ import { useOnboarding } from '../context/OnboardingContext';
 import { useTheme } from '../context/ThemeContext';
 import Loader from '../components/Loader';
 import SavedPostsScreen from '../screens/main/SavedPostsScreen';
+import UserProfileScreen from '../screens/main/UserProfileScreen';
+import FriendRequestsScreen from '../screens/main/FriendRequestsScreen';
+import BlockedAccountsScreen from '../screens/main/BlockedAccountsScreen';
+import FriendsScreen from '../screens/main/FriendsScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -41,6 +45,10 @@ import SavedPostsScreen from '../screens/main/SavedPostsScreen';
                   <Stack.Screen name="ChatDetail" component={ChatDetailScreen} options={{ headerShown: true, title: 'Chat' }} />
                   <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: true, title: 'Create Post' }} />
                   <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ headerShown: true, title: 'Saved Posts' }} />
+                  <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
+                  <Stack.Screen name="FriendRequests" component={FriendRequestsScreen} options={{ headerShown: true, title: 'Friend Requests' }} />
+                  <Stack.Screen name="BlockedAccounts" component={BlockedAccountsScreen} options={{ headerShown: true, title: 'Blocked Accounts' }} />
+                  <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends' }} />
                 </>
               )}
             </Stack.Navigator>

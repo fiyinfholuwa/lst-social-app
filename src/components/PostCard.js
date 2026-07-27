@@ -5,7 +5,7 @@ import Icon from './AppIcon';
 
 const PREVIEW_LIMIT = 180;
 
-export default function PostCard({ post, onPress, onLike, onShare, onSave, isSaved = false }) {
+export default function PostCard({ post, onPress, onUserPress, onLike, onShare, onSave, isSaved = false }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const isLong = post.content.length > PREVIEW_LIMIT;
@@ -15,7 +15,9 @@ export default function PostCard({ post, onPress, onLike, onShare, onSave, isSav
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <Pressable onPress={onPress}>
         <View style={styles.header}>
-          <Image source={{ uri: post.userAvatar }} style={styles.avatar} />
+          <TouchableOpacity onPress={onUserPress} disabled={!onUserPress}>
+            <Image source={{ uri: post.userAvatar }} style={styles.avatar} />
+          </TouchableOpacity>
           <View style={styles.userInfo}>
             <View style={styles.nameRow}>
               <Text style={[styles.userName, { color: theme.text }]}>{post.userName}</Text>

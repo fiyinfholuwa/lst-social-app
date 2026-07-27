@@ -19,7 +19,7 @@ import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 
-export default function PostScreen({ route }) {
+export default function PostScreen({ route, navigation }) {
   const { postId } = route.params;
   const [post, setPost] = useState(null);
   const [commentText, setCommentText] = useState('');
@@ -69,7 +69,9 @@ export default function PostScreen({ route }) {
     <>
       <View style={styles.postCard}>
         <View style={styles.header}>
-          <Image source={{ uri: post.userAvatar }} style={styles.avatar} />
+          <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: post.userId })}>
+            <Image source={{ uri: post.userAvatar }} style={styles.avatar} />
+          </TouchableOpacity>
           <View style={styles.author}>
             <View style={styles.nameRow}>
               <Text style={[styles.userName, { color: theme.text }]}>{post.userName}</Text>

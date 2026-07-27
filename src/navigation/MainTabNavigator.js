@@ -18,21 +18,23 @@ import React from 'react';
                 headerShown: false,
                 tabBarActiveTintColor: theme.tint,
                 tabBarInactiveTintColor: theme.secondaryText,
-                tabBarStyle: { backgroundColor: theme.background, borderTopColor: theme.border },
+                tabBarShowLabel: true,
+                tabBarLabelStyle: { fontSize: 11, fontWeight: '600', paddingBottom: 4 },
+                tabBarStyle: { backgroundColor: theme.surface, borderTopColor: theme.border, height: 76, paddingTop: 8 },
                 tabBarIcon: ({ color, size }) => {
                   let iconName;
-                  if (route.name === 'Home') iconName = 'home-outline';
+                  if (route.name === 'Home') iconName = 'leaf-outline';
                   else if (route.name === 'Communities') iconName = 'people-outline';
-                  else if (route.name === 'Chats') iconName = 'chatbubble-outline';
+                  else if (route.name === 'Chats') iconName = 'chatbubbles-outline';
                   else if (route.name === 'Profile') iconName = 'person-outline';
                   return <Icon name={iconName} size={size} color={color} />;
                 },
               })}
             >
-              <Tab.Screen name="Home" component={HomeScreen} />
-              <Tab.Screen name="Communities" component={CommunitiesScreen} />
-              <Tab.Screen name="Chats" component={ChatsScreen} />
-              <Tab.Screen name="Profile" component={ProfileScreen} />
+              <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Today' }} />
+              <Tab.Screen name="Communities" component={CommunitiesScreen} options={{ title: 'Circles' }} />
+              <Tab.Screen name="Chats" component={ChatsScreen} options={{ title: 'Messages' }} />
+              <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'You' }} />
             </Tab.Navigator>
           );
         }

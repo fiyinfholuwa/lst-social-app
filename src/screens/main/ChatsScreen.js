@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
         import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
         import { useTheme } from '../../context/ThemeContext';
-        import apiService from '../../api/apiService';
+import apiService from '../../api/apiService';
+import ScreenHeader from '../../components/ScreenHeader';
 
         export default function ChatsScreen({ navigation }) {
           const [chats, setChats] = useState([]);
@@ -16,6 +17,7 @@ import React, { useState, useEffect } from 'react';
 
           return (
             <View style={[styles.container, { backgroundColor: theme.background }]}>
+              <ScreenHeader eyebrow="PRIVATE & SAFE" title="Messages" actionIcon="create-outline" />
               <FlatList
                 data={chats}
                 keyExtractor={(item) => item.id}
@@ -38,8 +40,8 @@ import React, { useState, useEffect } from 'react';
         }
 
         const styles = StyleSheet.create({
-          container: { flex: 1, padding: 12 },
-          chatItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
+          container: { flex: 1 },
+          chatItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 18, borderWidth: 1, marginBottom: 10, marginHorizontal: 14 },
           avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 12 },
           info: { flex: 1 },
           name: { fontWeight: '600', fontSize: 16 },

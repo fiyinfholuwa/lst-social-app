@@ -1,7 +1,7 @@
 import React from 'react';
         import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
         import { useTheme } from '../context/ThemeContext';
-        import Icon from 'react-native-vector-icons/Ionicons';
+        import Icon from './AppIcon';
 
         export default function PostCard({ post, onPress, onLike }) {
           const { theme } = useTheme();
@@ -19,7 +19,7 @@ import React from 'react';
               {post.image && <Image source={{ uri: post.image }} style={styles.image} />}
               <View style={styles.actions}>
                 <TouchableOpacity onPress={onLike} style={styles.actionButton}>
-                  <Icon name="heart-outline" size={20} color={theme.tint} />
+                  <Icon name="heart-outline" size={20} color={theme.accent} />
                   <Text style={[styles.actionText, { color: theme.secondaryText }]}>{post.likes}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton}>
@@ -43,7 +43,7 @@ import React from 'react';
           timestamp: { fontSize: 12 },
           content: { fontSize: 14, marginBottom: 8, lineHeight: 20 },
           image: { width: '100%', height: 210, borderRadius: 14, marginBottom: 10, resizeMode: 'cover' },
-          actions: { flexDirection: 'row', gap: 24, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,.18)', paddingTop: 11, marginTop: 4 },
+          actions: { flexDirection: 'row', gap: 24, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.18)', paddingTop: 11, marginTop: 4 },
           actionButton: { flexDirection: 'row', alignItems: 'center' },
           actionText: { marginLeft: 4, fontSize: 14 },
         });

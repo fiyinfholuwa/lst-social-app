@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '../../components/AppIcon';
         import { useAuth } from '../../context/AuthContext';
         import { useTheme } from '../../context/ThemeContext';
 

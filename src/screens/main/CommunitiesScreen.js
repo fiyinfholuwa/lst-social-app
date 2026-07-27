@@ -4,7 +4,7 @@ import { View, FlatList, StyleSheet, TouchableOpacity, Text, Image, Alert, TextI
         import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
 import ScreenHeader from '../../components/ScreenHeader';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '../../components/AppIcon';
 
         export default function CommunitiesScreen({ navigation }) {
           const [communities, setCommunities] = useState([]);

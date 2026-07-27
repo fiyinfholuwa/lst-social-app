@@ -6,7 +6,7 @@ import { View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, Scr
         import PostCard from '../../components/PostCard';
 import Loader from '../../components/Loader';
 import ScreenHeader from '../../components/ScreenHeader';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '../../components/AppIcon';
 
 const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
 

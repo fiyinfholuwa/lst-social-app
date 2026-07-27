@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView 
         import { useTheme } from '../../context/ThemeContext';
         import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '../../components/AppIcon';
 
 const postTypes = [
   { key: 'update', label: 'Update', icon: 'create-outline' },

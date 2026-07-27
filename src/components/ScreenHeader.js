@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from './AppIcon';
 import { useTheme } from '../context/ThemeContext';
 
 export default function ScreenHeader({ eyebrow, title, actionIcon, onAction }) {

@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import apiService from '../../api/apiService';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useOnboarding } from '../../context/OnboardingContext';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '../../components/AppIcon';
 
         export default function ProfileScreen() {
           const { user, logout } = useAuth();

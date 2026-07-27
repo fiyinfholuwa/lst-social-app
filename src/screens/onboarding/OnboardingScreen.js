@@ -2,8 +2,9 @@ import React, { useRef, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '../../components/AppIcon';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { COLORS } from '../../styles/colors';
 
 const { width } = Dimensions.get('window');
 const VIDEO_URI = 'https://cdn.coverr.co/videos/coverr-a-field-of-wheat-at-sunset-1575/1080p.mp4';
@@ -53,7 +54,7 @@ export default function OnboardingScreen() {
         isMuted
       />
       <LinearGradient
-        colors={['rgba(248,250,244,0.20)', 'rgba(248,250,244,0.76)', '#F7F8F3']}
+        colors={[COLORS.lightOverlay20, COLORS.lightOverlay76, COLORS.offWhite]}
         locations={[0, 0.48, 0.83]}
         style={StyleSheet.absoluteFill}
       />
@@ -75,7 +76,7 @@ export default function OnboardingScreen() {
         onMomentumScrollEnd={event => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
         renderItem={({ item }) => (
           <View style={styles.slide}>
-            <View style={styles.iconWrap}><Icon name={item.icon} size={24} color="#315C47" /></View>
+            <View style={styles.iconWrap}><Icon name={item.icon} size={24} color={COLORS.navy} /></View>
             <Text style={styles.eyebrow}>{item.eyebrow}</Text>
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.body}>{item.body}</Text>
@@ -91,7 +92,7 @@ export default function OnboardingScreen() {
         </View>
         <TouchableOpacity style={styles.nextButton} onPress={next} activeOpacity={0.85}>
           <Text style={styles.nextText}>{index === slides.length - 1 ? 'Get started' : 'Continue'}</Text>
-          <Icon name="arrow-forward" size={19} color="#fff" />
+          <Icon name="arrow-forward" size={19} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.promise}>A safer space for faith, family & fellowship.</Text>
       </View>
@@ -100,22 +101,22 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8F3' },
+  container: { flex: 1, backgroundColor: COLORS.offWhite },
   brandRow: { position: 'absolute', top: 58, left: 24, right: 24, zIndex: 2, flexDirection: 'row', alignItems: 'center' },
-  brandMark: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#315C47', alignItems: 'center', justifyContent: 'center', marginRight: 9 },
-  brandMarkText: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  brand: { color: '#24362C', letterSpacing: 1.7, fontSize: 13, fontWeight: '800', flex: 1 },
-  skip: { color: '#44564B', fontSize: 14, fontWeight: '600' },
+  brandMark: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.red, alignItems: 'center', justifyContent: 'center', marginRight: 9 },
+  brandMarkText: { color: COLORS.white, fontWeight: '800', fontSize: 15 },
+  brand: { color: COLORS.navy, letterSpacing: 1.7, fontSize: 13, fontWeight: '800', flex: 1 },
+  skip: { color: COLORS.slate, fontSize: 14, fontWeight: '600' },
   slide: { width, paddingHorizontal: 28, justifyContent: 'flex-end', paddingBottom: 225 },
-  iconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,.76)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  eyebrow: { color: '#65766A', fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 12 },
-  title: { color: '#17221B', fontSize: 43, lineHeight: 48, fontWeight: '800', letterSpacing: -1.5 },
-  body: { color: '#56655B', fontSize: 17, lineHeight: 26, marginTop: 17, maxWidth: 345 },
+  iconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.white76, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  eyebrow: { color: COLORS.red, fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 12 },
+  title: { color: COLORS.navy, fontSize: 43, lineHeight: 48, fontWeight: '800', letterSpacing: -1.5 },
+  body: { color: COLORS.slate, fontSize: 17, lineHeight: 26, marginTop: 17, maxWidth: 345 },
   footer: { position: 'absolute', left: 24, right: 24, bottom: 28 },
   dots: { flexDirection: 'row', marginBottom: 20 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#C9D1CB', marginRight: 8 },
-  dotActive: { width: 26, backgroundColor: '#315C47' },
-  nextButton: { height: 58, borderRadius: 18, backgroundColor: '#315C47', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-  nextText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  promise: { color: '#7A877F', fontSize: 12, textAlign: 'center', marginTop: 14 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.border, marginRight: 8 },
+  dotActive: { width: 26, backgroundColor: COLORS.red },
+  nextButton: { height: 58, borderRadius: 18, backgroundColor: COLORS.navy, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  nextText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  promise: { color: COLORS.slate, fontSize: 12, textAlign: 'center', marginTop: 14 },
 });

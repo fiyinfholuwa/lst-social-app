@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,26 +7,27 @@ import { useOnboarding } from '../../context/OnboardingContext';
 import { COLORS } from '../../styles/colors';
 
 const { width } = Dimensions.get('window');
-const VIDEO_URI = 'https://cdn.coverr.co/videos/coverr-a-field-of-wheat-at-sunset-1575/1080p.mp4';
-
 const slides = [
   {
-    eyebrow: 'WELCOME TO LST',
-    title: 'Faith grows\nin community.',
-    body: 'A calm, trusted space to share your walk, find encouragement, and become whole.',
+    eyebrow: 'FAITH & FAMILY',
+    title: 'A family that\ngrows together.',
+    body: 'Build meaningful relationships, strengthen your home, and walk with people who genuinely care.',
     icon: 'heart-outline',
+    video: require('../../../assets/onboarding-family.mp4'),
   },
   {
-    eyebrow: 'FIND YOUR PEOPLE',
-    title: 'Belong beyond\nthe Sunday service.',
-    body: 'Join purposeful circles for singles, couples, recovery, discipleship, and prayer.',
-    icon: 'people-outline',
+    eyebrow: 'SPIRITUAL GROWTH',
+    title: 'Go deeper in\nyour walk with God.',
+    body: 'Find prayer, discipleship, honest encouragement, and practical support for every season of faith.',
+    icon: 'seedling',
+    video: require('../../../assets/onboarding-growth.mp4'),
   },
   {
-    eyebrow: 'WALK TOGETHER',
-    title: 'Real support.\nMeaningful growth.',
-    body: 'Share testimonies, ask for prayer, celebrate progress, and stay connected privately.',
-    icon: 'sparkles-outline',
+    eyebrow: 'LOVE & CONNECTION',
+    title: 'Love people.\nLive with purpose.',
+    body: 'Share life, celebrate progress, offer support, and form safe connections rooted in genuine love.',
+    icon: 'heart',
+    video: require('../../../assets/onboarding-love.mp4'),
   },
 ];
 
@@ -34,6 +35,16 @@ export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
   const listRef = useRef(null);
   const { completeOnboarding } = useOnboarding();
+
+  useEffect(() => {
+    if (index >= slides.length - 1) return undefined;
+    const timer = setTimeout(() => {
+      const nextIndex = index + 1;
+      setIndex(nextIndex);
+      listRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+    }, 6500);
+    return () => clearTimeout(timer);
+  }, [index]);
 
   const next = () => {
     if (index === slides.length - 1) {
@@ -45,24 +56,12 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      <Video
-        source={{ uri: VIDEO_URI }}
-        style={StyleSheet.absoluteFill}
-        resizeMode={ResizeMode.COVER}
-        shouldPlay
-        isLooping
-        isMuted
-      />
-      <LinearGradient
-        colors={[COLORS.lightOverlay20, COLORS.lightOverlay76, COLORS.offWhite]}
-        locations={[0, 0.48, 0.83]}
-        style={StyleSheet.absoluteFill}
-      />
       <View style={styles.brandRow}>
         <View style={styles.brandMark}><Text style={styles.brandMarkText}>L</Text></View>
         <Text style={styles.brand}>LST SOCIAL</Text>
-        <TouchableOpacity onPress={completeOnboarding} hitSlop={12}>
+        <TouchableOpacity style={styles.skipButton} onPress={completeOnboarding} hitSlop={12}>
           <Text style={styles.skip}>Skip</Text>
+          <Icon name="arrow-right" size={11} color={COLORS.navy} />
         </TouchableOpacity>
       </View>
 
@@ -74,12 +73,28 @@ export default function OnboardingScreen() {
         keyExtractor={item => item.title}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={event => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
-        renderItem={({ item }) => (
+        renderItem={({ item, index: slideIndex }) => (
           <View style={styles.slide}>
-            <View style={styles.iconWrap}><Icon name={item.icon} size={24} color={COLORS.navy} /></View>
-            <Text style={styles.eyebrow}>{item.eyebrow}</Text>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.body}>{item.body}</Text>
+            <Video
+              source={item.video}
+              style={styles.slideVideo}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay={slideIndex === index}
+              isLooping
+              isMuted
+              useNativeControls={false}
+            />
+            <LinearGradient
+              colors={['rgba(247,248,251,0.04)', 'rgba(247,248,251,0.52)', COLORS.offWhite]}
+              locations={[0, 0.55, 0.88]}
+              style={styles.slideOverlay}
+            />
+            <View style={styles.slideContent}>
+              <View style={styles.iconWrap}><Icon name={item.icon} size={24} color={COLORS.navy} /></View>
+              <Text style={styles.eyebrow}>{item.eyebrow}</Text>
+              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.body}>{item.body}</Text>
+            </View>
           </View>
         )}
       />
@@ -102,12 +117,16 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.offWhite },
-  brandRow: { position: 'absolute', top: 58, left: 24, right: 24, zIndex: 2, flexDirection: 'row', alignItems: 'center' },
+  brandRow: { position: 'absolute', top: 58, left: 24, right: 24, zIndex: 10, elevation: 10, flexDirection: 'row', alignItems: 'center' },
   brandMark: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.red, alignItems: 'center', justifyContent: 'center', marginRight: 9 },
   brandMarkText: { color: COLORS.white, fontWeight: '800', fontSize: 15 },
   brand: { color: COLORS.navy, letterSpacing: 1.7, fontSize: 13, fontWeight: '800', flex: 1 },
-  skip: { color: COLORS.slate, fontSize: 14, fontWeight: '600' },
-  slide: { width, paddingHorizontal: 28, justifyContent: 'flex-end', paddingBottom: 225 },
+  skipButton: { minHeight: 38, paddingHorizontal: 13, borderRadius: 19, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: COLORS.white90, borderWidth: 1, borderColor: COLORS.border },
+  skip: { color: COLORS.navy, fontSize: 13, fontWeight: '800' },
+  slide: { width, flex: 1, backgroundColor: COLORS.offWhite },
+  slideVideo: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  slideOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 1 },
+  slideContent: { flex: 1, zIndex: 2, paddingHorizontal: 28, justifyContent: 'flex-end', paddingBottom: 225 },
   iconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.white76, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   eyebrow: { color: COLORS.red, fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 12 },
   title: { color: COLORS.navy, fontSize: 43, lineHeight: 48, fontWeight: '800', letterSpacing: -1.5 },

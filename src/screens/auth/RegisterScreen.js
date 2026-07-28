@@ -47,8 +47,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView 
         const getStyles = (theme) => StyleSheet.create({
           container: { flex: 1, backgroundColor: theme.background },
           content: { padding: 24, paddingTop: 90, paddingBottom: 40 },
-          kicker: { fontSize: 11, color: theme.primary, fontWeight: '800', letterSpacing: 1.8, marginBottom: 10 },
-          title: { fontSize: 34, fontWeight: '800', color: theme.text, letterSpacing: -1, marginBottom: 10 },
+          kicker: { fontSize: 11, color: theme.primary, fontWeight: '700', letterSpacing: 1.8, marginBottom: 10 },
+          title: { fontSize: 34, fontWeight: '700', color: theme.text, letterSpacing: -1, marginBottom: 10 },
           subtitle: { fontSize: 16, lineHeight: 24, color: theme.secondaryText, marginBottom: 28 },
           label: { color: theme.text, fontWeight: '600', marginBottom: 8, fontSize: 13 },
           input: { backgroundColor: theme.card, color: theme.text, padding: 15, borderRadius: 14, marginBottom: 18, borderWidth: 1, borderColor: theme.border },

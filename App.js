@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SavedPostsProvider } from './src/context/SavedPostsContext';
 import { FriendshipsProvider } from './src/context/FriendshipsContext';
 import { CommunityApplicationsProvider } from './src/context/CommunityApplicationsContext';
+import { NotificationsProvider } from './src/context/NotificationsContext';
 import { FONT_FAMILY } from './src/styles/typography';
 
 Text.defaultProps = Text.defaultProps || {};
@@ -23,12 +24,14 @@ TextInput.defaultProps.style = [{ fontFamily: FONT_FAMILY }, TextInput.defaultPr
         <SavedPostsProvider>
           <FriendshipsProvider>
             <CommunityApplicationsProvider>
-              <AuthProvider>
-                <NavigationContainer>
-                  <AppNavigator />
-          <StatusBar style="auto" />
-                </NavigationContainer>
-              </AuthProvider>
+              <NotificationsProvider>
+                <AuthProvider>
+                  <NavigationContainer>
+                    <AppNavigator />
+                    <StatusBar style="auto" />
+                  </NavigationContainer>
+                </AuthProvider>
+              </NotificationsProvider>
             </CommunityApplicationsProvider>
           </FriendshipsProvider>
         </SavedPostsProvider>

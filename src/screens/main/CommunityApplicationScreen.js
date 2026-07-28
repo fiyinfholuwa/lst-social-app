@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
+import QuickMaritalReadingGate from '../../components/QuickMaritalReadingGate';
 import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getCommunityRequirement } from '../../data/communityRequirements';
@@ -14,6 +15,10 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   const [community, setCommunity] = useState(null);
   const [selectedPath, setSelectedPath] = useState(null);
   const [abstinenceBand, setAbstinenceBand] = useState(null);
+  const [supportArea, setSupportArea] = useState(null);
+  const [struggleDuration, setStruggleDuration] = useState(null);
+  const [supportType, setSupportType] = useState(null);
+  const [readingComplete, setReadingComplete] = useState(false);
   const [motivation, setMotivation] = useState('');
   const [agreements, setAgreements] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -25,6 +30,10 @@ export default function CommunityApplicationScreen({ route, navigation }) {
 
   if (!community || !requirement) return <Loader />;
 
+  if (communityId === 'comm4' && !readingComplete) {
+    return <QuickMaritalReadingGate theme={theme} onComplete={() => setReadingComplete(true)} />;
+  }
+
   const toggleAgreement = index => {
     setAgreements(current => current.includes(index)
       ? current.filter(item => item !== index)
@@ -32,6 +41,10 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   };
 
   const submit = async () => {
+    if (communityId === 'comm4' && !readingComplete) {
+      Alert.alert('Complete the required reading', 'Pass all three article quizzes before submitting your application.');
+      return;
+    }
     if (requirement.paths && !selectedPath) {
       Alert.alert('Choose the option that describes you', 'This helps the reviewers assess the correct prerequisite.');
       return;
@@ -40,8 +53,21 @@ export default function CommunityApplicationScreen({ route, navigation }) {
       Alert.alert('Select an abstinence period', 'Choose the range that most accurately reflects your current journey.');
       return;
     }
-    if (motivation.trim().length < 20) {
-      Alert.alert('Tell us a little more', 'Please write at least 20 characters about why you want to join.');
+    if (requirement.supportAreas && !supportArea) {
+      Alert.alert('Select an area', 'Choose the option that best describes your situation.');
+      return;
+    }
+    if (requirement.struggleDurations && !struggleDuration) {
+      Alert.alert('Select a duration', 'Choose the option that best describes your journey.');
+      return;
+    }
+    if (requirement.supportTypes && !supportType) {
+      Alert.alert('Select support', 'Choose the type of support you need.');
+      return;
+    }
+    const motivationMinimum = requirement.motivationMinimum || 20;
+    if (motivation.trim().length < motivationMinimum) {
+      Alert.alert('Tell us a little more', `Please write at least ${motivationMinimum} characters.`);
       return;
     }
     if (agreements.length !== requirement.commitments.length) {
@@ -53,6 +79,9 @@ export default function CommunityApplicationScreen({ route, navigation }) {
     await submitApplication(communityId, {
       applicantPath: selectedPath,
       abstinenceBand: selectedPath === 'puritan' ? abstinenceBand : null,
+      supportArea,
+      struggleDuration,
+      supportType,
       motivation: motivation.trim(),
       commitmentsAccepted: true,
     });
@@ -67,7 +96,7 @@ export default function CommunityApplicationScreen({ route, navigation }) {
       <Text style={[styles.eyebrow, { color: theme.primary }]}>MEMBERSHIP APPLICATION</Text>
       <Text style={[styles.title, { color: theme.text }]}>{requirement.title}</Text>
       <Text style={[styles.intro, { color: theme.secondaryText }]}>
-        {community.name} is a moderated community. Membership is reviewed to keep the space focused and safe.
+        {requirement.intro || `${community.name} is a moderated community. Membership is reviewed to keep the space focused and safe.`}
       </Text>
 
       <View style={[styles.reviewNote, { backgroundColor: theme.primarySoft }]}>
@@ -129,14 +158,49 @@ export default function CommunityApplicationScreen({ route, navigation }) {
         </View>
       ) : null}
 
+      {requirement.supportAreas ? (
+        <SelectionChips
+          title={requirement.supportAreasLabel || 'What do you need support with?'}
+          options={requirement.supportAreas}
+          selected={supportArea}
+          onSelect={setSupportArea}
+          theme={theme}
+          styles={styles}
+        />
+      ) : null}
+
+      {requirement.struggleDurations ? (
+        <SelectionChips
+          title={requirement.struggleDurationsLabel || 'How long have you struggled?'}
+          options={requirement.struggleDurations}
+          selected={struggleDuration}
+          onSelect={setStruggleDuration}
+          theme={theme}
+          styles={styles}
+        />
+      ) : null}
+
+      {requirement.supportTypes ? (
+        <SelectionChips
+          title={requirement.supportTypesLabel || 'What support do you need?'}
+          options={requirement.supportTypes}
+          selected={supportType}
+          onSelect={setSupportType}
+          theme={theme}
+          styles={styles}
+        />
+      ) : null}
+
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Why would you like to join?</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          {requirement.motivationLabel || 'Why would you like to join?'}
+        </Text>
         <TextInput
           value={motivation}
           onChangeText={setMotivation}
           multiline
           maxLength={600}
-          placeholder="Share your reason and what you hope to grow in..."
+          placeholder={requirement.motivationPlaceholder || 'Share your reason and what you hope to grow in...'}
           placeholderTextColor={theme.secondaryText}
           style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
         />
@@ -179,24 +243,55 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   );
 }
 
+function SelectionChips({ title, options, selected, onSelect, theme, styles }) {
+  return (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+      <View style={[styles.bands, styles.selectionOptions]}>
+        {options.map(option => {
+          const isSelected = selected === option;
+          return (
+            <TouchableOpacity
+              key={option}
+              onPress={() => onSelect(option)}
+              style={[
+                styles.band,
+                {
+                  borderColor: isSelected ? theme.primary : theme.border,
+                  backgroundColor: isSelected ? theme.primarySoft : theme.card,
+                },
+              ]}
+            >
+              <Text style={[styles.bandText, { color: isSelected ? theme.primary : theme.secondaryText }]}>
+                {option}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 20, paddingBottom: 40 },
-  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
-  title: { fontSize: 22, lineHeight: 28, fontWeight: '800', marginTop: 8 },
+  eyebrow: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  title: { fontSize: 22, lineHeight: 28, fontWeight: '700', marginTop: 8 },
   intro: { fontSize: 13, lineHeight: 20, marginTop: 8 },
   reviewNote: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 13, marginTop: 16 },
   reviewText: { flex: 1, fontSize: 11, fontWeight: '700' },
   section: { marginTop: 25 },
-  sectionTitle: { fontSize: 15, fontWeight: '800' },
+  sectionTitle: { fontSize: 15, fontWeight: '700' },
   helper: { fontSize: 11, lineHeight: 17, marginTop: 4, marginBottom: 10 },
   option: { flexDirection: 'row', alignItems: 'flex-start', padding: 13, borderWidth: 1, borderRadius: 15, marginTop: 9 },
   radio: { width: 19, height: 19, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1, marginRight: 11 },
   radioInner: { width: 9, height: 9, borderRadius: 5 },
   optionCopy: { flex: 1 },
-  optionTitle: { fontSize: 13, fontWeight: '800' },
+  optionTitle: { fontSize: 13, fontWeight: '700' },
   optionText: { fontSize: 11, lineHeight: 17, marginTop: 4 },
   bands: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  selectionOptions: { marginTop: 10 },
   band: { paddingHorizontal: 12, paddingVertical: 9, borderWidth: 1, borderRadius: 999 },
   bandText: { fontSize: 11, fontWeight: '700' },
   eligibilityNote: { fontSize: 11, lineHeight: 17, marginTop: 10 },
@@ -210,5 +305,5 @@ const styles = StyleSheet.create({
   privacy: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 18, paddingHorizontal: 4 },
   privacyText: { flex: 1, fontSize: 11, lineHeight: 17 },
   submit: { height: 52, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
-  submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 });

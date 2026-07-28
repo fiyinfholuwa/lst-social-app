@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   contextText: { fontSize: 11, fontWeight: '600' },
   content: { fontSize: 14, lineHeight: 22 },
   readMoreButton: { alignSelf: 'flex-start', paddingVertical: 5 },
-  readMore: { fontSize: 13, fontWeight: '800' },
+  readMore: { fontSize: 13, fontWeight: '700' },
   image: { width: '100%', height: 220, borderRadius: 14, marginTop: 7, resizeMode: 'cover' },
   countRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 10 },
   countText: { fontSize: 11 },

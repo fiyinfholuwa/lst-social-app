@@ -9,6 +9,7 @@ import ScreenHeader from '../../components/ScreenHeader';
 import Icon from '../../components/AppIcon';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useFriendships } from '../../context/FriendshipsContext';
+import { useNotifications } from '../../context/NotificationsContext';
 
 const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
 
@@ -21,6 +22,7 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
           const [activeFilter, setActiveFilter] = useState('For you');
           const { isPostSaved, toggleSavedPost } = useSavedPosts();
           const { blockedUserIds } = useFriendships();
+          const { unreadCount } = useNotifications();
 
           const sharePost = post => Share.share({
             title: `${post.userName} on LST Social`,
@@ -43,7 +45,13 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
 
           return (
             <View style={[styles.container, { backgroundColor: theme.background }]}>
-              <ScreenHeader eyebrow="GOOD TO SEE YOU" title={`Hello, ${user?.name?.split(' ')[0] || 'friend'}`} actionIcon="notifications-outline" />
+              <ScreenHeader
+                eyebrow="GOOD TO SEE YOU"
+                title={`Hello, ${user?.name?.split(' ')[0] || 'friend'}`}
+                actionIcon="notifications-outline"
+                badgeCount={unreadCount}
+                onAction={() => navigation.navigate('Notifications')}
+              />
               <FlatList
                 data={posts.filter(post => !blockedUserIds.includes(post.userId))}
                 keyExtractor={(item) => item.id}
@@ -90,7 +98,7 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
           container: { flex: 1 },
           feedContent: { paddingBottom: 94 },
           verseCard: { marginHorizontal: 14, padding: 20, borderRadius: 22, marginBottom: 12 },
-          verseLabel: { color: 'rgba(255,255,255,.82)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
+          verseLabel: { color: 'rgba(255,255,255,.82)', fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
           verse: { color: '#fff', fontSize: 21, fontWeight: '700', lineHeight: 29, marginTop: 11 },
           reference: { color: 'rgba(255,255,255,.76)', fontSize: 13, marginTop: 8 },
           composer: { marginHorizontal: 14, padding: 12, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },

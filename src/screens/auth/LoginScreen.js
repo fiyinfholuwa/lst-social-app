@@ -57,9 +57,9 @@ import Icon from '../../components/AppIcon';
         const getStyles = (theme) => StyleSheet.create({
           container: { flex: 1, backgroundColor: theme.background, padding: 24, justifyContent: 'center' },
           logo: { width: 48, height: 48, borderRadius: 16, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
-          logoText: { color: '#fff', fontWeight: '800', fontSize: 22 },
-          kicker: { fontSize: 11, color: theme.primary, fontWeight: '800', letterSpacing: 1.8, marginBottom: 10 },
-          title: { fontSize: 34, lineHeight: 40, fontWeight: '800', color: theme.text, letterSpacing: -1, marginBottom: 10 },
+          logoText: { color: '#fff', fontWeight: '700', fontSize: 22 },
+          kicker: { fontSize: 11, color: theme.primary, fontWeight: '700', letterSpacing: 1.8, marginBottom: 10 },
+          title: { fontSize: 34, lineHeight: 40, fontWeight: '700', color: theme.text, letterSpacing: -1, marginBottom: 10 },
           subtitle: { fontSize: 16, lineHeight: 24, color: theme.secondaryText, marginBottom: 30 },
           label: { color: theme.text, fontWeight: '600', marginBottom: 8, fontSize: 13 },
           input: { backgroundColor: theme.card, color: theme.text, padding: 15, borderRadius: 14, marginBottom: 18, borderWidth: 1, borderColor: theme.border },

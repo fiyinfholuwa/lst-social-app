@@ -7,11 +7,13 @@ import React from 'react';
         import ChatsScreen from '../screens/main/ChatsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
         const Tab = createBottomTabNavigator();
 
         export default function MainTabNavigator() {
           const { theme } = useTheme();
+          const insets = useSafeAreaInsets();
 
           return (
             <Tab.Navigator
@@ -20,33 +22,33 @@ import { StyleSheet, View } from 'react-native';
                 tabBarActiveTintColor: theme.accent,
                 tabBarInactiveTintColor: theme.secondaryText,
                 tabBarShowLabel: true,
-                tabBarLabelStyle: { fontSize: 11, fontWeight: '700', paddingBottom: 2 },
+                tabBarLabelStyle: { fontSize: 11, fontWeight: '600', paddingBottom: 3 },
                 tabBarStyle: {
                   position: 'absolute',
-                  left: 12,
-                  right: 12,
-                  bottom: 4,
-                  height: 68,
-                  paddingTop: 10,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 60 + insets.bottom,
+                  paddingTop: 7,
+                  paddingBottom: Math.max(insets.bottom, 5),
                   backgroundColor: theme.surface,
                   borderTopWidth: 1,
                   borderColor: theme.border,
-                  borderRadius: 22,
+                  elevation: 10,
+                  shadowColor: '#000000',
+                  shadowOffset: { width: 0, height: -2 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 6,
                 },
-                tabBarItemStyle: { borderRadius: 18 },
-                tabBarIcon: ({ color, size, focused }) => {
+                tabBarIcon: ({ color }) => {
                   let iconName;
                   if (route.name === 'Home') iconName = 'leaf-outline';
                   else if (route.name === 'Communities') iconName = 'people-outline';
                   else if (route.name === 'Chats') iconName = 'chatbubbles-outline';
                   else if (route.name === 'Profile') iconName = 'person-outline';
                   return (
-                    <View style={[
-                      styles.iconWrap,
-                      focused && { backgroundColor: theme.accentSoft },
-                    ]}>
-                      <Icon name={iconName} size={focused ? 20 : 18} color={color} solid />
-                      {focused ? <View style={[styles.activeDot, { backgroundColor: theme.accent }]} /> : null}
+                    <View style={styles.iconWrap}>
+                      <Icon name={iconName} size={21} strokeWidth={1.45} color={color} />
                     </View>
                   );
                 },
@@ -62,18 +64,10 @@ import { StyleSheet, View } from 'react-native';
 
         const styles = StyleSheet.create({
           iconWrap: {
-            width: 42,
-            height: 32,
-            borderRadius: 12,
+            width: 40,
+            height: 28,
             alignItems: 'center',
             justifyContent: 'center',
-          },
-          activeDot: {
-            position: 'absolute',
-            bottom: 2,
-            width: 4,
-            height: 4,
-            borderRadius: 2,
           },
         });
       

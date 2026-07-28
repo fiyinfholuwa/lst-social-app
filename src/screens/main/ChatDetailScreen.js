@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   profileHeader: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, marginHorizontal: -12, paddingHorizontal: 16, paddingVertical: 11 },
   profileAvatar: { width: 42, height: 42, borderRadius: 21, marginRight: 10 },
   profileCopy: { flex: 1 },
-  profileName: { fontSize: 14, fontWeight: '800' },
+  profileName: { fontSize: 14, fontWeight: '700' },
   profileHint: { fontSize: 11, marginTop: 2 },
   messages: { paddingVertical: 10 },
   messageRow: { marginVertical: 4, flexDirection: 'row' },

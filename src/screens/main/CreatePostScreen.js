@@ -77,7 +77,7 @@ const postTypes = [
         const styles = StyleSheet.create({
           container: { flex: 1 },
           content: { padding: 18, paddingBottom: 40 },
-          heading: { fontSize: 25, fontWeight: '800', letterSpacing: -0.6 },
+          heading: { fontSize: 25, fontWeight: '700', letterSpacing: -0.6 },
           subheading: { fontSize: 14, marginTop: 6, marginBottom: 18 },
           types: { flexDirection: 'row', gap: 8, marginBottom: 16 },
           type: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderRadius: 999 },

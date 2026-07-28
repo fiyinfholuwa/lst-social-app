@@ -50,27 +50,27 @@ import { useFriendships } from '../../context/FriendshipsContext';
                 <Switch value={isDark} onValueChange={toggleTheme} trackColor={{ false: '#767577', true: theme.primary }} />
               </View>
               <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={() => navigation.navigate('SavedPosts')}>
-                <Icon name="bookmark" size={20} color={theme.primary} />
+                <Icon name="bookmark" size={18} strokeWidth={1.4} color={theme.primary} />
                 <Text style={[styles.menuText, { color: theme.text }]}>Saved posts</Text>
                 <Text style={[styles.menuValue, { color: theme.secondaryText }]}>{savedPostIds.length}</Text>
-                <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
+                <Icon name="chevron-forward" size={16} strokeWidth={1.4} color={theme.secondaryText} />
               </TouchableOpacity>
               <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={() => navigation.navigate('Friends')}>
-                <Icon name="users" size={19} color={theme.primary} />
+                <Icon name="users" size={18} strokeWidth={1.4} color={theme.primary} />
                 <Text style={[styles.menuText, { color: theme.text }]}>Friends</Text>
                 <Text style={[styles.menuValue, { color: theme.secondaryText }]}>{friendIds.length}</Text>
-                <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
+                <Icon name="chevron-forward" size={16} strokeWidth={1.4} color={theme.secondaryText} />
               </TouchableOpacity>
               <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={replayOnboarding}>
-                <Icon name="play-circle-outline" size={21} color={theme.primary} />
+                <Icon name="play-circle-outline" size={18} strokeWidth={1.4} color={theme.primary} />
                 <Text style={[styles.menuText, { color: theme.text }]}>Replay welcome experience</Text>
-                <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
+                <Icon name="chevron-forward" size={16} strokeWidth={1.4} color={theme.secondaryText} />
               </TouchableOpacity>
               <TouchableOpacity style={[styles.menuRow, { borderColor: theme.border }]} onPress={() => navigation.navigate('BlockedAccounts')}>
-                <Icon name="ban" size={19} color={theme.danger} />
+                <Icon name="ban" size={18} strokeWidth={1.4} color={theme.danger} />
                 <Text style={[styles.menuText, { color: theme.text }]}>Blocked accounts</Text>
                 <Text style={[styles.menuValue, { color: theme.secondaryText }]}>{blockedUserIds.length}</Text>
-                <Icon name="chevron-forward" size={18} color={theme.secondaryText} />
+                <Icon name="chevron-forward" size={16} strokeWidth={1.4} color={theme.secondaryText} />
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.logoutButton, { backgroundColor: theme.primary }]} onPress={handleLogout}>

@@ -1,12 +1,11 @@
 import { Platform } from 'react-native';
 
 /**
- * Native, zero-download typography stack.
- * Avenir Next gives iOS a mature editorial-social feel, while Android uses its
- * highly legible native sans-serif with full weight support.
+ * Native system typography keeps letterforms crisp and familiar on every
+ * platform while avoiding unsupported synthetic font weights.
  */
 export const FONT_FAMILY = Platform.select({
-  ios: 'Avenir Next',
+  ios: 'System',
   android: 'sans-serif',
   web: 'system-ui',
   default: 'System',

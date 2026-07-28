@@ -17,6 +17,7 @@ import FriendRequestsScreen from '../screens/main/FriendRequestsScreen';
 import BlockedAccountsScreen from '../screens/main/BlockedAccountsScreen';
 import FriendsScreen from '../screens/main/FriendsScreen';
 import CommunityApplicationScreen from '../screens/main/CommunityApplicationScreen';
+import NotificationsScreen from '../screens/main/NotificationsScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -51,6 +52,7 @@ import CommunityApplicationScreen from '../screens/main/CommunityApplicationScre
                   <Stack.Screen name="BlockedAccounts" component={BlockedAccountsScreen} options={{ headerShown: true, title: 'Blocked Accounts' }} />
                   <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends' }} />
                   <Stack.Screen name="CommunityApplication" component={CommunityApplicationScreen} options={{ headerShown: true, title: 'Membership Application' }} />
+                  <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
                 </>
               )}
             </Stack.Navigator>

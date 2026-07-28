@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   emptyContent: { flexGrow: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 38 },
   emptyIcon: { width: 58, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontSize: 20, fontWeight: '800', marginTop: 16 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', marginTop: 16 },
   emptyText: { fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 7 },
   browseButton: { marginTop: 20, paddingVertical: 12, paddingHorizontal: 22, borderRadius: 14 },
   browseText: { color: '#FFFFFF', fontWeight: '700' },

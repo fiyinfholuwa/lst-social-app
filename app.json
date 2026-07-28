@@ -24,7 +24,8 @@
       ],
       "adaptiveIcon": {
         "backgroundColor": "#F7F8FB"
-      }
+      },
+      "package": "com.fiyinfholuwa.lstsocial"
     },
     "extra": {
       "eas": {

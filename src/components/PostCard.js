@@ -34,7 +34,7 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
 
         <View style={styles.contextRow}>
           <Icon
-            name={postType === 'Prayer' ? 'heart' : postType === 'Testimony' ? 'magic' : 'users'}
+            name={postType === 'Prayer' ? 'heart' : postType === 'Testimony' ? 'sparkles-outline' : 'users'}
             solid
             size={10}
             color={theme.secondaryText}

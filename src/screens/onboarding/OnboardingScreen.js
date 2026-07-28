@@ -19,7 +19,7 @@ const slides = [
     eyebrow: 'SPIRITUAL GROWTH',
     title: 'Go deeper in\nyour walk with God.',
     body: 'Find prayer, discipleship, honest encouragement, and practical support for every season of faith.',
-    icon: 'seedling',
+    icon: 'leaf-outline',
     video: require('../../../assets/onboarding-growth.mp4'),
   },
   {

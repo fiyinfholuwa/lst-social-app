@@ -9,7 +9,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#F7F8FB"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -17,9 +19,16 @@
       }
     },
     "android": {
-      "permissions": ["RECORD_AUDIO"],
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#F7F8FB"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2b054da6-480d-4ddb-97f3-fa0b3bf57298"
       }
     }
   }

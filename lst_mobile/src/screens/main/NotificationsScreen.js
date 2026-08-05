@@ -1,0 +1,88 @@
+import React from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import AppIcon from '../../components/AppIcon';
+import { useTheme } from '../../context/ThemeContext';
+import { useNotifications } from '../../context/NotificationsContext';
+
+export default function NotificationsScreen({ navigation }) {
+  const { theme } = useTheme();
+  const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+
+  const openNotification = notification => {
+    markAsRead(notification.id);
+    if (notification.screen) navigation.navigate(notification.screen);
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.summary, { borderBottomColor: theme.border }]}>
+        <Text style={[styles.summaryText, { color: theme.secondaryText }]}>
+          {unreadCount ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : 'You’re all caught up'}
+        </Text>
+        {unreadCount ? (
+          <TouchableOpacity onPress={markAllRead}>
+            <Text style={[styles.markAll, { color: theme.primary }]}>Mark all as read</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      <FlatList
+        data={notifications}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.notification,
+              {
+                backgroundColor: item.unread ? theme.primarySoft : theme.card,
+                borderColor: item.unread ? theme.primary : theme.border,
+              },
+            ]}
+            onPress={() => openNotification(item)}
+          >
+            <View style={[styles.icon, { backgroundColor: theme.background }]}>
+              <AppIcon name={item.icon} size={17} color={theme.primary} />
+            </View>
+            <View style={styles.copy}>
+              <View style={styles.titleRow}>
+                <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
+                {item.unread ? <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} /> : null}
+              </View>
+              <Text style={[styles.message, { color: theme.secondaryText }]}>{item.message}</Text>
+              <Text style={[styles.time, { color: theme.primary }]}>{item.time}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <AppIcon name="bell" size={28} color={theme.secondaryText} />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No notifications yet</Text>
+            <Text style={[styles.emptyText, { color: theme.secondaryText }]}>
+              Community updates and activity will appear here.
+            </Text>
+          </View>
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  summary: { minHeight: 52, paddingHorizontal: 18, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  summaryText: { fontSize: 12, fontWeight: '600' },
+  markAll: { fontSize: 12, fontWeight: '700' },
+  list: { padding: 14, paddingBottom: 40 },
+  notification: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderWidth: 1, borderRadius: 17, marginBottom: 10 },
+  icon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  copy: { flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  title: { flex: 1, fontSize: 13, fontWeight: '700' },
+  unreadDot: { width: 7, height: 7, borderRadius: 4, marginLeft: 8 },
+  message: { fontSize: 12, lineHeight: 18, marginTop: 4 },
+  time: { fontSize: 10, fontWeight: '700', marginTop: 7 },
+  empty: { alignItems: 'center', paddingHorizontal: 35, paddingTop: 80 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 14 },
+  emptyText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 6 },
+});

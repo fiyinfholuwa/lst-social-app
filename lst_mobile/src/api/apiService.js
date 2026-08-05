@@ -1,0 +1,38 @@
+import httpClient from './httpClient';
+
+const apiService = {
+  login: (email, password) => httpClient.post('/login', { email, password }, { auth: false }),
+  register: (name, email, password) => httpClient.post('/register', { name, email, password }, { auth: false }),
+  logout: () => httpClient.post('/logout'),
+  getUserProfile: async () => (await httpClient.get('/user')).user,
+  updateUserProfile: updates => httpClient.patch('/user', updates),
+  getUser: userId => httpClient.get(`/users/${userId}`),
+  getPosts: () => httpClient.get('/posts'),
+  getPost: postId => httpClient.get(`/posts/${postId}`),
+  createPost: (content, image = null, communityId = null) => httpClient.post('/posts', { content, image, communityId }),
+  likePost: postId => httpClient.post(`/posts/${postId}/like`),
+  addComment: (postId, text) => httpClient.post(`/posts/${postId}/comments`, { text }),
+  getSavedPostIds: async () => (await httpClient.get('/saved-posts')).savedPostIds,
+  toggleSavedPost: postId => httpClient.post(`/posts/${postId}/save`),
+  getCommunities: () => httpClient.get('/communities'),
+  getCommunity: communityId => httpClient.get(`/communities/${communityId}`),
+  getCommunityMembers: async communityId => (await httpClient.get(`/communities/${communityId}/members`)).data,
+  joinCommunity: communityId => httpClient.post(`/communities/${communityId}/join`),
+  getApplications: async () => (await httpClient.get('/community-applications')).applications,
+  submitApplication: (communityId, answers) => httpClient.post(`/communities/${communityId}/applications`, { answers }),
+  withdrawApplication: communityId => httpClient.delete(`/communities/${communityId}/applications`),
+  getFriendships: () => httpClient.get('/friendships'),
+  sendFriendRequest: userId => httpClient.post(`/users/${userId}/friend-request`),
+  updateRelationship: (userId, action) => httpClient.post(`/users/${userId}/relationship`, { action }),
+  getChats: () => httpClient.get('/chats'),
+  getChat: chatId => httpClient.get(`/chats/${chatId}`),
+  getOrCreateChat: otherUser => httpClient.post(`/chats/with/${otherUser.id}`),
+  getMessages: chatId => httpClient.get(`/chats/${chatId}/messages`),
+  sendMessage: (chatId, text) => httpClient.post(`/chats/${chatId}/messages`, { text }),
+  sendVoiceMessage: (chatId, audioUri, duration) => httpClient.post(`/chats/${chatId}/messages`, { type: 'voice', audioUri, duration }),
+  getNotifications: () => httpClient.get('/notifications'),
+  markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
+  markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),
+};
+
+export default apiService;

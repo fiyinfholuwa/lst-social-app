@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "LST Social",
+    "slug": "lst-social",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F8FB"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "LST Social uses your microphone when you choose to record a voice note."
+      }
+    },
+    "android": {
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F8FB"
+      },
+      "package": "com.fiyinfholuwa.lstsocial"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2b054da6-480d-4ddb-97f3-fa0b3bf57298"
+      }
+    }
+  }
+}

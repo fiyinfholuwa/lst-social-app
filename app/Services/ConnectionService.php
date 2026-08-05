@@ -8,7 +8,18 @@ use App\Repositories\ConnectionRepository;
 
 class ConnectionService
 {
-    public function __construct(private ConnectionRepository $repo) {}
+    public function __construct(private ConnectionRepository $repo, private CacheService $cache) {}
+
+    public function friendshipState(User $user): array
+    {
+        return $this->cache->remember("friendships:{$user->id}", 'state', CacheService::MEDIUM,
+            fn () => $this->repo->friendshipState($user));
+    }
+
+    public function invalidateFriendships(User $first, User $second): void
+    {
+        $this->cache->invalidate("friendships:{$first->id}", "friendships:{$second->id}");
+    }
 
     public function chatData(User $me, Chat $chat): array
     {
@@ -20,11 +31,17 @@ class ConnectionService
 
     public function chats(User $u)
     {
-        return $this->repo->chats($u)->map(fn ($c) => $this->chatData($u, $c));
+        return $this->cache->remember("chats:{$u->id}", 'list', CacheService::SHORT,
+            fn () => $this->repo->chats($u)->map(fn ($c) => $this->chatData($u, $c))->all());
     }
 
     public function chat(User $u, Chat $c)
     {
         return $this->chatData($u, $this->repo->chat($u, $c));
+    }
+
+    public function invalidateChat(Chat $chat): void
+    {
+        $chat->users()->pluck('users.id')->each(fn ($id) => $this->cache->invalidate("chats:{$id}"));
     }
 }

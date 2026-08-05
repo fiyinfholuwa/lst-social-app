@@ -9,7 +9,7 @@ use App\Repositories\SocialRepository;
 
 class SocialService
 {
-    public function __construct(private SocialRepository $repo) {}
+    public function __construct(private SocialRepository $repo, private CacheService $cache) {}
 
     public function postData(Post $post): array
     {
@@ -18,17 +18,35 @@ class SocialService
 
     public function posts()
     {
-        return $this->repo->posts()->map(fn ($p) => $this->postData($p));
+        return $this->cache->remember('posts', 'feed', CacheService::SHORT,
+            fn () => $this->repo->posts()->map(fn ($p) => $this->postData($p))->all());
     }
 
     public function post(int $id): array
     {
-        return $this->postData($this->repo->post($id));
+        return $this->cache->remember("post:{$id}", 'detail', CacheService::MEDIUM,
+            fn () => $this->postData($this->repo->post($id)));
     }
 
     public function create(User $user, array $data): array
     {
-        return $this->post($this->repo->createPost($user, $data)->id);
+        $post = $this->repo->createPost($user, $data);
+        $scopes = ['posts', "user:{$user->id}"];
+        if ($post->community_id) {
+            $scopes[] = "community:{$post->community_id}";
+        }
+        $this->cache->invalidate(...$scopes);
+
+        return $this->post($post->id);
+    }
+
+    public function invalidatePost(Post $post): void
+    {
+        $scopes = ['posts', "post:{$post->id}", "user:{$post->user_id}"];
+        if ($post->community_id) {
+            $scopes[] = "community:{$post->community_id}";
+        }
+        $this->cache->invalidate(...$scopes);
     }
 
     public function communityData(Community $c): array

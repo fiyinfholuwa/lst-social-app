@@ -10,12 +10,13 @@ use App\Models\Notification;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\SocialRepository;
+use App\Services\CacheService;
 use App\Services\SocialService;
 use Illuminate\Http\Request;
 
 class SocialController extends Controller
 {
-    public function __construct(private SocialRepository $repo, private SocialService $service) {}
+    public function __construct(private SocialRepository $repo, private SocialService $service, private CacheService $cache) {}
 
     public function posts()
     {
@@ -37,6 +38,7 @@ class SocialController extends Controller
     public function like(Request $r, Post $post)
     {
         $this->repo->toggleLike($r->user(), $post);
+        $this->service->invalidatePost($post);
 
         return response()->json($this->service->post($post->id));
     }
@@ -45,45 +47,59 @@ class SocialController extends Controller
     {
         $d = $r->validate(['text' => 'required|string|max:2000']);
         $c = $this->repo->addComment($r->user(), $post, $d['text'])->load('user');
+        $this->service->invalidatePost($post);
 
         return response()->json(['id' => (string) $c->id, 'userId' => (string) $c->user_id, 'userName' => $c->user->name, 'text' => $c->text, 'timestamp' => $c->created_at->diffForHumans()], 201);
     }
 
     public function saved(Request $r)
     {
-        return response()->json(['savedPostIds' => $this->repo->savedIds($r->user())]);
+        $ids = $this->cache->remember("saved:{$r->user()->id}", 'ids', CacheService::MEDIUM,
+            fn () => $this->repo->savedIds($r->user()));
+
+        return response()->json(['savedPostIds' => $ids]);
     }
 
     public function toggleSaved(Request $r, Post $post)
     {
-        return response()->json(['saved' => $this->repo->toggleSave($r->user(), $post)]);
+        $saved = $this->repo->toggleSave($r->user(), $post);
+        $this->cache->invalidate("saved:{$r->user()->id}");
+
+        return response()->json(['saved' => $saved]);
     }
 
     public function communities()
     {
-        return response()->json($this->repo->communities()->map(fn ($c) => $this->service->communityData($c)));
+        return response()->json($this->cache->remember('communities', 'list', CacheService::LONG,
+            fn () => $this->repo->communities()->map(fn ($c) => $this->service->communityData($c))->all()));
     }
 
     public function community(Community $community)
     {
-        return response()->json($this->service->communityData($this->repo->community($community->id)));
+        return response()->json($this->cache->remember("community:{$community->id}", 'detail', CacheService::MEDIUM,
+            fn () => $this->service->communityData($this->repo->community($community->id))));
     }
 
     public function members(Community $community)
     {
-        return UserResource::collection($community->members()->get());
+        $members = $this->cache->remember("community:{$community->id}", 'members', CacheService::MEDIUM,
+            fn () => UserResource::collection($community->members()->get())->resolve());
+
+        return response()->json(['data' => $members]);
     }
 
     public function join(Request $r, Community $community)
     {
         $community->members()->syncWithoutDetaching($r->user()->id);
+        $this->cache->invalidate('communities', "community:{$community->id}", "user:{$r->user()->id}");
 
         return response()->json(['success' => true]);
     }
 
     public function applications(Request $r)
     {
-        $apps = CommunityApplication::where('user_id', $r->user()->id)->get()->mapWithKeys(fn ($a) => [(string) $a->community_id => ['communityId' => (string) $a->community_id, 'answers' => $a->answers, 'status' => $a->status, 'submittedAt' => $a->created_at]]);
+        $apps = $this->cache->remember("applications:{$r->user()->id}", 'list', CacheService::MEDIUM,
+            fn () => CommunityApplication::where('user_id', $r->user()->id)->get()->mapWithKeys(fn ($a) => [(string) $a->community_id => ['communityId' => (string) $a->community_id, 'answers' => $a->answers, 'status' => $a->status, 'submittedAt' => $a->created_at]])->all());
 
         return response()->json(['applications' => $apps]);
     }
@@ -92,38 +108,46 @@ class SocialController extends Controller
     {
         $d = $r->validate(['answers' => 'required']);
 
-        return response()->json($this->repo->apply($r->user(), $community, $d['answers']), 201);
+        $application = $this->repo->apply($r->user(), $community, $d['answers']);
+        $this->cache->invalidate("applications:{$r->user()->id}");
+
+        return response()->json($application, 201);
     }
 
     public function withdraw(Request $r, Community $community)
     {
         CommunityApplication::where(['user_id' => $r->user()->id, 'community_id' => $community->id])->delete();
+        $this->cache->invalidate("applications:{$r->user()->id}");
 
         return response()->json(['success' => true]);
     }
 
-    public function user(User $user)
+    public function user(Request $request, User $user)
     {
-        return new UserResource($user->load('communities'));
+        return response()->json($this->cache->remember("user:{$user->id}", 'profile', CacheService::LONG,
+            fn () => (new UserResource($user->load('communities')))->resolve($request)));
     }
 
     public function updateProfile(Request $r)
     {
         $d = $r->validate(['name' => 'sometimes|string|max:255', 'bio' => 'nullable|string|max:2000', 'avatar' => 'nullable|string|max:2048']);
         $r->user()->update($d);
+        $this->cache->invalidate("user:{$r->user()->id}", 'posts');
 
         return new UserResource($r->user()->load('communities'));
     }
 
     public function notifications(Request $r)
     {
-        return response()->json($r->user()->notifications()->latest()->get()->map(fn ($n) => ['id' => (string) $n->id, 'icon' => $n->icon, 'title' => $n->title, 'message' => $n->message, 'time' => $n->created_at->diffForHumans(), 'unread' => $n->read_at === null, 'screen' => $n->screen]));
+        return response()->json($this->cache->remember("notifications:{$r->user()->id}", 'list', CacheService::SHORT,
+            fn () => $r->user()->notifications()->latest()->get()->map(fn ($n) => ['id' => (string) $n->id, 'icon' => $n->icon, 'title' => $n->title, 'message' => $n->message, 'time' => $n->created_at->diffForHumans(), 'unread' => $n->read_at === null, 'screen' => $n->screen])->all()));
     }
 
     public function readNotification(Request $r, Notification $notification)
     {
         abort_unless($notification->user_id === $r->user()->id, 403);
         $notification->forceFill(['read_at' => now()])->save();
+        $this->cache->invalidate("notifications:{$r->user()->id}");
 
         return response()->json(['success' => true]);
     }
@@ -131,6 +155,7 @@ class SocialController extends Controller
     public function readAll(Request $r)
     {
         $r->user()->notifications()->whereNull('read_at')->update(['read_at' => now()]);
+        $this->cache->invalidate("notifications:{$r->user()->id}");
 
         return response()->json(['success' => true]);
     }

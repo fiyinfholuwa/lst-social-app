@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin overview · LST Social</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root{--navy:#0b1f3a;--navy-2:#173a63;--red:#d62839;--red-soft:#fbe8eb;--bg:#f6f7f9;--surface:#fff;--ink:#101828;--muted:#667085;--line:#e6e9ee;--green:#15803d;--green-soft:#eaf8ef;--amber:#b45309;--amber-soft:#fff7e6;--shadow:0 12px 36px rgba(16,24,40,.07)}
+        *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px}.icon{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.app{min-height:100vh;display:grid;grid-template-columns:248px 1fr}.sidebar{position:fixed;inset:0 auto 0 0;width:248px;background:var(--navy);color:#fff;padding:24px 16px;display:flex;flex-direction:column;z-index:30}.brand{display:flex;align-items:center;gap:11px;padding:0 10px 27px;font:800 20px 'Manrope',sans-serif}.brand-mark{width:34px;height:34px;border-radius:11px;background:var(--red);display:grid;place-items:center;font-size:14px;box-shadow:0 6px 16px rgba(214,40,57,.32)}.nav-label{padding:0 12px;margin:5px 0 8px;color:#8fa0b7;font-size:10px;font-weight:700;letter-spacing:.12em}.nav{display:grid;gap:4px}.nav a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:#cbd5e1;text-decoration:none;font-weight:500}.nav a:hover,.nav a.active{background:rgba(255,255,255,.1);color:#fff}.nav a.active{box-shadow:inset 3px 0 var(--red)}.nav .badge{margin-left:auto;background:var(--red);font-size:10px;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;color:white}.admin-card{margin-top:auto;border-top:1px solid rgba(255,255,255,.1);padding:18px 8px 0;display:flex;align-items:center;gap:10px}.avatar{width:36px;height:36px;border-radius:50%;background:#dbe7f5;color:var(--navy);display:grid;place-items:center;font-weight:800;flex:0 0 auto}.admin-card strong{font-size:13px;display:block}.admin-card small{color:#8fa0b7}.main{grid-column:2;min-width:0}.topbar{height:76px;background:rgba(255,255,255,.91);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 34px;gap:20px;position:sticky;top:0;z-index:20}.menu-btn{display:none}.search{height:42px;max-width:430px;flex:1;position:relative}.search .icon{position:absolute;left:14px;top:11px;color:#98a2b3}.search input{width:100%;height:100%;border:1px solid var(--line);background:#f9fafb;border-radius:12px;padding:0 16px 0 43px;outline:none}.search input:focus{border-color:var(--navy-2);box-shadow:0 0 0 3px #e8eef6}.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}.icon-btn{border:1px solid var(--line);background:white;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;cursor:pointer;position:relative}.dot{width:7px;height:7px;background:var(--red);border:2px solid white;box-sizing:content-box;border-radius:50%;position:absolute;right:8px;top:7px}.content{padding:30px 34px 48px;max-width:1600px;margin:auto}.page-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:25px}.eyebrow{font-size:11px;color:var(--red);font-weight:800;letter-spacing:.11em;text-transform:uppercase;margin-bottom:6px}.page-heading h1{font:800 28px/1.2 'Manrope';margin:0 0 5px}.page-heading p{margin:0;color:var(--muted)}.btn{border:0;border-radius:11px;height:42px;padding:0 16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}.btn-primary{background:var(--red);color:white;box-shadow:0 6px 15px rgba(214,40,57,.2)}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 8px rgba(16,24,40,.025)}.stat{padding:19px}.stat-top{display:flex;justify-content:space-between;align-items:start}.stat-icon{width:39px;height:39px;border-radius:11px;background:#edf2f8;color:var(--navy);display:grid;place-items:center}.stat-icon.red{background:var(--red-soft);color:var(--red)}.stat-value{font:800 27px 'Manrope';margin:16px 0 3px}.stat-label{color:var(--muted);font-size:12px}.trend{color:var(--green);background:var(--green-soft);padding:4px 7px;border-radius:20px;font-size:10px;font-weight:700}.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.8fr);gap:20px}.panel{padding:21px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.panel h2{font:800 17px 'Manrope';margin:0}.panel-sub{font-size:12px;color:var(--muted);margin-top:4px}.text-btn{color:var(--navy-2);background:none;border:0;font-weight:700;cursor:pointer}.quiz-list{display:grid;gap:10px}.quiz{border:1px solid var(--line);border-radius:13px;padding:15px;display:grid;grid-template-columns:1fr auto;gap:12px;transition:.2s}.quiz:hover{border-color:#cad4e2;transform:translateY(-1px)}.quiz-title{display:flex;gap:10px;align-items:center;font-weight:700}.status{width:8px;height:8px;border-radius:50%;background:#22c55e}.status.draft{background:#f59e0b}.quiz-meta{margin:8px 0 0 18px;display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:11px}.quiz-score{text-align:right}.quiz-score strong{display:block;font:800 18px 'Manrope';color:var(--navy)}.quiz-score small{color:var(--muted)}.progress{height:6px;background:#edf0f4;border-radius:8px;margin-top:10px;overflow:hidden}.progress span{display:block;height:100%;border-radius:8px;background:var(--navy-2)}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.quick{border:1px solid var(--line);background:white;border-radius:12px;padding:13px;text-align:left;cursor:pointer}.quick .icon{color:var(--red);margin-bottom:9px}.quick strong{display:block;font-size:12px}.quick small{color:var(--muted);font-size:10px}.activity{display:grid;gap:16px}.activity-item{display:grid;grid-template-columns:33px 1fr;gap:10px;align-items:start}.activity-item .avatar{width:33px;height:33px;font-size:10px}.activity-item p{font-size:12px;margin:1px 0 3px;line-height:1.45}.activity-item time{font-size:10px;color:#98a2b3}.lower{display:grid;grid-template-columns:1.15fr 1fr;gap:20px;margin-top:20px}.bars{height:180px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:20px;border-bottom:1px solid var(--line)}.bar-group{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;color:var(--muted);font-size:10px}.bar{width:min(29px,80%);background:linear-gradient(var(--navy-2),var(--navy));border-radius:6px 6px 2px 2px;min-height:8px}.moderation{display:grid;gap:9px}.mod-row{border:1px solid var(--line);border-radius:12px;padding:13px;display:flex;align-items:center;gap:11px}.mod-icon{width:35px;height:35px;border-radius:10px;background:var(--amber-soft);color:var(--amber);display:grid;place-items:center}.mod-info{min-width:0;flex:1}.mod-info strong{display:block;font-size:12px}.mod-info small{color:var(--muted);font-size:10px}.pill{padding:5px 8px;border-radius:20px;background:var(--red-soft);color:var(--red);font-size:10px;font-weight:700}.mobile-overlay{display:none}
+        @media(max-width:1050px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.quick-grid{grid-template-columns:repeat(4,1fr)}.lower{grid-template-columns:1fr 1fr}}
+        @media(max-width:760px){.app{display:block}.sidebar{transform:translateX(-105%);transition:.25s}.sidebar.open{transform:translateX(0)}.mobile-overlay.show{display:block;position:fixed;inset:0;background:rgba(7,20,38,.52);z-index:25}.main{width:100%}.topbar{height:66px;padding:0 16px}.menu-btn{display:grid}.search{max-width:none}.search input{font-size:16px}.content{padding:22px 16px 35px}.page-heading{align-items:start}.page-heading h1{font-size:23px}.page-heading p{font-size:12px}.page-heading .btn span{display:none}.stats{grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:15px}.stat-value{font-size:23px}.grid,.lower{grid-template-columns:1fr}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:430px){.topbar .search{display:none}.stats{grid-template-columns:1fr 1fr}.stat-label{font-size:11px}.stat-icon{width:34px;height:34px}.trend{display:none}.panel{padding:16px}.quiz{grid-template-columns:1fr}.quiz-score{text-align:left;display:flex;gap:5px;align-items:baseline}.quiz-meta{gap:7px}.page-heading{margin-bottom:19px}}
+    </style>
+</head>
+<body>
+<div class="app">
+    @include('admin.partials.sidebar', ['section' => $section ?? 'overview'])
+    <div class="mobile-overlay" id="overlay"></div>
+    <main class="main">
+        @include('admin.partials.header')
+        <div class="content" id="adminContent" aria-live="polite">
+            @if(($section ?? 'overview') !== 'overview')
+                @include('admin.sections.index', ['section' => $section])
+            @else
+            <div class="page-heading">
+                <div><div class="eyebrow">Thursday, 6 August</div><h1>Good morning, Amara</h1><p>Here’s what is happening across your community today.</p></div>
+                <button class="btn btn-primary" id="createQuiz"><svg class="icon"><path d="M12 5v14M5 12h14"/></svg><span>Create quiz</span></button>
+            </div>
+            <section class="stats">
+                <article class="card stat"><div class="stat-top"><span class="stat-icon"><svg class="icon"><circle cx="9" cy="8" r="4"/><path d="M2 20c1-4 3.3-6 7-6s6 2 7 6M17 5c2 .7 3 2 3 4s-1 3.3-3 4"/></svg></span><span class="trend">↑ 12.5%</span></div><div class="stat-value">12,849</div><div class="stat-label">Total members</div></article>
+                <article class="card stat"><div class="stat-top"><span class="stat-icon"><svg class="icon"><path d="M4 5h16v12H8l-4 3V5Z"/></svg></span><span class="trend">↑ 8.2%</span></div><div class="stat-value">184</div><div class="stat-label">Active communities</div></article>
+                <article class="card stat"><div class="stat-top"><span class="stat-icon red"><svg class="icon"><path d="M4 4h16v16H4zM8 9l2 2 5-5M8 16h8"/></svg></span><span class="trend">↑ 6.7%</span></div><div class="stat-value">2,410</div><div class="stat-label">Quiz completions</div></article>
+                <article class="card stat"><div class="stat-top"><span class="stat-icon red"><svg class="icon"><path d="M12 3 4 6v5c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-3Z"/><path d="M12 8v5M12 16h.01"/></svg></span><span class="pill">Needs review</span></div><div class="stat-value">8</div><div class="stat-label">Open reports</div></article>
+            </section>
+            <section class="grid">
+                <article class="card panel"><div class="panel-head"><div><h2>Required reading & quizzes</h2><div class="panel-sub">Control questions, answers, timing and access</div></div><button class="text-btn">Manage all</button></div>
+                    <div class="quiz-list">
+                        <div class="quiz"><div><div class="quiz-title"><i class="status"></i>Healthy Communication Foundations</div><div class="quiz-meta"><span>Marriage Builders</span><span>8 questions</span><span>10 min</span><span>80% to pass</span></div><div class="progress"><span style="width:78%"></span></div></div><div class="quiz-score"><strong>78%</strong><small>934 completed</small></div></div>
+                        <div class="quiz"><div><div class="quiz-title"><i class="status"></i>Community Guidelines & Safety</div><div class="quiz-meta"><span>All members</span><span>6 questions</span><span>No limit</span><span>100% to pass</span></div><div class="progress"><span style="width:91%"></span></div></div><div class="quiz-score"><strong>91%</strong><small>8,201 completed</small></div></div>
+                        <div class="quiz"><div><div class="quiz-title"><i class="status draft"></i>Preparing for Parenthood</div><div class="quiz-meta"><span>Growing Families</span><span>12 questions</span><span>15 min</span><span>75% to pass</span></div><div class="progress"><span style="width:34%;background:#f59e0b"></span></div></div><div class="quiz-score"><strong>Draft</strong><small>Edited 2h ago</small></div></div>
+                    </div>
+                </article>
+                <article class="card panel"><div class="panel-head"><div><h2>Quick actions</h2><div class="panel-sub">Common admin tasks</div></div></div><div class="quick-grid">
+                    <button class="quick"><svg class="icon"><path d="M12 5v14M5 12h14"/></svg><strong>New quiz</strong><small>Add questions & rules</small></button>
+                    <button class="quick"><svg class="icon"><circle cx="12" cy="8" r="4"/><path d="M5 21c1-5 3.5-7 7-7s6 2 7 7M19 5v6M16 8h6"/></svg><strong>Add member</strong><small>Send an invitation</small></button>
+                    <button class="quick"><svg class="icon"><path d="M4 5h16v12H8l-4 3V5Z"/><path d="M12 8v6M9 11h6"/></svg><strong>Community</strong><small>Create a new space</small></button>
+                    <button class="quick"><svg class="icon"><path d="M5 3h14v18H5zM9 8h6M9 12h6"/></svg><strong>Required post</strong><small>Publish reading</small></button>
+                </div><div class="panel-head" style="margin-top:25px"><div><h2>Recent activity</h2></div></div><div class="activity">
+                    <div class="activity-item"><div class="avatar">CN</div><div><p><strong>Chidi N.</strong> passed “Healthy Communication” with 88%</p><time>4 minutes ago</time></div></div>
+                    <div class="activity-item"><div class="avatar" style="background:#fbe8eb;color:#d62839">AM</div><div><p><strong>Amina M.</strong> created a new community post</p><time>18 minutes ago</time></div></div>
+                    <div class="activity-item"><div class="avatar" style="background:#eaf8ef;color:#15803d">TO</div><div><p><strong>Tunde O.</strong> joined Marriage Builders</p><time>31 minutes ago</time></div></div>
+                </div></article>
+            </section>
+            <section class="lower">
+                <article class="card panel"><div class="panel-head"><div><h2>Weekly quiz engagement</h2><div class="panel-sub">Completions over the last 7 days</div></div><button class="text-btn">This week ▾</button></div><div class="bars"><div class="bar-group"><div class="bar" style="height:40%"></div>Mon</div><div class="bar-group"><div class="bar" style="height:58%"></div>Tue</div><div class="bar-group"><div class="bar" style="height:46%"></div>Wed</div><div class="bar-group"><div class="bar" style="height:76%"></div>Thu</div><div class="bar-group"><div class="bar" style="height:68%"></div>Fri</div><div class="bar-group"><div class="bar" style="height:92%;background:var(--red)"></div>Sat</div><div class="bar-group"><div class="bar" style="height:72%"></div>Sun</div></div></article>
+                <article class="card panel"><div class="panel-head"><div><h2>Moderation queue</h2><div class="panel-sub">Items that need your attention</div></div><button class="text-btn">View queue</button></div><div class="moderation"><div class="mod-row"><span class="mod-icon"><svg class="icon"><path d="M12 3 4 6v5c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-3Z"/></svg></span><div class="mod-info"><strong>Reported posts</strong><small>5 waiting for review</small></div><span class="pill">5 open</span></div><div class="mod-row"><span class="mod-icon"><svg class="icon"><circle cx="12" cy="8" r="4"/><path d="M5 21c1-5 3.5-7 7-7s6 2 7 7"/></svg></span><div class="mod-info"><strong>Member appeals</strong><small>3 account restrictions</small></div><span class="pill">3 open</span></div></div></article>
+            </section>
+            @endif
+        </div>
+        @include('admin.partials.footer')
+    </main>
+</div>
+<script>
+    const sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay');
+    document.getElementById('menuBtn').addEventListener('click',()=>{sidebar.classList.add('open');overlay.classList.add('show')});
+    overlay.addEventListener('click',()=>{sidebar.classList.remove('open');overlay.classList.remove('show')});
+    async function loadAdmin(url, push = true) {
+        const content = document.getElementById('adminContent');
+        content.style.opacity = '.45';
+        try {
+            const response = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'text/html'}});
+            if (!response.ok) throw new Error('Request failed');
+            content.innerHTML = await response.text();
+            if (push) history.pushState({url}, '', url);
+            document.querySelectorAll('[data-admin-link]').forEach(item => item.classList.toggle('active', item.href === url));
+            sidebar.classList.remove('open'); overlay.classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'});
+        } catch (error) { window.location.href = url; }
+        finally { content.style.opacity = '1'; }
+    }
+    document.addEventListener('click', event => {
+        const link = event.target.closest('[data-admin-link]');
+        if (!link) return;
+        event.preventDefault();
+        loadAdmin(link.href);
+    });
+    window.addEventListener('popstate', () => loadAdmin(window.location.href, false));
+    document.addEventListener('click', event => {
+        if(event.target.closest('#createQuiz')) alert('Quiz builder: add questions, correct answers, time limit, passing score, attempts and unlock rules.');
+    });
+</script>
+</body>
+</html>

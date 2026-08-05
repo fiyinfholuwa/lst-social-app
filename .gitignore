@@ -1,8 +1,25 @@
+/.env
+/.env.*
+!/.env.example
+/.phpunit.cache
+/.phpunit.result.cache
+/.idea
+/.vscode
+/auth.json
 node_modules/
-.expo/
-.expo-shared/
-dist/
-build/
-*.log
-.DS_Store
+/public/build
+/public/hot
+/storage/*.key
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+vendor/
+/database/database.sqlite
 
+# Mobile dependencies and generated builds
+/lst_mobile/.expo
+/lst_mobile/dist
+/lst_mobile/android
+/lst_mobile/ios
+*.apk

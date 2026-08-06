@@ -29,6 +29,7 @@ const OUTLINE_ICONS = {
   'ellipsis-h': 'ellipsis-horizontal',
   'file-alt': 'document-text-outline',
   heart: 'heart-outline',
+  happy: 'happy-outline',
   'heart-outline': 'heart-outline',
   'image-outline': 'image-outline',
   'leaf-outline': 'home-outline',

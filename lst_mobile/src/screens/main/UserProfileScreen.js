@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
 import Loader from '../../components/Loader';
 import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
@@ -90,7 +91,7 @@ export default function UserProfileScreen({ route, navigation }) {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
-      <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+      <Avatar uri={profile.avatar} size={112} style={styles.avatar} accessibilityLabel={`${profile.name}'s profile avatar`} />
       <Text style={[styles.name, { color: theme.text }]}>{profile.name}</Text>
       <Text style={[styles.role, { color: theme.secondaryText }]}>{profile.role || 'LST community member'}</Text>
       <Text style={[styles.bio, { color: theme.text }]}>{profile.bio}</Text>

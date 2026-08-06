@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,6 +8,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
 import Icon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
+import EmojiPicker from '../../components/EmojiPicker';
 
 const MAX_IMAGES = 6;
 
@@ -16,6 +18,9 @@ export default function CreatePostScreen({ navigation }) {
   const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [processingImages, setProcessingImages] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const inputRef = useRef(null);
   const { theme } = useTheme();
   const { user } = useAuth();
 
@@ -80,6 +85,15 @@ export default function CreatePostScreen({ navigation }) {
 
   const removeImage = uri => setImages(current => current.filter(image => image.uri !== uri));
 
+  const insertEmoji = emoji => {
+    const start = selection.start ?? content.length;
+    const end = selection.end ?? start;
+    setContent(`${content.slice(0, start)}${emoji}${content.slice(end)}`);
+    const cursor = start + emoji.length;
+    setSelection({ start: cursor, end: cursor });
+    inputRef.current?.focus();
+  };
+
   const handleSubmit = async () => {
     if (!content.trim()) {
       Alert.alert('Write something', 'Add a message before sharing your post.');
@@ -110,7 +124,7 @@ export default function CreatePostScreen({ navigation }) {
 
       <View style={[styles.composer, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.authorRow}>
-          {user?.avatar ? <Image source={{ uri: user.avatar }} style={styles.avatar} /> : <View style={[styles.avatarFallback, { backgroundColor: theme.primarySoft }]}><Text style={[styles.initial, { color: theme.primary }]}>{user?.name?.[0] || 'L'}</Text></View>}
+          <Avatar uri={user?.avatar} size={44} style={styles.avatar} accessibilityLabel="Your profile avatar" />
           <View>
             <Text style={[styles.authorName, { color: theme.text }]}>{user?.name || 'LST member'}</Text>
             <View style={styles.audience}><Icon name="people-outline" size={12} color={theme.secondaryText} /><Text style={[styles.audienceText, { color: theme.secondaryText }]}>Everyone</Text></View>
@@ -118,15 +132,19 @@ export default function CreatePostScreen({ navigation }) {
         </View>
 
         <TextInput
+          ref={inputRef}
           style={[styles.input, { color: theme.text }]}
           placeholder="Start a conversation..."
           placeholderTextColor={theme.secondaryText}
           multiline
           value={content}
           onChangeText={setContent}
+          onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
           maxLength={10000}
           autoFocus
         />
+
+        {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
 
         {images.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.previewRow}>
@@ -156,6 +174,9 @@ export default function CreatePostScreen({ navigation }) {
             {processingImages ? <ActivityIndicator size="small" color={theme.accent} /> : <Icon name="images-outline" size={20} color={theme.accent} />}
             <Text style={[styles.photoText, { color: theme.accent }]}>{processingImages ? 'Preparing…' : images.length ? 'Add more photos' : 'Add photos'}</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={[styles.emojiButton, { backgroundColor: theme.primarySoft }]} onPress={() => setShowEmojiPicker(value => !value)} accessibilityLabel="Add emoji">
+            <Icon name="happy" size={21} color={theme.primary} />
+          </TouchableOpacity>
           <Text style={[styles.photoCount, { color: theme.secondaryText }]}>{images.length}/{MAX_IMAGES}</Text>
         </View>
       </View>
@@ -183,8 +204,6 @@ const styles = StyleSheet.create({
   composer: { borderWidth: 1, borderRadius: 24, padding: 16 },
   authorRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 11 },
-  avatarFallback: { width: 44, height: 44, borderRadius: 22, marginRight: 11, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontSize: 16, fontWeight: '800' },
   authorName: { fontSize: 14, fontWeight: '800' },
   audience: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   audienceText: { fontSize: 11, fontWeight: '600' },
@@ -197,6 +216,7 @@ const styles = StyleSheet.create({
   addMoreText: { fontSize: 12, fontWeight: '800' },
   composerFooter: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 13, flexDirection: 'row', alignItems: 'center' },
   photoButton: { minHeight: 42, borderRadius: 13, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  emojiButton: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   photoText: { fontSize: 13, fontWeight: '800' },
   photoCount: { marginLeft: 'auto', fontSize: 12, fontWeight: '700' },
   note: { flexDirection: 'row', gap: 9, padding: 14, borderRadius: 15, marginTop: 16, alignItems: 'center' },

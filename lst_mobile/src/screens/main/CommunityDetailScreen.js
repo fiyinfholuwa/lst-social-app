@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
 import Loader from '../../components/Loader';
 import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
@@ -98,7 +99,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.members}>
           {visibleMembers.map(member => (
             <TouchableOpacity key={member.id} style={styles.member} onPress={() => navigation.navigate('UserProfile', { userId: member.id })}>
-              <Image source={{ uri: member.avatar }} style={styles.memberAvatar} />
+              <Avatar uri={member.avatar} size={52} style={styles.memberAvatar} accessibilityLabel={`${member.name}'s profile avatar`} />
               <Text style={[styles.memberName, { color: theme.text }]} numberOfLines={1}>{member.name.split(' ')[0]}</Text>
             </TouchableOpacity>
           ))}

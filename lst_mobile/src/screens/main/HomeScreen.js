@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Alert, View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, ScrollView, Share } from 'react-native';
+import { ActivityIndicator, Alert, View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, Share } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
         import { useTheme } from '../../context/ThemeContext';
         import { useAuth } from '../../context/AuthContext';
@@ -13,15 +13,15 @@ import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useNotifications } from '../../context/NotificationsContext';
 
-const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
-
         export default function HomeScreen({ navigation }) {
           const [posts, setPosts] = useState([]);
           const [loading, setLoading] = useState(true);
           const [refreshing, setRefreshing] = useState(false);
+          const [loadingMore, setLoadingMore] = useState(false);
+          const [nextPage, setNextPage] = useState(1);
+          const [hasMorePosts, setHasMorePosts] = useState(true);
           const { theme } = useTheme();
           const { user } = useAuth();
-          const [activeFilter, setActiveFilter] = useState('For you');
           const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
           const friendshipState = useFriendships();
           const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds)
@@ -36,11 +36,25 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
 
           const loadPosts = useCallback(async () => {
             try {
-              const data = await apiService.getPosts();
-              setPosts(data);
+              const data = await apiService.getPostsPage(1);
+              setPosts(data.data);
+              setNextPage(2);
+              setHasMorePosts(data.hasMorePages);
             } catch (e) { console.error(e); }
             finally { setLoading(false); setRefreshing(false); }
           }, []);
+
+          const loadMorePosts = async () => {
+            if (loadingMore || !hasMorePosts) return;
+            setLoadingMore(true);
+            try {
+              const data = await apiService.getPostsPage(nextPage);
+              setPosts(current => [...current, ...data.data]);
+              setNextPage(current => current + 1);
+              setHasMorePosts(data.hasMorePages);
+            } catch (e) { console.error(e); }
+            finally { setLoadingMore(false); }
+          };
 
           useFocusEffect(useCallback(() => { loadPosts(); }, [loadPosts]));
 
@@ -86,6 +100,9 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
                   />
                 )}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.tint} />}
+                onEndReached={loadMorePosts}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={loadingMore ? <View style={styles.loadingFooter}><ActivityIndicator color={theme.tint} /></View> : null}
                 ListHeaderComponent={
                   <>
                     <LinearGradient
@@ -103,13 +120,6 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
                       <Text style={[styles.composerText, { color: theme.secondaryText }]}>Share an update or prayer...</Text>
                       <Icon name="image-outline" size={21} color={theme.primary} />
                     </TouchableOpacity>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-                      {filters.map(filter => (
-                        <TouchableOpacity key={filter} onPress={() => setActiveFilter(filter)} style={[styles.filter, { borderColor: theme.border }, filter === activeFilter && { backgroundColor: theme.primary, borderColor: theme.primary }]}>
-                          <Text style={[styles.filterText, { color: theme.secondaryText }, filter === activeFilter && { color: '#fff' }]}>{filter}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
                   </>
                 }
               />
@@ -120,15 +130,13 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
         const styles = StyleSheet.create({
           container: { flex: 1 },
           feedContent: { paddingBottom: 94 },
+          loadingFooter: { paddingVertical: 20, alignItems: 'center' },
           verseCard: { marginHorizontal: 14, padding: 20, borderRadius: 22, marginBottom: 12 },
           verseLabel: { color: 'rgba(255,255,255,.82)', fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
           verse: { color: '#fff', fontSize: 21, fontWeight: '700', lineHeight: 29, marginTop: 11 },
           reference: { color: 'rgba(255,255,255,.76)', fontSize: 13, marginTop: 8 },
-          composer: { marginHorizontal: 14, padding: 12, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+          composer: { marginHorizontal: 14, marginBottom: 16, padding: 12, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
           composerIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
           composerText: { flex: 1, fontSize: 13 },
-          filters: { paddingHorizontal: 14, paddingVertical: 16, gap: 8 },
-          filter: { paddingVertical: 9, paddingHorizontal: 15, borderWidth: 1, borderRadius: 999 },
-          filterText: { fontSize: 12, fontWeight: '700' },
         });
       

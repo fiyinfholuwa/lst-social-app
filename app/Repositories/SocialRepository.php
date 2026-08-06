@@ -10,14 +10,26 @@ use App\Models\User;
 
 class SocialRepository
 {
-    public function posts()
+    public function posts(User $viewer)
     {
-        return Post::with(['user', 'comments.user'])->withCount('likes')->latest()->get();
+        return $this->postsQuery($viewer)->get();
     }
 
-    public function post(int $id): Post
+    public function postsPage(User $viewer, int $perPage = 10)
     {
-        return Post::with(['user', 'comments.user'])->withCount('likes')->findOrFail($id);
+        return $this->postsQuery($viewer)->paginate($perPage);
+    }
+
+    public function post(int $id, User $viewer): Post
+    {
+        return Post::with(['user', 'comments.user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->withCount('likes')->findOrFail($id);
+    }
+
+    private function postsQuery(User $viewer)
+    {
+        return Post::with(['user', 'comments.user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->withCount('likes')->latest();
     }
 
     public function createPost(User $user, array $data): Post

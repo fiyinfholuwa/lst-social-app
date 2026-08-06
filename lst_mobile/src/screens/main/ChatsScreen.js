@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-        import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
+        import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
         import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../api/apiService';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useFriendships } from '../../context/FriendshipsContext';
-import AppIcon from '../../components/AppIcon';
+        import AppIcon from '../../components/AppIcon';
+        import Avatar from '../../components/Avatar';
 
         export default function ChatsScreen({ navigation }) {
           const [chats, setChats] = useState([]);
@@ -36,7 +37,7 @@ import AppIcon from '../../components/AppIcon';
                     style={[styles.chatItem, { backgroundColor: theme.card, borderColor: theme.border }]}
                     onPress={() => navigation.navigate('ChatDetail', { chatId: item.id, userName: item.withUser.name })}
                   >
-                    <Image source={{ uri: item.withUser.avatar }} style={styles.avatar} />
+                    <Avatar uri={item.withUser.avatar} size={50} style={styles.avatar} accessibilityLabel={`${item.withUser.name}'s profile avatar`} />
                     <View style={styles.info}>
                       <Text style={[styles.name, { color: theme.text }]}>{item.withUser.name}</Text>
                       <Text style={[styles.lastMsg, { color: theme.secondaryText }]}>{item.lastMessage}</Text>

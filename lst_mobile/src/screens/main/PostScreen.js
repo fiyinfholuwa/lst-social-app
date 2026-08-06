@@ -18,6 +18,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
 import Loader from '../../components/Loader';
 import PostOptionsMenu from '../../components/PostOptionsMenu';
 import { useSavedPosts } from '../../context/SavedPostsContext';
@@ -89,7 +90,7 @@ export default function PostScreen({ route, navigation }) {
       <View style={styles.postCard}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: post.userId })}>
-            <Image source={{ uri: post.userAvatar }} style={styles.avatar} />
+            <Avatar uri={post.userAvatar} size={48} style={styles.avatar} accessibilityLabel={`${post.userName}'s profile avatar`} />
           </TouchableOpacity>
           <View style={styles.author}>
             <View style={styles.nameRow}>
@@ -122,7 +123,7 @@ export default function PostScreen({ route, navigation }) {
 
         <View style={[styles.actions, { borderTopColor: theme.border }]}>
           <TouchableOpacity style={styles.action} onPress={handleLike} accessibilityLabel="Encourage this post">
-            <AppIcon name="heart" size={19} color={theme.accent} />
+            <AppIcon name="heart" solid={post.likedByCurrentUser} size={19} color={theme.accent} />
             <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.likes}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.action} accessibilityLabel="View comments">
@@ -191,7 +192,7 @@ export default function PostScreen({ route, navigation }) {
       />
 
       <View style={[styles.composer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-        <Image source={{ uri: user?.avatar }} style={styles.composerAvatar} />
+        <Avatar uri={user?.avatar} size={34} style={styles.composerAvatar} accessibilityLabel="Your profile avatar" />
         <TextInput
           style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
           placeholder="Write an encouraging comment..."
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%', borderRadius: 14, resizeMode: 'cover' },
   imageCount: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(31,18,25,0.72)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
   imageCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
-  actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, marginTop: 18, paddingTop: 9, gap: 8 },
+  actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, marginTop: 18, paddingTop: 9 },
   action: { minWidth: 48, height: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   actionCount: { fontSize: 11, fontWeight: '600' },
   iconAction: { width: 42, height: 38, alignItems: 'center', justifyContent: 'center' },

@@ -15,6 +15,7 @@ const apiService = {
   updateUserProfile: updates => httpClient.patch('/user', updates),
   getUser: userId => httpClient.get(`/users/${userId}`),
   getPosts: () => httpClient.get('/posts'),
+  getPostsPage: page => httpClient.get(`/posts?page=${page}`),
   getPost: postId => httpClient.get(`/posts/${postId}`),
   createPost: (content, images = []) => {
     const form = new FormData();
@@ -26,7 +27,18 @@ const apiService = {
     }));
     return httpClient.postForm('/posts', form);
   },
-  updatePost: (postId, content) => httpClient.patch(`/posts/${postId}`, { content }),
+  updatePost: (postId, content, postImages = []) => {
+    const form = new FormData();
+    form.append('_method', 'PATCH');
+    form.append('content', content);
+    postImages.filter(image => image.existing).forEach(image => form.append('existing_images[]', image.uri));
+    postImages.filter(image => !image.existing).forEach((image, index) => form.append('images[]', {
+      uri: image.uri,
+      name: image.fileName || `post-image-${index + 1}.jpg`,
+      type: image.mimeType || 'image/jpeg',
+    }));
+    return httpClient.postForm(`/posts/${postId}`, form);
+  },
   deletePost: postId => httpClient.delete(`/posts/${postId}`),
   likePost: postId => httpClient.post(`/posts/${postId}/like`),
   addComment: (postId, text) => httpClient.post(`/posts/${postId}/comments`, { text }),

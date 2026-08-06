@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Audio } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -154,7 +155,7 @@ export default function ChatDetailScreen({ route, navigation }) {
           onPress={() => navigation.navigate('UserProfile', { userId: chat.withUser.id })}
           activeOpacity={0.8}
         >
-          <Image source={{ uri: chat.withUser.avatar }} style={styles.profileAvatar} />
+          <Avatar uri={chat.withUser.avatar} size={42} style={styles.profileAvatar} accessibilityLabel={`${chat.withUser.name}'s profile avatar`} />
           <View style={styles.profileCopy}>
             <Text style={[styles.profileName, { color: theme.text }]}>{chat.withUser.name}</Text>
             <Text style={[styles.profileHint, { color: theme.secondaryText }]}>Tap to view profile</Text>

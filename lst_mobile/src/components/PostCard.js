@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import Icon from './AppIcon';
+import Avatar from './Avatar';
 import PostOptionsMenu from './PostOptionsMenu';
 
 const PREVIEW_LIMIT = 180;
@@ -19,7 +20,7 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
       <Pressable onPress={onPress}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onUserPress} disabled={!onUserPress}>
-            <Image source={{ uri: post.userAvatar }} style={styles.avatar} />
+            <Avatar uri={post.userAvatar} size={44} style={styles.avatar} accessibilityLabel={`${post.userName}'s profile avatar`} />
           </TouchableOpacity>
           <View style={styles.userInfo}>
             <View style={styles.nameRow}>
@@ -70,23 +71,14 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
         </ScrollView>
       ) : null}
 
-      <View style={styles.countRow}>
-        <Text style={[styles.countText, { color: theme.secondaryText }]}>
-          {post.likes > 0 ? `${post.likes} ${post.likes === 1 ? 'person' : 'people'} encouraged this` : 'Be the first to encourage'}
-        </Text>
-        <TouchableOpacity onPress={onPress}>
-          <Text style={[styles.countText, { color: theme.secondaryText }]}>
-            {post.comments.length} {post.comments.length === 1 ? 'comment' : 'comments'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       <View style={[styles.actions, { borderTopColor: theme.border }]}>
-        <TouchableOpacity onPress={onLike} style={styles.iconAction} accessibilityLabel="Encourage this post">
-          <Icon name="heart" size={18} color={theme.accent} />
+        <TouchableOpacity onPress={onLike} style={styles.countAction} accessibilityLabel={`${post.likes} encouragements`}>
+          <Icon name="heart" solid={post.likedByCurrentUser} size={18} color={theme.accent} />
+          <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.likes}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onPress} style={styles.iconAction} accessibilityLabel="View comments">
+        <TouchableOpacity onPress={onPress} style={styles.countAction} accessibilityLabel={`${post.comments.length} comments`}>
           <Icon name="comment" size={18} color={theme.primary} />
+          <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.comments.length}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={onShare}>
           <Icon name="share-alt" size={18} color={theme.secondaryText} />
@@ -118,9 +110,9 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%', borderRadius: 14, resizeMode: 'cover' },
   imageCount: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(31,18,25,0.72)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
   imageCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
-  countRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 10 },
-  countText: { fontSize: 11 },
-  actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, paddingTop: 8, gap: 8 },
-  iconAction: { width: 40, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, marginTop: 12, paddingTop: 8 },
+  countAction: { minWidth: 47, height: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 3 },
+  actionCount: { fontSize: 12, fontWeight: '700' },
+  iconAction: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   bookmarkButton: { marginLeft: 'auto' },
 });

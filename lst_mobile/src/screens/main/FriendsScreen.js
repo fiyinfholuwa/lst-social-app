@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
 import Loader from '../../components/Loader';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -47,7 +48,7 @@ export default function FriendsScreen({ navigation }) {
         renderItem={({ item }) => (
           <View style={[styles.friendRow, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <TouchableOpacity style={styles.profileArea} onPress={() => navigation.navigate('UserProfile', { userId: item.id })}>
-              <Image source={{ uri: item.avatar }} style={styles.avatar} />
+              <Avatar uri={item.avatar} size={48} style={styles.avatar} accessibilityLabel={`${item.name}'s profile avatar`} />
               <View style={styles.info}>
                 <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
                 <Text style={[styles.bio, { color: theme.secondaryText }]} numberOfLines={1}>{item.bio}</Text>

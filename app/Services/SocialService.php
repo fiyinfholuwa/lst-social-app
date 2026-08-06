@@ -15,19 +15,29 @@ class SocialService
     {
         $images = $post->images ?: ($post->image ? [$post->image] : []);
 
-        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $post->user->avatar, 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'comments' => $post->comments->map(fn ($c) => ['id' => (string) $c->id, 'userId' => (string) $c->user_id, 'userName' => $c->user->name, 'text' => $c->text, 'timestamp' => $c->created_at->diffForHumans()])->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'verified' => $post->user->role === 'Community leader'];
+        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $post->user->avatar, 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'likedByCurrentUser' => $post->likes->isNotEmpty(), 'comments' => $post->comments->map(fn ($c) => ['id' => (string) $c->id, 'userId' => (string) $c->user_id, 'userName' => $c->user->name, 'text' => $c->text, 'timestamp' => $c->created_at->diffForHumans()])->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'verified' => $post->user->role === 'Community leader'];
     }
 
-    public function posts()
+    public function posts(User $viewer)
     {
-        return $this->cache->remember('posts', 'feed', CacheService::SHORT,
-            fn () => $this->repo->posts()->map(fn ($p) => $this->postData($p))->all());
+        return $this->repo->posts($viewer)->map(fn ($p) => $this->postData($p))->all();
     }
 
-    public function post(int $id): array
+    public function postsPage(User $viewer): array
     {
-        return $this->cache->remember("post:{$id}", 'detail', CacheService::MEDIUM,
-            fn () => $this->postData($this->repo->post($id)));
+        $page = $this->repo->postsPage($viewer);
+
+        return [
+            'data' => $page->getCollection()->map(fn ($post) => $this->postData($post))->values()->all(),
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+        ];
+    }
+
+    public function post(int $id, User $viewer): array
+    {
+        return $this->postData($this->repo->post($id, $viewer));
     }
 
     public function create(User $user, array $data): array
@@ -39,7 +49,7 @@ class SocialService
         }
         $this->cache->invalidate(...$scopes);
 
-        return $this->post($post->id);
+        return $this->post($post->id, $user);
     }
 
     public function invalidatePost(Post $post): void

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-        import { View, Text, Image, TouchableOpacity, StyleSheet, Switch, Alert } from 'react-native';
+        import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert } from 'react-native';
         import { useAuth } from '../../context/AuthContext';
         import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../api/apiService';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useOnboarding } from '../../context/OnboardingContext';
 import Icon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 
@@ -36,7 +37,7 @@ import { useFriendships } from '../../context/FriendshipsContext';
           return (
             <View style={[styles.container, { backgroundColor: theme.background }]}>
               <ScreenHeader eyebrow="YOUR SPACE" title="Profile" actionIcon="settings-outline" />
-              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+              <Avatar uri={profile.avatar} size={120} style={styles.avatar} accessibilityLabel={`${profile.name}'s profile avatar`} />
               <Text style={[styles.name, { color: theme.text }]}>{profile.name}</Text>
               <Text style={[styles.email, { color: theme.secondaryText }]}>{profile.email}</Text>
               <Text style={[styles.bio, { color: theme.text }]}>{profile.bio}</Text>

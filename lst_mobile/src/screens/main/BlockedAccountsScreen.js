@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import Avatar from '../../components/Avatar';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -22,7 +23,7 @@ export default function BlockedAccountsScreen({ navigation }) {
       keyExtractor={item => item.id}
       renderItem={({ item }) => (
         <View style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          <Avatar uri={item.avatar} size={48} style={styles.avatar} accessibilityLabel={`${item.name}'s profile avatar`} />
           <View style={styles.info}>
             <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
             <Text style={[styles.status, { color: theme.secondaryText }]}>Blocked account</Text>

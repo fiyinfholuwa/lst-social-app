@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import Icon from './AppIcon';
 import Avatar from './Avatar';
 import PostOptionsMenu from './PostOptionsMenu';
+import EmojiText from './EmojiText';
 
 const PREVIEW_LIMIT = 180;
 const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
@@ -44,12 +45,12 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
           <Text style={[styles.contextText, { color: theme.secondaryText }]}>{postType}</Text>
         </View>
 
-        <Text
+        <EmojiText
           style={[styles.content, { color: theme.text }]}
           numberOfLines={expanded ? undefined : 4}
         >
           {post.content}
-        </Text>
+        </EmojiText>
       </Pressable>
 
       {isLong ? (

@@ -4,6 +4,7 @@ import { Audio } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import EmojiText from '../../components/EmojiText';
 import Avatar from '../../components/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -177,7 +178,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                 {item.type === 'voice' ? (
                   <VoiceNote message={item} mine={mine} theme={theme} />
                 ) : (
-                  <Text style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</Text>
+                  <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>
                 )}
                 <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>
                   {item.timestamp}

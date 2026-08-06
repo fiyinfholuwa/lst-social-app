@@ -91,7 +91,8 @@ export default function CreatePostScreen({ navigation }) {
     setContent(`${content.slice(0, start)}${emoji}${content.slice(end)}`);
     const cursor = start + emoji.length;
     setSelection({ start: cursor, end: cursor });
-    inputRef.current?.focus();
+    setShowEmojiPicker(false);
+    setTimeout(() => inputRef.current?.focus(), 250);
   };
 
   const handleSubmit = async () => {
@@ -117,7 +118,7 @@ export default function CreatePostScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
       <Text style={[styles.eyebrow, { color: theme.accent }]}>CREATE A POST</Text>
       <Text style={[styles.heading, { color: theme.text }]}>Share what’s on your heart.</Text>
       <Text style={[styles.subheading, { color: theme.secondaryText }]}>Your post will be shared with the entire LST community.</Text>

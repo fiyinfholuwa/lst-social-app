@@ -15,7 +15,12 @@ class SocialService
     {
         $images = $post->images ?: ($post->image ? [$post->image] : []);
 
-        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $post->user->avatar, 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'likedByCurrentUser' => $post->likes->isNotEmpty(), 'comments' => $post->comments->map(fn ($c) => ['id' => (string) $c->id, 'userId' => (string) $c->user_id, 'userName' => $c->user->name, 'text' => $c->text, 'timestamp' => $c->created_at->diffForHumans()])->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'verified' => $post->user->role === 'Community leader'];
+        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $post->user->avatar, 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'likedByCurrentUser' => $post->likes->isNotEmpty(), 'comments' => $post->comments->map(fn ($c) => $this->commentData($c))->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'verified' => $post->user->role === 'Community leader'];
+    }
+
+    public function commentData($comment): array
+    {
+        return ['id' => (string) $comment->id, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'text' => $comment->text, 'parentId' => $comment->parent_id ? (string) $comment->parent_id : null, 'likes' => $comment->likes_count ?? $comment->likes()->count(), 'likedByCurrentUser' => $comment->relationLoaded('likes') && $comment->likes->isNotEmpty(), 'timestamp' => $comment->created_at->diffForHumans()];
     }
 
     public function posts(User $viewer)

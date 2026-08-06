@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
   Share,
@@ -22,6 +23,8 @@ import Avatar from '../../components/Avatar';
 import Loader from '../../components/Loader';
 import PostOptionsMenu from '../../components/PostOptionsMenu';
 import { useSavedPosts } from '../../context/SavedPostsContext';
+import EmojiPicker from '../../components/EmojiPicker';
+import EmojiText from '../../components/EmojiText';
 
 const DETAIL_IMAGE_WIDTH = Dimensions.get('window').width - 36;
 
@@ -30,6 +33,11 @@ export default function PostScreen({ route, navigation }) {
   const [post, setPost] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [sending, setSending] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
   const { user } = useAuth();
   const { theme } = useTheme();
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
@@ -62,11 +70,39 @@ export default function PostScreen({ route, navigation }) {
     if (!commentText.trim() || sending) return;
     setSending(true);
     try {
-      await apiService.addComment(postId, commentText.trim());
+      await apiService.addComment(postId, commentText.trim(), replyTo?.id || null);
       setCommentText('');
+      setReplyTo(null);
       await loadPost();
     } finally {
       setSending(false);
+    }
+  };
+
+  const startReply = comment => {
+    setReplyTo(comment);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      listRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  const insertEmoji = emoji => {
+    const start = selection.start ?? commentText.length;
+    const end = selection.end ?? start;
+    setCommentText(`${commentText.slice(0, start)}${emoji}${commentText.slice(end)}`);
+    const cursor = start + emoji.length;
+    setSelection({ start: cursor, end: cursor });
+    setShowEmojiPicker(false);
+    setTimeout(() => inputRef.current?.focus(), 250);
+  };
+
+  const handleCommentLike = async comment => {
+    try {
+      await apiService.likeComment(comment.id);
+      await loadPost();
+    } catch (error) {
+      Alert.alert('Couldn’t update comment', error.message);
     }
   };
 
@@ -109,7 +145,7 @@ export default function PostScreen({ route, navigation }) {
           <Text style={[styles.contextText, { color: theme.secondaryText }]}>{postType}</Text>
         </View>
 
-        <Text style={[styles.content, { color: theme.text }]}>{post.content}</Text>
+        <EmojiText style={[styles.content, { color: theme.text }]}>{post.content}</EmojiText>
         {(post.images?.length ? post.images : post.image ? [post.image] : []).length ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
             {(post.images?.length ? post.images : [post.image]).map((image, index, allImages) => (
@@ -156,16 +192,17 @@ export default function PostScreen({ route, navigation }) {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      keyboardVerticalOffset={0}
     >
       <FlatList
+        ref={listRef}
         data={post.comments}
         keyExtractor={item => item.id}
         ListHeaderComponent={<PostContent />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <View style={styles.commentRow}>
+          <View style={[styles.commentRow, item.parentId ? styles.replyRow : null]}>
             <View style={[styles.commentAvatar, { backgroundColor: theme.primarySoft }]}>
               <Text style={[styles.initial, { color: theme.primary }]}>{item.userName.charAt(0).toUpperCase()}</Text>
             </View>
@@ -174,10 +211,13 @@ export default function PostScreen({ route, navigation }) {
                 <Text style={[styles.commentUser, { color: theme.text }]}>{item.userName}</Text>
                 <Text style={[styles.commentTime, { color: theme.secondaryText }]}>{item.timestamp}</Text>
               </View>
-              <Text style={[styles.commentText, { color: theme.text }]}>{item.text}</Text>
+              <EmojiText style={[styles.commentText, { color: theme.text }]}>{item.text}</EmojiText>
               <View style={styles.commentActions}>
-                <TouchableOpacity><Text style={[styles.replyText, { color: theme.primary }]}>Reply</Text></TouchableOpacity>
-                <TouchableOpacity><AppIcon name="heart" size={13} color={theme.secondaryText} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => startReply(item)} accessibilityLabel={`Reply to ${item.userName}`}><Text style={[styles.replyText, { color: theme.primary }]}>Reply</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.commentLike} onPress={() => handleCommentLike(item)} accessibilityLabel={`Like ${item.userName}'s comment`}>
+                  <AppIcon name="heart" solid={item.likedByCurrentUser} size={13} color={item.likedByCurrentUser ? theme.accent : theme.secondaryText} />
+                  {item.likes ? <Text style={[styles.commentLikeCount, { color: theme.secondaryText }]}>{item.likes}</Text> : null}
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -191,17 +231,27 @@ export default function PostScreen({ route, navigation }) {
         }
       />
 
+      {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
       <View style={[styles.composer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <Avatar uri={user?.avatar} size={34} style={styles.composerAvatar} accessibilityLabel="Your profile avatar" />
-        <TextInput
-          style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
-          placeholder="Write an encouraging comment..."
-          placeholderTextColor={theme.secondaryText}
-          value={commentText}
-          onChangeText={setCommentText}
-          multiline
-          maxLength={500}
-        />
+        <View style={styles.inputWrap}>
+          {replyTo ? <View style={[styles.replyingTo, { backgroundColor: theme.primarySoft }]}><Text style={[styles.replyingText, { color: theme.primary }]}>Replying to {replyTo.userName}</Text><TouchableOpacity onPress={() => setReplyTo(null)} accessibilityLabel="Cancel reply"><AppIcon name="times" size={13} color={theme.primary} /></TouchableOpacity></View> : null}
+          <TextInput
+            ref={inputRef}
+            style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+            placeholder={replyTo ? `Reply to ${replyTo.userName}...` : 'Write an encouraging comment...'}
+            placeholderTextColor={theme.secondaryText}
+            value={commentText}
+            onChangeText={setCommentText}
+            onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
+            onFocus={() => listRef.current?.scrollToEnd({ animated: true })}
+            multiline
+            maxLength={500}
+          />
+        </View>
+        <TouchableOpacity style={[styles.emojiButton, { backgroundColor: theme.primarySoft }]} onPress={() => { Keyboard.dismiss(); setShowEmojiPicker(true); }} accessibilityLabel="Add emoji">
+          <AppIcon name="happy" size={18} color={theme.primary} />
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.sendButton, { backgroundColor: commentText.trim() ? theme.primary : theme.border }]}
           onPress={handleComment}
@@ -242,6 +292,7 @@ const styles = StyleSheet.create({
   commentTitle: { fontSize: 19, fontWeight: '700' },
   commentSubtitle: { fontSize: 11, marginTop: 3 },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
+  replyRow: { marginLeft: 26 },
   commentAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 9 },
   initial: { fontWeight: '700', fontSize: 13 },
   commentBubble: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 12 },
@@ -250,12 +301,18 @@ const styles = StyleSheet.create({
   commentText: { fontSize: 13, lineHeight: 20, marginTop: 6 },
   commentTime: { fontSize: 11 },
   commentActions: { flexDirection: 'row', gap: 16, alignItems: 'center', marginTop: 9 },
+  commentLike: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  commentLikeCount: { fontSize: 11, fontWeight: '600' },
   replyText: { fontSize: 11, fontWeight: '700' },
   empty: { alignItems: 'center', paddingVertical: 34, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 10 },
   emptyText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 5 },
   composer: { flexDirection: 'row', alignItems: 'flex-end', borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, gap: 8 },
   composerAvatar: { width: 34, height: 34, borderRadius: 17, marginBottom: 3 },
+  inputWrap: { flex: 1 },
+  replyingTo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 9, paddingHorizontal: 9, paddingVertical: 5, marginBottom: 5 },
+  replyingText: { fontSize: 11, fontWeight: '700' },
   input: { flex: 1, minHeight: 42, maxHeight: 100, borderWidth: 1, borderRadius: 16, paddingHorizontal: 13, paddingTop: 11, paddingBottom: 10, fontSize: 13 },
+  emojiButton: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sendButton: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });

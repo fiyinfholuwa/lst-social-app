@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import EmojiText from '../../components/EmojiText';
 import Avatar from '../../components/Avatar';
 import Loader from '../../components/Loader';
 import { useAuth } from '../../context/AuthContext';
@@ -132,7 +133,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
               <Text style={[styles.postTime, { color: theme.secondaryText }]}>{item.timestamp}</Text>
             </View>
           </View>
-          <Text style={[styles.postContent, { color: theme.text }]}>{item.content}</Text>
+          <EmojiText style={[styles.postContent, { color: theme.text }]}>{item.content}</EmojiText>
           <View style={[styles.postActions, { borderTopColor: theme.border }]}>
             <AppIcon name="heart" size={15} color={theme.secondaryText} />
             <AppIcon name="comment" size={15} color={theme.secondaryText} />

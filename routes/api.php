@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConnectionController;
 use App\Http\Controllers\Api\SocialController;
+use App\Models\Comment;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('throttle:6,1')->group(function () {
@@ -23,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/posts/{post}', [SocialController::class, 'post']);
     Route::post('/posts/{post}/like', [SocialController::class, 'like']);
     Route::post('/posts/{post}/comments', [SocialController::class, 'comment']);
+    Route::post('/comments/{comment}/like', [SocialController::class, 'likeComment']);
     Route::get('/saved-posts', [SocialController::class, 'saved']);
     Route::post('/posts/{post}/save', [SocialController::class, 'toggleSaved']);
     Route::get('/communities', [SocialController::class, 'communities']);

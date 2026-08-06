@@ -93,7 +93,8 @@ export default function EditPostScreen({ route, navigation }) {
     setContent(`${content.slice(0, start)}${emoji}${content.slice(end)}`);
     const cursor = start + emoji.length;
     setSelection({ start: cursor, end: cursor });
-    inputRef.current?.focus();
+    setShowEmojiPicker(false);
+    setTimeout(() => inputRef.current?.focus(), 250);
   };
 
   const save = async () => {
@@ -115,7 +116,7 @@ export default function EditPostScreen({ route, navigation }) {
 
   if (!post) return <Loader />;
   return (
-    <ScrollView style={[styles.screen, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView style={[styles.screen, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
       <Text style={[styles.title, { color: theme.text }]}>Update your conversation.</Text>
       <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Update your words and photos before sharing the changes.</Text>
 

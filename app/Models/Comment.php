@@ -6,10 +6,30 @@ use Illuminate\Database\Eloquent\Model;
 
 class Comment extends Model
 {
-    protected $fillable = ['post_id', 'user_id', 'text'];
+    protected $fillable = ['post_id', 'user_id', 'parent_id', 'text'];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function post()
+    {
+        return $this->belongsTo(Post::class);
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function likes()
+    {
+        return $this->belongsToMany(User::class, 'comment_likes');
     }
 }

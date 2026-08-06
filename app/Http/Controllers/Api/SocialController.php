@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\Community;
 use App\Models\CommunityApplication;
+use App\Models\Comment;
 use App\Models\Notification;
 use App\Models\Post;
 use App\Models\User;
@@ -136,11 +137,22 @@ class SocialController extends Controller
 
     public function comment(Request $r, Post $post)
     {
-        $d = $r->validate(['text' => 'required|string|max:2000']);
-        $c = $this->repo->addComment($r->user(), $post, $d['text'])->load('user');
+        $d = $r->validate(['text' => 'required|string|max:2000', 'parent_id' => 'nullable|integer']);
+        if (!empty($d['parent_id'])) {
+            abort_unless($post->comments()->whereKey($d['parent_id'])->exists(), 422, 'The reply target does not belong to this post.');
+        }
+        $c = $this->repo->addComment($r->user(), $post, $d['text'], $d['parent_id'] ?? null)->load(['user', 'likes']);
         $this->service->invalidatePost($post);
 
-        return response()->json(['id' => (string) $c->id, 'userId' => (string) $c->user_id, 'userName' => $c->user->name, 'text' => $c->text, 'timestamp' => $c->created_at->diffForHumans()], 201);
+        return response()->json($this->service->commentData($c), 201);
+    }
+
+    public function likeComment(Request $r, Comment $comment)
+    {
+        $this->repo->toggleCommentLike($r->user(), $comment);
+        $this->service->invalidatePost($comment->post);
+
+        return response()->json(['liked' => $comment->likes()->whereKey($r->user()->id)->exists(), 'likes' => $comment->likes()->count()]);
     }
 
     public function saved(Request $r)

@@ -22,13 +22,13 @@ class SocialRepository
 
     public function post(int $id, User $viewer): Post
     {
-        return Post::with(['user', 'comments.user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+        return Post::with(['user', 'comments.user', 'comments.likes' => fn ($query) => $query->whereKey($viewer->id), 'likes' => fn ($query) => $query->whereKey($viewer->id)])
             ->withCount('likes')->findOrFail($id);
     }
 
     private function postsQuery(User $viewer)
     {
-        return Post::with(['user', 'comments.user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+        return Post::with(['user', 'comments.user', 'comments.likes' => fn ($query) => $query->whereKey($viewer->id), 'likes' => fn ($query) => $query->whereKey($viewer->id)])
             ->withCount('likes')->latest();
     }
 
@@ -37,9 +37,14 @@ class SocialRepository
         return $user->posts()->create($data);
     }
 
-    public function addComment(User $user, Post $post, string $text): Comment
+    public function addComment(User $user, Post $post, string $text, ?int $parentId = null): Comment
     {
-        return $post->comments()->create(['user_id' => $user->id, 'text' => $text]);
+        return $post->comments()->create(['user_id' => $user->id, 'parent_id' => $parentId, 'text' => $text]);
+    }
+
+    public function toggleCommentLike(User $user, Comment $comment): void
+    {
+        $comment->likes()->toggle($user->id);
     }
 
     public function toggleLike(User $user, Post $post): void

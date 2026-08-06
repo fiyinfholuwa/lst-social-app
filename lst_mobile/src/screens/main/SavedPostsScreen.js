@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
@@ -7,18 +7,20 @@ import PostCard from '../../components/PostCard';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useFriendships } from '../../context/FriendshipsContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SavedPostsScreen({ navigation }) {
   const { theme } = useTheme();
-  const { savedPostIds, savedPostsLoading, isPostSaved, toggleSavedPost } = useSavedPosts();
+  const { user } = useAuth();
+  const { savedPostIds, savedPostsLoading, isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const friendshipState = useFriendships();
   const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds) ? friendshipState.blockedUserIds : [];
 
   const loadSavedPosts = useCallback(async () => {
-    const results = await Promise.all(savedPostIds.map(id => apiService.getPost(id)));
-    setPosts(results.filter(Boolean));
+    const results = await Promise.allSettled(savedPostIds.map(id => apiService.getPost(id)));
+    setPosts(results.filter(result => result.status === 'fulfilled').map(result => result.value).filter(Boolean));
     setLoading(false);
   }, [savedPostIds]);
 
@@ -28,6 +30,17 @@ export default function SavedPostsScreen({ navigation }) {
     title: `${post.userName} on LST Social`,
     message: `${post.userName} shared on LST Social:\n\n${post.content}`,
   });
+
+  const deletePost = async post => {
+    try {
+      await apiService.deletePost(post.id);
+      forgetDeletedPost(post.id);
+      setPosts(current => current.filter(item => item.id !== post.id));
+    } catch (error) {
+      Alert.alert('Couldn’t delete post', error.message);
+      throw error;
+    }
+  };
 
   if (savedPostsLoading || loading) return <Loader />;
 
@@ -45,6 +58,8 @@ export default function SavedPostsScreen({ navigation }) {
             onLike={() => apiService.likePost(item.id).then(loadSavedPosts)}
             onShare={() => sharePost(item)}
             onSave={() => toggleSavedPost(item.id)}
+            onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}
+            onDelete={String(item.userId) === String(user?.id) ? () => deletePost(item) : undefined}
             isSaved={isPostSaved(item.id)}
           />
         )}

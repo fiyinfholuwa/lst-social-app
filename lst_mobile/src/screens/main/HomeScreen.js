@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, ScrollView, Share } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { Alert, View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, ScrollView, Share } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
         import { useTheme } from '../../context/ThemeContext';
         import { useAuth } from '../../context/AuthContext';
         import apiService from '../../api/apiService';
@@ -21,7 +22,7 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
           const { theme } = useTheme();
           const { user } = useAuth();
           const [activeFilter, setActiveFilter] = useState('For you');
-          const { isPostSaved, toggleSavedPost } = useSavedPosts();
+          const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
           const friendshipState = useFriendships();
           const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds)
             ? friendshipState.blockedUserIds
@@ -41,7 +42,18 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
             finally { setLoading(false); setRefreshing(false); }
           }, []);
 
-          useEffect(() => { loadPosts(); }, []);
+          useFocusEffect(useCallback(() => { loadPosts(); }, [loadPosts]));
+
+          const deletePost = async post => {
+            try {
+              await apiService.deletePost(post.id);
+              forgetDeletedPost(post.id);
+              setPosts(current => current.filter(item => item.id !== post.id));
+            } catch (error) {
+              Alert.alert('Couldn’t delete post', error.message);
+              throw error;
+            }
+          };
 
           const onRefresh = () => { setRefreshing(true); loadPosts(); };
 
@@ -68,6 +80,8 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
                     onLike={() => apiService.likePost(item.id).then(loadPosts)}
                     onShare={() => sharePost(item)}
                     onSave={() => toggleSavedPost(item.id)}
+                    onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}
+                    onDelete={String(item.userId) === String(user?.id) ? () => deletePost(item) : undefined}
                     isSaved={isPostSaved(item.id)}
                   />
                 )}

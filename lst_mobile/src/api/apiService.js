@@ -16,7 +16,18 @@ const apiService = {
   getUser: userId => httpClient.get(`/users/${userId}`),
   getPosts: () => httpClient.get('/posts'),
   getPost: postId => httpClient.get(`/posts/${postId}`),
-  createPost: (content, image = null, communityId = null) => httpClient.post('/posts', { content, image, communityId }),
+  createPost: (content, images = []) => {
+    const form = new FormData();
+    form.append('content', content);
+    images.forEach((asset, index) => form.append('images[]', {
+      uri: asset.uri,
+      name: asset.fileName || `post-image-${index + 1}.jpg`,
+      type: asset.mimeType || 'image/jpeg',
+    }));
+    return httpClient.postForm('/posts', form);
+  },
+  updatePost: (postId, content) => httpClient.patch(`/posts/${postId}`, { content }),
+  deletePost: postId => httpClient.delete(`/posts/${postId}`),
   likePost: postId => httpClient.post(`/posts/${postId}/like`),
   addComment: (postId, text) => httpClient.post(`/posts/${postId}/comments`, { text }),
   getSavedPostIds: async () => (await httpClient.get('/saved-posts')).savedPostIds,

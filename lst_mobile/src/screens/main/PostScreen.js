@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Dimensions,
   FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -17,7 +19,10 @@ import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
+import PostOptionsMenu from '../../components/PostOptionsMenu';
 import { useSavedPosts } from '../../context/SavedPostsContext';
+
+const DETAIL_IMAGE_WIDTH = Dimensions.get('window').width - 36;
 
 export default function PostScreen({ route, navigation }) {
   const { postId } = route.params;
@@ -26,9 +31,12 @@ export default function PostScreen({ route, navigation }) {
   const [sending, setSending] = useState(false);
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { isPostSaved, toggleSavedPost } = useSavedPosts();
+  const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
 
-  useEffect(() => { loadPost(); }, [postId]);
+  useEffect(() => {
+    loadPost();
+    return navigation.addListener('focus', loadPost);
+  }, [navigation, postId]);
 
   const loadPost = async () => {
     const data = await apiService.getPost(postId);
@@ -61,6 +69,17 @@ export default function PostScreen({ route, navigation }) {
     }
   };
 
+  const deletePost = async () => {
+    try {
+      await apiService.deletePost(post.id);
+      forgetDeletedPost(post.id);
+      navigation.popToTop();
+    } catch (error) {
+      Alert.alert('Couldn’t delete post', error.message);
+      throw error;
+    }
+  };
+
   if (!post) return <Loader />;
 
   const postType = post.type || (post.communityId ? 'Community' : 'Encouragement');
@@ -81,9 +100,7 @@ export default function PostScreen({ route, navigation }) {
               {post.timestamp} • {post.audience || 'LST community'}
             </Text>
           </View>
-          <TouchableOpacity style={styles.headerAction}>
-            <AppIcon name="ellipsis-h" size={18} color={theme.secondaryText} />
-          </TouchableOpacity>
+          {String(post.userId) === String(user?.id) ? <PostOptionsMenu onEdit={() => navigation.navigate('EditPost', { postId: post.id })} onDelete={deletePost} /> : null}
         </View>
 
         <View style={styles.contextRow}>
@@ -92,7 +109,16 @@ export default function PostScreen({ route, navigation }) {
         </View>
 
         <Text style={[styles.content, { color: theme.text }]}>{post.content}</Text>
-        {post.image ? <Image source={{ uri: post.image }} style={styles.image} /> : null}
+        {(post.images?.length ? post.images : post.image ? [post.image] : []).length ? (
+          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
+            {(post.images?.length ? post.images : [post.image]).map((image, index, allImages) => (
+              <View key={`${image}-${index}`} style={styles.imageWrap}>
+                <Image source={{ uri: image }} style={styles.image} />
+                {allImages.length > 1 ? <View style={styles.imageCount}><Text style={styles.imageCountText}>{index + 1}/{allImages.length}</Text></View> : null}
+              </View>
+            ))}
+          </ScrollView>
+        ) : null}
 
         <View style={[styles.actions, { borderTopColor: theme.border }]}>
           <TouchableOpacity style={styles.action} onPress={handleLike} accessibilityLabel="Encourage this post">
@@ -190,18 +216,22 @@ export default function PostScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   listContent: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 24 },
-  postCard: { paddingBottom: 8 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  postCard: { paddingBottom: 8, overflow: 'visible' },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, position: 'relative', zIndex: 100, elevation: 20 },
   avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 11 },
   author: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   userName: { fontWeight: '700', fontSize: 16 },
   timestamp: { fontSize: 11, marginTop: 3 },
   headerAction: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  contextRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 10 },
+  contextRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 10, zIndex: 0 },
   contextText: { fontSize: 11, fontWeight: '600' },
-  content: { fontSize: 17, lineHeight: 28 },
-  image: { width: '100%', height: 260, borderRadius: 12, resizeMode: 'cover', marginTop: 16 },
+  content: { fontSize: 17, lineHeight: 28, zIndex: 0 },
+  gallery: { marginTop: 16, borderRadius: 14 },
+  imageWrap: { width: DETAIL_IMAGE_WIDTH, height: 280, marginRight: 8 },
+  image: { width: '100%', height: '100%', borderRadius: 14, resizeMode: 'cover' },
+  imageCount: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(31,18,25,0.72)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
+  imageCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, marginTop: 18, paddingTop: 9, gap: 8 },
   action: { minWidth: 48, height: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   actionCount: { fontSize: 11, fontWeight: '600' },

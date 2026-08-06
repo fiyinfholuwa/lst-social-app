@@ -18,6 +18,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}', [SocialController::class, 'user']);
     Route::get('/posts', [SocialController::class, 'posts']);
     Route::post('/posts', [SocialController::class, 'createPost']);
+    Route::patch('/posts/{post}', [SocialController::class, 'updatePost']);
+    Route::delete('/posts/{post}', [SocialController::class, 'deletePost']);
     Route::get('/posts/{post}', [SocialController::class, 'post']);
     Route::post('/posts/{post}/like', [SocialController::class, 'like']);
     Route::post('/posts/{post}/comments', [SocialController::class, 'comment']);

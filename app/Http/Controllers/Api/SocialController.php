@@ -13,6 +13,9 @@ use App\Repositories\SocialRepository;
 use App\Services\CacheService;
 use App\Services\SocialService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class SocialController extends Controller
 {
@@ -30,9 +33,60 @@ class SocialController extends Controller
 
     public function createPost(Request $r)
     {
-        $d = $r->validate(['content' => 'required|string|max:10000', 'image' => 'nullable|string', 'communityId' => 'nullable|exists:communities,id', 'type' => 'nullable|string|max:40', 'audience' => 'nullable|string|max:80']);
+        $d = $r->validate([
+            'content' => 'required|string|max:10000',
+            'images' => 'nullable|array|max:6',
+            'images.*' => 'image|max:2048',
+        ]);
 
-        return response()->json($this->service->create($r->user(), ['content' => $d['content'], 'image' => $d['image'] ?? null, 'community_id' => $d['communityId'] ?? null, 'type' => $d['type'] ?? 'Encouragement', 'audience' => $d['audience'] ?? 'Everyone']), 201);
+        $images = collect($r->file('images', []))->map(function ($image) use ($r) {
+            $path = $image->store('posts', 'public');
+
+            return $r->getSchemeAndHttpHost().Storage::url($path);
+        })->values()->all();
+
+        return response()->json($this->service->create($r->user(), ['content' => $d['content'], 'images' => $images ?: null, 'image' => $images[0] ?? null, 'community_id' => null, 'type' => 'Post', 'audience' => 'Everyone']), 201);
+    }
+
+    public function updatePost(Request $r, Post $post)
+    {
+        abort_unless((int) $post->user_id === (int) $r->user()->id, 403, 'You can only edit your own posts.');
+        $d = $r->validate(['content' => 'required|string|max:10000']);
+
+        $post->update(['content' => trim($d['content'])]);
+        $this->service->invalidatePost($post);
+
+        return response()->json($this->service->post($post->id));
+    }
+
+    public function deletePost(Request $r, Post $post)
+    {
+        abort_unless((int) $post->user_id === (int) $r->user()->id, 403, 'You can only delete your own posts.');
+
+        $postId = $post->id;
+        $userId = $post->user_id;
+        $communityId = $post->community_id;
+        $savedByUserIds = DB::table('saved_posts')->where('post_id', $postId)->pluck('user_id');
+        $images = $post->images ?: ($post->image ? [$post->image] : []);
+        $post->delete();
+
+        foreach ($images as $image) {
+            $path = parse_url($image, PHP_URL_PATH);
+            if ($path && Str::contains($path, '/storage/posts/')) {
+                Storage::disk('public')->delete(Str::after($path, '/storage/'));
+            }
+        }
+
+        $scopes = ['posts', "post:{$postId}", "user:{$userId}"];
+        foreach ($savedByUserIds as $savedByUserId) {
+            $scopes[] = "saved:{$savedByUserId}";
+        }
+        if ($communityId) {
+            $scopes[] = "community:{$communityId}";
+        }
+        $this->cache->invalidate(...$scopes);
+
+        return response()->json(['message' => 'Post deleted.']);
     }
 
     public function like(Request $r, Post $post)

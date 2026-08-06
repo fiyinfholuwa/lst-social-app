@@ -12,6 +12,14 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LST Social uses your photos when you choose images to share in a post."
+        }
+      ]
+    ],
     "ios": {
       "bundleIdentifier": "com.fiyinfholuwa.lstsocial",
       "supportsTablet": true,

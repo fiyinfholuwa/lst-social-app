@@ -13,7 +13,9 @@ class SocialService
 
     public function postData(Post $post): array
     {
-        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $post->user->avatar, 'content' => $post->content, 'image' => $post->image, 'likes' => $post->likes_count ?? $post->likes()->count(), 'comments' => $post->comments->map(fn ($c) => ['id' => (string) $c->id, 'userId' => (string) $c->user_id, 'userName' => $c->user->name, 'text' => $c->text, 'timestamp' => $c->created_at->diffForHumans()])->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'verified' => $post->user->role === 'Community leader'];
+        $images = $post->images ?: ($post->image ? [$post->image] : []);
+
+        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $post->user->avatar, 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'comments' => $post->comments->map(fn ($c) => ['id' => (string) $c->id, 'userId' => (string) $c->user_id, 'userName' => $c->user->name, 'text' => $c->text, 'timestamp' => $c->created_at->diffForHumans()])->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'verified' => $post->user->role === 'Community leader'];
     }
 
     public function posts()

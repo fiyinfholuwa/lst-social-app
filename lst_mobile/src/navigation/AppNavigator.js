@@ -18,6 +18,7 @@ import BlockedAccountsScreen from '../screens/main/BlockedAccountsScreen';
 import FriendsScreen from '../screens/main/FriendsScreen';
 import CommunityApplicationScreen from '../screens/main/CommunityApplicationScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import EditPostScreen from '../screens/main/EditPostScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -46,6 +47,7 @@ import NotificationsScreen from '../screens/main/NotificationsScreen';
                   <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: 'Community' }} />
                   <Stack.Screen name="ChatDetail" component={ChatDetailScreen} options={{ headerShown: true, title: 'Chat' }} />
                   <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: true, title: 'Create Post' }} />
+                  <Stack.Screen name="EditPost" component={EditPostScreen} options={{ headerShown: true, title: 'Edit Post' }} />
                   <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ headerShown: true, title: 'Saved Posts' }} />
                   <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
                   <Stack.Screen name="FriendRequests" component={FriendRequestsScreen} options={{ headerShown: true, title: 'Friend Requests' }} />

@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import Icon from './AppIcon';
+import PostOptionsMenu from './PostOptionsMenu';
 
 const PREVIEW_LIMIT = 180;
+const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
 
-export default function PostCard({ post, onPress, onUserPress, onLike, onShare, onSave, isSaved = false }) {
+export default function PostCard({ post, onPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const isLong = post.content.length > PREVIEW_LIMIT;
   const postType = post.type || (post.communityId ? 'Community' : 'Encouragement');
+  const images = post.images?.length ? post.images : post.image ? [post.image] : [];
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -27,9 +30,7 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
               {post.timestamp}{post.audience ? `  •  ${post.audience}` : '  •  LST community'}
             </Text>
           </View>
-          <TouchableOpacity style={styles.moreButton} hitSlop={10}>
-            <Icon name="ellipsis-h" size={18} color={theme.secondaryText} />
-          </TouchableOpacity>
+          {onEdit && onDelete ? <PostOptionsMenu onEdit={onEdit} onDelete={onDelete} /> : null}
         </View>
 
         <View style={styles.contextRow}>
@@ -58,10 +59,15 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
         </TouchableOpacity>
       ) : null}
 
-      {post.image ? (
-        <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
-          <Image source={{ uri: post.image }} style={styles.image} />
-        </TouchableOpacity>
+      {images.length ? (
+        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
+          {images.map((image, index) => (
+            <TouchableOpacity key={`${image}-${index}`} activeOpacity={0.9} onPress={onPress} style={styles.imageWrap}>
+              <Image source={{ uri: image }} style={styles.image} />
+              {images.length > 1 ? <View style={styles.imageCount}><Text style={styles.imageCountText}>{index + 1}/{images.length}</Text></View> : null}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       ) : null}
 
       <View style={styles.countRow}>
@@ -94,20 +100,24 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 14, marginBottom: 12, padding: 15, borderRadius: 18, borderWidth: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  card: { marginHorizontal: 14, marginBottom: 12, padding: 15, borderRadius: 18, borderWidth: 1, overflow: 'visible' },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, position: 'relative', zIndex: 100, elevation: 20 },
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 10 },
   userInfo: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   userName: { fontWeight: '700', fontSize: 15 },
   meta: { fontSize: 11, marginTop: 3 },
   moreButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  contextRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  contextRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, zIndex: 0 },
   contextText: { fontSize: 11, fontWeight: '600' },
-  content: { fontSize: 14, lineHeight: 22 },
+  content: { fontSize: 14, lineHeight: 22, zIndex: 0 },
   readMoreButton: { alignSelf: 'flex-start', paddingVertical: 5 },
   readMore: { fontSize: 13, fontWeight: '700' },
-  image: { width: '100%', height: 220, borderRadius: 14, marginTop: 7, resizeMode: 'cover' },
+  gallery: { marginTop: 7, borderRadius: 14 },
+  imageWrap: { width: CARD_IMAGE_WIDTH, height: 230, marginRight: 8 },
+  image: { width: '100%', height: '100%', borderRadius: 14, resizeMode: 'cover' },
+  imageCount: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(31,18,25,0.72)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
+  imageCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
   countRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 10 },
   countText: { fontSize: 11 },
   actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, paddingTop: 8, gap: 8 },

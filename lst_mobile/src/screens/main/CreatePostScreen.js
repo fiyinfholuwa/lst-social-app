@@ -1,94 +1,206 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
-        import { useTheme } from '../../context/ThemeContext';
-        import { useAuth } from '../../context/AuthContext';
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
 import Icon from '../../components/AppIcon';
 
-const postTypes = [
-  { key: 'update', label: 'Update', icon: 'create-outline' },
-  { key: 'prayer', label: 'Prayer', icon: 'heart-outline' },
-  { key: 'testimony', label: 'Testimony', icon: 'sparkles-outline' },
-];
+const MAX_IMAGES = 6;
 
-        export default function CreatePostScreen({ navigation }) {
-          const [content, setContent] = useState('');
-          const [image, setImage] = useState(null);
-          const { theme } = useTheme();
-          const { user } = useAuth();
-          const [postType, setPostType] = useState('update');
+export default function CreatePostScreen({ navigation }) {
+  const [content, setContent] = useState('');
+  const [images, setImages] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [processingImages, setProcessingImages] = useState(false);
+  const { theme } = useTheme();
+  const { user } = useAuth();
 
-          const handleSubmit = async () => {
-            if (!content.trim()) {
-              Alert.alert('Error', 'Please write something');
-              return;
-            }
-            if (!user) {
-              Alert.alert('Authentication Required', 'Please log in.');
-              return;
-            }
-            await apiService.createPost(content, image);
-            Alert.alert('Success', 'Post created!');
-            navigation.goBack();
-          };
+  const pickImages = async () => {
+    if (images.length >= MAX_IMAGES) {
+      Alert.alert('Photo limit reached', `You can add up to ${MAX_IMAGES} photos to one post.`);
+      return;
+    }
 
-          return (
-            <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
-              <Text style={[styles.heading, { color: theme.text }]}>Share with intention</Text>
-              <Text style={[styles.subheading, { color: theme.secondaryText }]}>What kind of moment are you sharing?</Text>
-              <View style={styles.types}>
-                {postTypes.map(type => (
-                  <TouchableOpacity key={type.key} onPress={() => setPostType(type.key)} style={[styles.type, { borderColor: theme.border }, postType === type.key && { backgroundColor: theme.primarySoft, borderColor: theme.primary }]}>
-                    <Icon name={type.icon} size={17} color={postType === type.key ? theme.primary : theme.secondaryText} />
-                    <Text style={[styles.typeText, { color: postType === type.key ? theme.primary : theme.secondaryText }]}>{type.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
-                placeholder={postType === 'prayer' ? 'How can the community pray with you?' : postType === 'testimony' ? 'Share what God has done...' : "What's on your heart?"}
-                placeholderTextColor={theme.secondaryText}
-                multiline
-                numberOfLines={6}
-                value={content}
-                onChangeText={setContent}
-              />
-              <View style={styles.tools}>
-                <TouchableOpacity style={[styles.tool, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                  <Icon name="image-outline" size={20} color={theme.primary} />
-                  <Text style={[styles.toolText, { color: theme.text }]}>Add photo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.tool, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                  <Icon name="people-outline" size={20} color={theme.primary} />
-                  <Text style={[styles.toolText, { color: theme.text }]}>Choose circle</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={[styles.note, { backgroundColor: theme.primarySoft }]}>
-                <Icon name="shield-checkmark-outline" size={18} color={theme.primary} />
-                <Text style={[styles.noteText, { color: theme.primary }]}>Lead with kindness. Your post will be visible to the LST community.</Text>
-              </View>
-              <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={handleSubmit}>
-                <Text style={styles.buttonText}>Share post</Text>
-              </TouchableOpacity>
-            </ScrollView>
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Photo access needed', 'Allow photo access in Settings to add pictures to your post.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      orderedSelection: true,
+      selectionLimit: MAX_IMAGES - images.length,
+      quality: 0.82,
+    });
+
+    if (!result.canceled) {
+      setProcessingImages(true);
+      try {
+        const optimized = await Promise.all(result.assets.map(async (asset, index) => {
+          const largestSide = Math.max(asset.width || 0, asset.height || 0);
+          const resize = largestSide > 1200
+            ? asset.width >= asset.height ? { width: 1200 } : { height: 1200 }
+            : null;
+          let output = await ImageManipulator.manipulateAsync(
+            asset.uri,
+            resize ? [{ resize }] : [],
+            { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG },
           );
-        }
 
-        const styles = StyleSheet.create({
-          container: { flex: 1 },
-          content: { padding: 18, paddingBottom: 40 },
-          heading: { fontSize: 25, fontWeight: '700', letterSpacing: -0.6 },
-          subheading: { fontSize: 14, marginTop: 6, marginBottom: 18 },
-          types: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-          type: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderRadius: 999 },
-          typeText: { fontWeight: '700', fontSize: 12 },
-          input: { borderWidth: 1, borderRadius: 18, padding: 15, fontSize: 16, minHeight: 180, textAlignVertical: 'top' },
-          tools: { flexDirection: 'row', gap: 10, marginTop: 12 },
-          tool: { flex: 1, borderWidth: 1, borderRadius: 14, padding: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7 },
-          toolText: { fontSize: 13, fontWeight: '600' },
-          note: { flexDirection: 'row', gap: 9, padding: 13, borderRadius: 14, marginTop: 16, alignItems: 'center' },
-          noteText: { flex: 1, fontSize: 12, lineHeight: 17 },
-          button: { padding: 16, borderRadius: 16, alignItems: 'center', marginTop: 20 },
-          buttonText: { color: '#fff', fontWeight: '600' },
-        });
-      
+          const fileInfo = await FileSystem.getInfoAsync(output.uri, { size: true });
+          if (fileInfo.exists && fileInfo.size > 900000) {
+            const secondResize = output.width >= output.height ? { width: 900 } : { height: 900 };
+            output = await ImageManipulator.manipulateAsync(
+              output.uri,
+              [{ resize: secondResize }],
+              { compress: 0.38, format: ImageManipulator.SaveFormat.JPEG },
+            );
+          }
+
+          return {
+            ...output,
+            fileName: `lst-post-${Date.now()}-${index + 1}.jpg`,
+            mimeType: 'image/jpeg',
+          };
+        }));
+        setImages(current => [...current, ...optimized].slice(0, MAX_IMAGES));
+      } catch (error) {
+        Alert.alert('Couldn’t prepare photos', 'Please try selecting the photos again.');
+      } finally {
+        setProcessingImages(false);
+      }
+    }
+  };
+
+  const removeImage = uri => setImages(current => current.filter(image => image.uri !== uri));
+
+  const handleSubmit = async () => {
+    if (!content.trim()) {
+      Alert.alert('Write something', 'Add a message before sharing your post.');
+      return;
+    }
+    if (!user) {
+      Alert.alert('Authentication required', 'Please sign in before sharing a post.');
+      return;
+    }
+    if (submitting) return;
+
+    setSubmitting(true);
+    try {
+      await apiService.createPost(content.trim(), images);
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Couldn’t share post', error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <Text style={[styles.eyebrow, { color: theme.accent }]}>CREATE A POST</Text>
+      <Text style={[styles.heading, { color: theme.text }]}>Share what’s on your heart.</Text>
+      <Text style={[styles.subheading, { color: theme.secondaryText }]}>Your post will be shared with the entire LST community.</Text>
+
+      <View style={[styles.composer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <View style={styles.authorRow}>
+          {user?.avatar ? <Image source={{ uri: user.avatar }} style={styles.avatar} /> : <View style={[styles.avatarFallback, { backgroundColor: theme.primarySoft }]}><Text style={[styles.initial, { color: theme.primary }]}>{user?.name?.[0] || 'L'}</Text></View>}
+          <View>
+            <Text style={[styles.authorName, { color: theme.text }]}>{user?.name || 'LST member'}</Text>
+            <View style={styles.audience}><Icon name="people-outline" size={12} color={theme.secondaryText} /><Text style={[styles.audienceText, { color: theme.secondaryText }]}>Everyone</Text></View>
+          </View>
+        </View>
+
+        <TextInput
+          style={[styles.input, { color: theme.text }]}
+          placeholder="Start a conversation..."
+          placeholderTextColor={theme.secondaryText}
+          multiline
+          value={content}
+          onChangeText={setContent}
+          maxLength={10000}
+          autoFocus
+        />
+
+        {images.length ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.previewRow}>
+            {images.map((image, index) => (
+              <View key={`${image.uri}-${index}`} style={styles.previewWrap}>
+                <Image source={{ uri: image.uri }} style={styles.preview} />
+                <TouchableOpacity style={styles.remove} onPress={() => removeImage(image.uri)} accessibilityLabel={`Remove photo ${index + 1}`}>
+                  <Icon name="times" size={15} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {images.length < MAX_IMAGES ? (
+              <TouchableOpacity
+                style={[styles.addMoreTile, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}
+                onPress={pickImages}
+                disabled={processingImages}
+              >
+                {processingImages ? <ActivityIndicator color={theme.accent} /> : <Icon name="add" size={24} color={theme.accent} />}
+                <Text style={[styles.addMoreText, { color: theme.accent }]}>Add more</Text>
+              </TouchableOpacity>
+            ) : null}
+          </ScrollView>
+        ) : null}
+
+        <View style={[styles.composerFooter, { borderTopColor: theme.border }]}>
+          <TouchableOpacity style={[styles.photoButton, { backgroundColor: theme.accentSoft }]} onPress={pickImages} disabled={processingImages}>
+            {processingImages ? <ActivityIndicator size="small" color={theme.accent} /> : <Icon name="images-outline" size={20} color={theme.accent} />}
+            <Text style={[styles.photoText, { color: theme.accent }]}>{processingImages ? 'Preparing…' : images.length ? 'Add more photos' : 'Add photos'}</Text>
+          </TouchableOpacity>
+          <Text style={[styles.photoCount, { color: theme.secondaryText }]}>{images.length}/{MAX_IMAGES}</Text>
+        </View>
+      </View>
+
+      <View style={[styles.note, { backgroundColor: theme.primarySoft }]}>
+        <Icon name="shield-checkmark-outline" size={18} color={theme.primary} />
+        <Text style={[styles.noteText, { color: theme.primary }]}>Lead with kindness and respect. Love Straight Talks is a safe space for genuine conversations.</Text>
+      </View>
+
+      <TouchableOpacity activeOpacity={0.86} onPress={handleSubmit} disabled={submitting}>
+        <LinearGradient colors={[theme.primary, theme.accentDark]} style={styles.button}>
+          {submitting ? <ActivityIndicator color="#FFFFFF" /> : <><Text style={styles.buttonText}>Share post</Text><Icon name="paper-plane" size={17} color="#FFFFFF" /></>}
+        </LinearGradient>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  content: { padding: 18, paddingTop: 24, paddingBottom: 44 },
+  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 1.7, marginBottom: 8 },
+  heading: { fontSize: 28, lineHeight: 35, fontWeight: '800', letterSpacing: -0.8 },
+  subheading: { fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 21 },
+  composer: { borderWidth: 1, borderRadius: 24, padding: 16 },
+  authorRow: { flexDirection: 'row', alignItems: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 11 },
+  avatarFallback: { width: 44, height: 44, borderRadius: 22, marginRight: 11, alignItems: 'center', justifyContent: 'center' },
+  initial: { fontSize: 16, fontWeight: '800' },
+  authorName: { fontSize: 14, fontWeight: '800' },
+  audience: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  audienceText: { fontSize: 11, fontWeight: '600' },
+  input: { minHeight: 170, paddingVertical: 20, fontSize: 17, lineHeight: 25, textAlignVertical: 'top' },
+  previewRow: { gap: 10, paddingBottom: 16 },
+  previewWrap: { width: 132, height: 132 },
+  preview: { width: '100%', height: '100%', borderRadius: 16, resizeMode: 'cover' },
+  remove: { position: 'absolute', top: 7, right: 7, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(31,18,25,0.78)', alignItems: 'center', justifyContent: 'center' },
+  addMoreTile: { width: 132, height: 132, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  addMoreText: { fontSize: 12, fontWeight: '800' },
+  composerFooter: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 13, flexDirection: 'row', alignItems: 'center' },
+  photoButton: { minHeight: 42, borderRadius: 13, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  photoText: { fontSize: 13, fontWeight: '800' },
+  photoCount: { marginLeft: 'auto', fontSize: 12, fontWeight: '700' },
+  note: { flexDirection: 'row', gap: 9, padding: 14, borderRadius: 15, marginTop: 16, alignItems: 'center' },
+  noteText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  button: { minHeight: 58, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 9, marginTop: 20 },
+  buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
+});

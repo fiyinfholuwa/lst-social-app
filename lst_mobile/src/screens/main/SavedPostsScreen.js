@@ -13,7 +13,8 @@ export default function SavedPostsScreen({ navigation }) {
   const { savedPostIds, savedPostsLoading, isPostSaved, toggleSavedPost } = useSavedPosts();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { blockedUserIds } = useFriendships();
+  const friendshipState = useFriendships();
+  const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds) ? friendshipState.blockedUserIds : [];
 
   const loadSavedPosts = useCallback(async () => {
     const results = await Promise.all(savedPostIds.map(id => apiService.getPost(id)));

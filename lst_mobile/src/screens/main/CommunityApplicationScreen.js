@@ -22,7 +22,8 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   const [motivation, setMotivation] = useState('');
   const [agreements, setAgreements] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const requirement = getCommunityRequirement(communityId);
+  const requirementKey = community?.requirementKey || communityId;
+  const requirement = getCommunityRequirement(requirementKey);
 
   useEffect(() => {
     apiService.getCommunity(communityId).then(setCommunity);
@@ -30,7 +31,7 @@ export default function CommunityApplicationScreen({ route, navigation }) {
 
   if (!community || !requirement) return <Loader />;
 
-  if (communityId === 'comm4' && !readingComplete) {
+  if (requirementKey === 'comm4' && !readingComplete) {
     return <QuickMaritalReadingGate theme={theme} onComplete={() => setReadingComplete(true)} />;
   }
 
@@ -41,7 +42,7 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   };
 
   const submit = async () => {
-    if (communityId === 'comm4' && !readingComplete) {
+    if (requirementKey === 'comm4' && !readingComplete) {
       Alert.alert('Complete the required reading', 'Pass all three article quizzes before submitting your application.');
       return;
     }

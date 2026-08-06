@@ -13,6 +13,7 @@
       "**/*"
     ],
     "ios": {
+      "bundleIdentifier": "com.fiyinfholuwa.lstsocial",
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "LST Social uses your microphone when you choose to record a voice note."

@@ -85,7 +85,7 @@ export default function OnboardingScreen() {
               useNativeControls={false}
             />
             <LinearGradient
-              colors={['rgba(247,248,251,0.04)', 'rgba(247,248,251,0.52)', COLORS.offWhite]}
+              colors={['rgba(84,35,61,0.04)', 'rgba(252,248,250,0.58)', COLORS.offWhite]}
               locations={[0, 0.55, 0.88]}
               style={styles.slideOverlay}
             />
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   slideVideo: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   slideOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 1 },
   slideContent: { flex: 1, zIndex: 2, paddingHorizontal: 28, justifyContent: 'flex-end', paddingBottom: 225 },
-  iconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.white76, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  iconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.redSoft, borderWidth: 1, borderColor: 'rgba(217,79,112,0.22)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   eyebrow: { color: COLORS.red, fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 12 },
   title: { color: COLORS.navy, fontSize: 43, lineHeight: 48, fontWeight: '700', letterSpacing: -1.5 },
   body: { color: COLORS.slate, fontSize: 17, lineHeight: 26, marginTop: 17, maxWidth: 345 },

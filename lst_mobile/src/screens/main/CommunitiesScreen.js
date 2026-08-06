@@ -18,15 +18,27 @@ const matchesFilter = (community, filter, joinedIds) => {
 
 export default function CommunitiesScreen({ navigation }) {
   const [communities, setCommunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const { theme } = useTheme();
   const { user } = useAuth();
   const joinedIds = user?.joinedCommunities || [];
 
-  useEffect(() => {
-    apiService.getCommunities().then(setCommunities);
-  }, []);
+  const loadCommunities = async () => {
+    setLoadError(null);
+    try {
+      const data = await apiService.getCommunities();
+      setCommunities(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setLoadError(error.message || 'Unable to load communities.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadCommunities(); }, []);
 
   const joinedCommunities = communities.filter(item => joinedIds.includes(item.id));
   const visibleCommunities = useMemo(() => communities.filter(item => {
@@ -145,8 +157,9 @@ export default function CommunitiesScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.empty}>
             <AppIcon name="search" size={26} color={theme.secondaryText} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No communities found</Text>
-            <Text style={[styles.emptyText, { color: theme.secondaryText }]}>Try a different search or category.</Text>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>{loading ? 'Loading communities…' : loadError ? 'Could not load communities' : 'No communities found'}</Text>
+            <Text style={[styles.emptyText, { color: theme.secondaryText }]}>{loadError || (loading ? 'Please wait.' : 'Try a different search or category.')}</Text>
+            {loadError ? <TouchableOpacity style={[styles.retry, { backgroundColor: theme.primary }]} onPress={loadCommunities}><Text style={styles.retryText}>Try again</Text></TouchableOpacity> : null}
           </View>
         }
       />
@@ -185,4 +198,6 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 50 },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 12 },
   emptyText: { fontSize: 12, marginTop: 5 },
+  retry: { marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 },
+  retryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
 });

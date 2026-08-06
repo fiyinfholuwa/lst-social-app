@@ -7,6 +7,15 @@ use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'email' => strtolower(trim((string) $this->email)),
+            'first_name' => trim((string) $this->first_name),
+            'last_name' => trim((string) $this->last_name),
+        ]);
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -15,9 +24,10 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', Password::min(8)],
+            'password' => ['required', 'string', 'confirmed', Password::min(8)],
         ];
     }
 }

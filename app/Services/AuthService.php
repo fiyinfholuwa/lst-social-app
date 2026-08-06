@@ -17,7 +17,9 @@ class AuthService
     public function register(array $data): array
     {
         $user = $this->users->create([
-            'name' => $data['name'],
+            'first_name' => trim($data['first_name']),
+            'last_name' => trim($data['last_name']),
+            'name' => trim($data['first_name'].' '.$data['last_name']),
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);

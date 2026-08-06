@@ -1,71 +1,145 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../../components/AppIcon';
-        import { useAuth } from '../../context/AuthContext';
-        import { useTheme } from '../../context/ThemeContext';
+import AuthField from '../../components/AuthField';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
-        export default function LoginScreen({ navigation }) {
-          const [email, setEmail] = useState('test@example.com');
-          const [password, setPassword] = useState('password');
-          const { login } = useAuth();
-          const { theme } = useTheme();
+export default function LoginScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const { login } = useAuth();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
-          const handleLogin = async () => {
-            try {
-              await login(email, password);
-            } catch (error) {
-              Alert.alert('Login Failed', error.message);
-            }
-          };
+  const handleLogin = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await login(email.trim(), password);
+    } catch (error) {
+      Alert.alert('Couldn’t sign in', error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-          const styles = getStyles(theme);
-          return (
-            <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-              <View style={styles.logo}><Text style={styles.logoText}>L</Text></View>
-              <Text style={styles.kicker}>WELCOME BACK</Text>
-              <Text style={styles.title}>Continue your journey.</Text>
-              <Text style={styles.subtitle}>Sign in to reconnect with your faith community.</Text>
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={theme.secondaryText}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-              />
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={theme.secondaryText}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.button} onPress={handleLogin}>
+  return (
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <LinearGradient
+        colors={[theme.background, theme.accentSoft, theme.secondaryAccentSoft]}
+        locations={[0.15, 0.62, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.orb, styles.orbTop, { backgroundColor: theme.warmAccent }]} />
+      <View style={[styles.orb, styles.orbSide, { backgroundColor: theme.secondaryAccent }]} />
+
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <View style={styles.brandRow}>
+          <LinearGradient colors={[theme.primary, theme.accent]} style={styles.logo}>
+            <Icon name="heart" solid size={21} color="#FFFFFF" />
+          </LinearGradient>
+          <View>
+            <Text style={[styles.brand, { color: theme.text }]}>LST SOCIAL</Text>
+            <Text style={[styles.brandTag, { color: theme.secondaryText }]}>Love Straight Talks</Text>
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={[styles.welcomeIcon, { backgroundColor: theme.accentSoft }]}>
+            <Icon name="sparkles-outline" size={20} color={theme.accent} />
+          </View>
+          <Text style={[styles.kicker, { color: theme.accent }]}>WELCOME BACK</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Your community is waiting.</Text>
+          <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Sign in to continue the conversations and connections that matter.</Text>
+
+          <AuthField
+            label="Email address"
+            icon="mail-outline"
+            theme={theme}
+            style={styles.fieldSpacing}
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+          />
+          <AuthField
+            label="Password"
+            icon="lock"
+            theme={theme}
+            style={styles.fieldSpacing}
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoComplete="password"
+            onSubmitEditing={handleLogin}
+          />
+
+          <TouchableOpacity style={styles.forgot} onPress={() => Alert.alert('Password reset', 'Password recovery will be available soon.')}>
+            <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity activeOpacity={0.86} onPress={handleLogin} disabled={submitting}>
+            <LinearGradient colors={[theme.primary, theme.accentDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.button}>
+              {submitting ? <ActivityIndicator color="#FFFFFF" /> : <>
                 <Text style={styles.buttonText}>Sign in</Text>
-                <Icon name="arrow-forward" size={18} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.link}>New to LST? <Text style={styles.linkStrong}>Create an account</Text></Text>
-              </TouchableOpacity>
-            </KeyboardAvoidingView>
-          );
-        }
+                <View style={styles.buttonIcon}><Icon name="arrow-forward" size={17} color="#FFFFFF" /></View>
+              </>}
+            </LinearGradient>
+          </TouchableOpacity>
 
-        const getStyles = (theme) => StyleSheet.create({
-          container: { flex: 1, backgroundColor: theme.background, padding: 24, justifyContent: 'center' },
-          logo: { width: 48, height: 48, borderRadius: 16, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
-          logoText: { color: '#fff', fontWeight: '700', fontSize: 22 },
-          kicker: { fontSize: 11, color: theme.primary, fontWeight: '700', letterSpacing: 1.8, marginBottom: 10 },
-          title: { fontSize: 34, lineHeight: 40, fontWeight: '700', color: theme.text, letterSpacing: -1, marginBottom: 10 },
-          subtitle: { fontSize: 16, lineHeight: 24, color: theme.secondaryText, marginBottom: 30 },
-          label: { color: theme.text, fontWeight: '600', marginBottom: 8, fontSize: 13 },
-          input: { backgroundColor: theme.card, color: theme.text, padding: 15, borderRadius: 14, marginBottom: 18, borderWidth: 1, borderColor: theme.border },
-          button: { backgroundColor: theme.primary, padding: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 9, marginTop: 3 },
-          buttonText: { color: '#fff', fontWeight: '600' },
-          link: { color: theme.secondaryText, textAlign: 'center', marginTop: 24 },
-          linkStrong: { color: theme.tint, fontWeight: '700' },
-        });
-      
+          <View style={[styles.trustRow, { borderTopColor: theme.border }]}>
+            <Icon name="shield-checkmark-outline" size={15} color={theme.secondaryText} />
+            <Text style={[styles.trustText, { color: theme.secondaryText }]}>A private, respectful space for genuine connection</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.switchLink} onPress={() => navigation.navigate('Register')}>
+          <Text style={[styles.switchText, { color: theme.secondaryText }]}>New to LST? <Text style={{ color: theme.primary, fontWeight: '800' }}>Create an account</Text></Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const getStyles = theme => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: theme.background },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingTop: 64, paddingBottom: 34 },
+  orb: { position: 'absolute', borderRadius: 999, opacity: 0.12 },
+  orbTop: { width: 180, height: 180, top: -74, right: -54 },
+  orbSide: { width: 120, height: 120, left: -66, top: '37%', opacity: 0.09 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24, paddingHorizontal: 4 },
+  logo: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  brand: { fontSize: 14, fontWeight: '800', letterSpacing: 1.7 },
+  brandTag: { fontSize: 11, marginTop: 3, letterSpacing: 0.25 },
+  card: { borderWidth: 1, borderRadius: 28, padding: 22, shadowColor: '#54233D', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.1, shadowRadius: 28, elevation: 5 },
+  welcomeIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  kicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1.8, marginBottom: 9 },
+  title: { fontSize: 31, lineHeight: 37, fontWeight: '800', letterSpacing: -1, marginBottom: 9 },
+  subtitle: { fontSize: 15, lineHeight: 22, marginBottom: 25 },
+  fieldSpacing: { marginBottom: 17 },
+  forgot: { alignSelf: 'flex-end', marginTop: -4, marginBottom: 20, paddingVertical: 3 },
+  forgotText: { fontSize: 13, fontWeight: '700' },
+  button: { minHeight: 58, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
+  buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
+  buttonIcon: { width: 27, height: 27, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' },
+  trustRow: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 20, paddingTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  trustText: { fontSize: 11, flexShrink: 1, textAlign: 'center' },
+  switchLink: { paddingVertical: 22 },
+  switchText: { textAlign: 'center', fontSize: 14 },
+});

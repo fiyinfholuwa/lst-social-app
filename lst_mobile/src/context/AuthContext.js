@@ -32,8 +32,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
             return data;
           };
 
-          const register = async (name, email, password) => {
-            const data = await apiService.register(name, email, password);
+          const register = async (firstName, lastName, email, password, passwordConfirmation) => {
+            const data = await apiService.register(firstName, lastName, email, password, passwordConfirmation);
             await AsyncStorage.setItem('@auth_token', data.token);
             setUser(data.user);
             return data;

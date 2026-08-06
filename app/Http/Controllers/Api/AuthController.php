@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -24,6 +25,23 @@ class AuthController extends Controller
             'user' => new UserResource($result['user']),
             'token' => $result['token'],
         ], 201);
+    }
+
+    public function checkEmail(Request $request): JsonResponse
+    {
+        $validator = Validator::make([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ], [
+            'email' => ['required', 'string', 'email', 'max:255'],
+        ]);
+
+        $validated = $validator->validate();
+        $available = ! \App\Models\User::whereRaw('LOWER(email) = ?', [$validated['email']])->exists();
+
+        return response()->json([
+            'available' => $available,
+            'message' => $available ? 'Email is available.' : 'An account with this email already exists.',
+        ]);
     }
 
     public function login(LoginRequest $request): JsonResponse

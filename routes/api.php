@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('throttle:6,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register/check-email', [AuthController::class, 'checkEmail']);
     Route::post('/login', [AuthController::class, 'login']);
 });
 

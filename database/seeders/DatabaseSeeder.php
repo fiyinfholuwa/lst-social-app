@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Community;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -26,11 +25,11 @@ class DatabaseSeeder extends Seeder
             ['Pastor Michael', 'michael@example.com', 4, 'Pastor and mentor helping people grow with wisdom.'],
             ['Daniel Okafor', 'daniel@example.com', 11, 'Recovery advocate. One day at a time.'],
         ])->map(fn ($u) => User::updateOrCreate(['email' => $u[1]], ['name' => $u[0], 'password' => 'password', 'avatar' => "https://i.pravatar.cc/200?img={$u[2]}", 'bio' => $u[3], 'role' => str_starts_with($u[0], 'Pastor') ? 'Community leader' : null]));
-        $community = Community::firstOrCreate(['name' => 'Faith & Encouragement'], ['description' => 'A welcoming place to grow, pray, and encourage one another.', 'rules' => 'Be kind, truthful, and respectful.', 'image' => 'https://picsum.photos/200/200?random=10', 'admin_id' => $users[3]->id]);
-        $community->members()->syncWithoutDetaching($users->pluck('id'));
         if (Post::count() === 0) {
             Post::create(['user_id' => $users[0]->id, 'content' => 'Trust in the Lord with all your heart. Share the verse carrying you today. 🙏', 'image' => 'https://picsum.photos/600/320?random=1', 'type' => 'Encouragement', 'audience' => 'Everyone']);
-            Post::create(['user_id' => $users[3]->id, 'community_id' => $community->id, 'content' => 'Healthy fellowship grows when every member notices who has become quiet and makes room for a new voice.', 'type' => 'Community', 'audience' => 'Faith & Encouragement']);
         }
+
+        $this->call(CommunitySeeder::class);
+        $this->call(CommunityQuizSeeder::class);
     }
 }

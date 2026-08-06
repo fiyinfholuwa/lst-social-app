@@ -2,7 +2,14 @@ import httpClient from './httpClient';
 
 const apiService = {
   login: (email, password) => httpClient.post('/login', { email, password }, { auth: false }),
-  register: (name, email, password) => httpClient.post('/register', { name, email, password }, { auth: false }),
+  checkEmailAvailability: email => httpClient.post('/register/check-email', { email }, { auth: false }),
+  register: (firstName, lastName, email, password, passwordConfirmation) => httpClient.post('/register', {
+    first_name: firstName,
+    last_name: lastName,
+    email,
+    password,
+    password_confirmation: passwordConfirmation,
+  }, { auth: false }),
   logout: () => httpClient.post('/logout'),
   getUserProfile: async () => (await httpClient.get('/user')).user,
   updateUserProfile: updates => httpClient.patch('/user', updates),

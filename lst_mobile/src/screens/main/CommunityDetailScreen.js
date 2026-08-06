@@ -14,7 +14,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [members, setMembers] = useState([]);
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { blockedUserIds } = useFriendships();
+  const friendshipState = useFriendships();
+  const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds) ? friendshipState.blockedUserIds : [];
   const [joined, setJoined] = useState(user.joinedCommunities?.includes(communityId));
   const { getApplication, withdrawApplication } = useCommunityApplications();
   const application = getApplication(communityId);

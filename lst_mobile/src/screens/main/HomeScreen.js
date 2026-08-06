@@ -7,6 +7,7 @@ import { View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, Scr
 import Loader from '../../components/Loader';
 import ScreenHeader from '../../components/ScreenHeader';
 import Icon from '../../components/AppIcon';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useNotifications } from '../../context/NotificationsContext';
@@ -21,7 +22,10 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
           const { user } = useAuth();
           const [activeFilter, setActiveFilter] = useState('For you');
           const { isPostSaved, toggleSavedPost } = useSavedPosts();
-          const { blockedUserIds } = useFriendships();
+          const friendshipState = useFriendships();
+          const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds)
+            ? friendshipState.blockedUserIds
+            : [];
           const { unreadCount } = useNotifications();
 
           const sharePost = post => Share.share({
@@ -70,11 +74,16 @@ const filters = ['For you', 'Prayer', 'Testimonies', 'Relationships'];
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.tint} />}
                 ListHeaderComponent={
                   <>
-                    <View style={[styles.verseCard, { backgroundColor: theme.primary }]}>
+                    <LinearGradient
+                      colors={[theme.primary, theme.accentDark, theme.warmAccent]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.verseCard}
+                    >
                       <Text style={styles.verseLabel}>TODAY'S ENCOURAGEMENT</Text>
                       <Text style={styles.verse}>“Let all that you do be done in love.”</Text>
                       <Text style={styles.reference}>1 Corinthians 16:14</Text>
-                    </View>
+                    </LinearGradient>
                     <TouchableOpacity style={[styles.composer, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => navigation.navigate('CreatePost')}>
                       <View style={[styles.composerIcon, { backgroundColor: theme.primarySoft }]}><Icon name="create-outline" size={20} color={theme.primary} /></View>
                       <Text style={[styles.composerText, { color: theme.secondaryText }]}>Share an update or prayer...</Text>

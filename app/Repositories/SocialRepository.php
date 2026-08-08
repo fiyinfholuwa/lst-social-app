@@ -22,22 +22,38 @@ class SocialRepository
 
     public function post(int $id, User $viewer): Post
     {
-        return Post::with(['user', 'comments.user', 'comments.likes' => fn ($query) => $query->whereKey($viewer->id), 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
             ->where(function ($query) use ($viewer) {
                 $query->where('status', 'approved')->orWhere('user_id', $viewer->id);
             })
-            ->withCount('likes')->findOrFail($id);
+            ->withCount(['likes', 'comments'])->findOrFail($id);
     }
 
     private function postsQuery(User $viewer)
     {
-        return Post::with(['user', 'comments.user', 'comments.likes' => fn ($query) => $query->whereKey($viewer->id), 'likes' => fn ($query) => $query->whereKey($viewer->id)])
-            ->where('status', 'approved')->withCount('likes')->latest();
+        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->where('status', 'approved')->withCount(['likes', 'comments'])->latest();
     }
 
     public function createPost(User $user, array $data): Post
     {
         return $user->posts()->create($data);
+    }
+
+    public function commentsPage(Post $post, User $viewer, int $perPage = 20)
+    {
+        return $post->comments()->whereNull('parent_id')
+            ->with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->withCount(['likes', 'replies'])->oldest()->paginate($perPage);
+    }
+
+    public function repliesPage(Post $post, Comment $comment, User $viewer, int $perPage = 10)
+    {
+        abort_unless($comment->post_id === $post->id && $comment->parent_id === null, 404);
+
+        return $comment->replies()
+            ->with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->withCount(['likes', 'replies'])->oldest()->paginate($perPage);
     }
 
     public function addComment(User $user, Post $post, string $text, ?int $parentId = null): Comment
@@ -85,11 +101,9 @@ class SocialRepository
         return $community->posts()
             ->with([
                 'user',
-                'comments.user',
-                'comments.likes' => fn ($likes) => $likes->whereKey($viewer->id),
-                'likes' => fn ($likes) => $likes->whereKey($viewer->id),
-            ])
-            ->withCount('likes')
+                    'likes' => fn ($likes) => $likes->whereKey($viewer->id),
+                ])
+            ->withCount(['likes', 'comments'])
             ->where(fn ($posts) => $posts
                 ->where('status', 'approved')
                 ->orWhere(fn ($own) => $own->where('user_id', $viewer->id)->where('status', 'pending')))

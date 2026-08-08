@@ -42,6 +42,8 @@ const apiService = {
   deletePost: postId => httpClient.delete(`/posts/${postId}`),
   likePost: postId => httpClient.post(`/posts/${postId}/like`),
   addComment: (postId, text, parentId = null) => httpClient.post(`/posts/${postId}/comments`, { text, parent_id: parentId }),
+  getComments: (postId, page = 1) => httpClient.get(`/posts/${postId}/comments?page=${page}`),
+  getCommentReplies: (postId, commentId, page = 1) => httpClient.get(`/posts/${postId}/comments/${commentId}/replies?page=${page}`),
   likeComment: commentId => httpClient.post(`/comments/${commentId}/like`),
   getSavedPostIds: async () => (await httpClient.get('/saved-posts')).savedPostIds,
   toggleSavedPost: postId => httpClient.post(`/posts/${postId}/save`),

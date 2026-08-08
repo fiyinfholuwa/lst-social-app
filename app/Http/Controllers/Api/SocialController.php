@@ -137,6 +137,20 @@ class SocialController extends Controller
         return response()->json($this->service->commentData($c), 201);
     }
 
+    public function comments(Request $r, Post $post)
+    {
+        $page = $this->repo->commentsPage($post, $r->user());
+
+        return response()->json($this->commentPageData($page));
+    }
+
+    public function replies(Request $r, Post $post, Comment $comment)
+    {
+        $page = $this->repo->repliesPage($post, $comment, $r->user());
+
+        return response()->json($this->commentPageData($page));
+    }
+
     public function likeComment(Request $r, Comment $comment)
     {
         $this->repo->toggleCommentLike($r->user(), $comment);
@@ -301,7 +315,29 @@ class SocialController extends Controller
 
     public function updateProfile(Request $r)
     {
-        $d = $r->validate(['name' => 'sometimes|string|max:255', 'bio' => 'nullable|string|max:2000', 'avatar' => 'nullable|string|max:2048']);
+        $d = $r->validate([
+            'name' => 'sometimes|string|max:255',
+            'bio' => 'nullable|string|max:5000',
+            'hobbies' => 'nullable|string|max:1000',
+            'marital_status' => 'nullable|in:single,married,divorced,widowed,separated,prefer_not_to_say',
+            'date_of_birth' => 'nullable|date|before:today',
+            'workplace' => 'nullable|string|max:255',
+            'occupation' => 'nullable|string|max:255',
+            'is_profile_private' => 'sometimes|boolean',
+            'avatar_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+        ]);
+        if ($r->hasFile('avatar_image')) {
+            $directory = public_path('custom_folder/profiles');
+            File::ensureDirectoryExists($directory);
+            $filename = Str::uuid().'.'.($r->file('avatar_image')->guessExtension() ?: 'jpg');
+            $r->file('avatar_image')->move($directory, $filename);
+            $oldPath = parse_url((string) $r->user()->avatar, PHP_URL_PATH);
+            if ($oldPath && Str::startsWith($oldPath, '/custom_folder/profiles/')) {
+                File::delete(public_path(ltrim($oldPath, '/')));
+            }
+            $d['avatar'] = "/custom_folder/profiles/{$filename}";
+        }
+        unset($d['avatar_image']);
         $r->user()->update($d);
         $this->cache->invalidate("user:{$r->user()->id}", 'posts');
 
@@ -349,5 +385,16 @@ class SocialController extends Controller
         } elseif ($path && Str::contains($path, '/storage/posts/')) {
             Storage::disk('public')->delete(Str::after($path, '/storage/'));
         }
+    }
+
+    private function commentPageData($page): array
+    {
+        return [
+            'data' => $page->getCollection()->map(fn (Comment $comment) => $this->service->commentData($comment))->values(),
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
+        ];
     }
 }

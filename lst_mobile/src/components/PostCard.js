@@ -78,9 +78,9 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
           <Icon name="heart" solid={post.likedByCurrentUser} size={18} color={theme.accent} />
           <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.likes}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onPress} style={styles.countAction} accessibilityLabel={`${post.comments.length} comments`}>
+        <TouchableOpacity onPress={onPress} style={styles.countAction} accessibilityLabel={`${post.commentsCount || 0} comments`}>
           <Icon name="comment" size={18} color={theme.primary} />
-          <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.comments.length}</Text>
+          <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={onShare}>
           <Icon name="share-alt" size={18} color={theme.secondaryText} />

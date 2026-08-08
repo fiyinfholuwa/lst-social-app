@@ -4,21 +4,42 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $isOwner = (int) $request->user()?->id === (int) $this->id;
+        $canSeeDetails = $isOwner || ! $this->is_profile_private;
+
         return [
-            'id' => $this->id,
+            'id' => (string) $this->id,
             'name' => $this->name,
             'firstName' => $this->first_name,
             'lastName' => $this->last_name,
-            'email' => $this->email,
-            'avatar' => $this->avatar,
-            'bio' => $this->bio,
+            'email' => $this->when($isOwner, $this->email),
+            'avatar' => $this->mediaUrl($request, $this->avatar),
+            'bio' => $this->when($canSeeDetails, $this->bio),
+            'hobbies' => $this->when($canSeeDetails, $this->hobbies),
+            'maritalStatus' => $this->when($canSeeDetails, $this->marital_status),
+            'dateOfBirth' => $this->when($canSeeDetails, $this->date_of_birth?->format('Y-m-d')),
+            'workplace' => $this->when($canSeeDetails, $this->workplace),
+            'occupation' => $this->when($canSeeDetails, $this->occupation),
+            'isProfilePrivate' => (bool) $this->is_profile_private,
+            'canSeePrivateDetails' => $canSeeDetails,
             'role' => $this->role,
             'joinedCommunities' => $this->whenLoaded('communities', fn () => $this->communities->pluck('id')->map(fn ($id) => (string) $id)->values()),
         ];
+    }
+
+    private function mediaUrl(Request $request, ?string $url): ?string
+    {
+        if (! $url) return null;
+        $path = parse_url($url, PHP_URL_PATH);
+
+        return $path && (Str::startsWith($path, '/storage/') || Str::startsWith($path, '/custom_folder/'))
+            ? $request->getSchemeAndHttpHost().$path
+            : $url;
     }
 }

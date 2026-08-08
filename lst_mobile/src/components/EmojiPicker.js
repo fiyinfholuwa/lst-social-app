@@ -1,11 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
-// The iOS simulator used for this project does not expose its colour-emoji
-// font to React Native Text, so Unicode emoji render as a boxed question mark.
-// Ionicons is bundled with Expo, making it a dependable visual picker on every
-// target. The selected value remains a standard Unicode emoji for posts.
 const EMOJIS = [
   ['happy-outline', '😀', 'grinning happy smile'], ['happy', '😄', 'happy smile joy'], ['heart', '❤️', 'heart love'], ['heart-outline', '💖', 'heart love'],
   ['thumbs-up', '👍', 'thumbs up like yes'], ['thumbs-down', '👎', 'thumbs down dislike no'], ['hand-left-outline', '👋', 'wave hello'], ['star-outline', '✨', 'sparkles celebrate'],
@@ -17,7 +12,7 @@ const EMOJIS = [
   ['people-outline', '👥', 'people friends community'], ['person-outline', '🙂', 'person face'], ['paw-outline', '🐾', 'paw animal'], ['restaurant-outline', '🍽️', 'food meal'],
   ['cafe-outline', '☕', 'coffee cafe'], ['wine-outline', '🥂', 'drink cheers'], ['football-outline', '⚽', 'football soccer sport'], ['game-controller-outline', '🎮', 'game play'],
   ['bulb-outline', '💡', 'idea light'], ['checkmark-circle-outline', '✅', 'check yes done'], ['alert-circle-outline', '❗', 'alert important'], ['help-circle-outline', '❓', 'question help'],
-].map(([icon, unicode, keywords]) => ({ id: icon, icon, unicode, value: `:${icon}:`, keywords }));
+].map(([icon, unicode, keywords]) => ({ id: icon, unicode, value: unicode, keywords }));
 
 export default function EmojiPicker({ onSelect, onClose, theme }) {
   const [query, setQuery] = useState('');
@@ -51,7 +46,7 @@ export default function EmojiPicker({ onSelect, onClose, theme }) {
           contentContainerStyle={styles.grid}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.emojiButton} onPress={() => onSelect(item.value)} accessibilityLabel={`Add ${item.keywords} emoji`}>
-              <Ionicons name={item.icon} size={26} color={theme.primary} />
+              <Text style={styles.emoji}>{item.unicode}</Text>
             </TouchableOpacity>
           )}
         />
@@ -68,4 +63,5 @@ const styles = StyleSheet.create({
   search: { height: 42, borderWidth: 1, borderRadius: 12, margin: 14, paddingHorizontal: 13, fontSize: 15 },
   grid: { paddingHorizontal: 10, paddingBottom: 24 },
   emojiButton: { width: '14.2857%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  emoji: { fontSize: 27, lineHeight: 34 },
 });

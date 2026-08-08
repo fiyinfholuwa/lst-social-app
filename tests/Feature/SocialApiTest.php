@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Community;
+use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -119,6 +120,30 @@ class SocialApiTest extends TestCase
             ->assertOk()->assertJsonCount(10, 'data')->assertJsonPath('hasMorePages', true);
         $this->withHeaders($headers)->getJson("/api/communities/{$community->id}/posts?page=2")
             ->assertOk()->assertJsonCount(5, 'data')->assertJsonPath('hasMorePages', false);
+    }
+
+    public function test_comments_and_replies_are_paginated_separately(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::create(['user_id' => $user->id, 'content' => 'Busy discussion']);
+        $root = null;
+        foreach (range(1, 25) as $number) {
+            $comment = Comment::create(['post_id' => $post->id, 'user_id' => $user->id, 'text' => "Comment {$number}"]);
+            $root ??= $comment;
+        }
+        foreach (range(1, 12) as $number) {
+            Comment::create(['post_id' => $post->id, 'user_id' => $user->id, 'parent_id' => $root->id, 'text' => "Reply {$number}"]);
+        }
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        $this->withHeaders($headers)->getJson("/api/posts/{$post->id}")
+            ->assertOk()->assertJsonCount(0, 'comments')->assertJsonPath('commentsCount', 37);
+        $this->withHeaders($headers)->getJson("/api/posts/{$post->id}/comments?page=1")
+            ->assertOk()->assertJsonCount(20, 'data')->assertJsonPath('total', 25)->assertJsonPath('hasMorePages', true);
+        $this->withHeaders($headers)->getJson("/api/posts/{$post->id}/comments?page=2")
+            ->assertOk()->assertJsonCount(5, 'data')->assertJsonPath('hasMorePages', false);
+        $this->withHeaders($headers)->getJson("/api/posts/{$post->id}/comments/{$root->id}/replies?page=1")
+            ->assertOk()->assertJsonCount(10, 'data')->assertJsonPath('total', 12)->assertJsonPath('hasMorePages', true);
     }
 
     public function test_user_can_search_for_people_and_send_a_friend_request(): void

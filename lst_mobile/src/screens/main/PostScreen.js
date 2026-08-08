@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  ActivityIndicator,
   Animated,
   Dimensions,
   FlatList,
@@ -27,6 +28,17 @@ import EmojiPicker from '../../components/EmojiPicker';
 import EmojiText from '../../components/EmojiText';
 
 const DETAIL_IMAGE_WIDTH = Dimensions.get('window').width - 36;
+
+const CommentText = ({ text, style, theme }) => {
+  const [expanded, setExpanded] = useState(false);
+  const long = text.length > 280;
+  return (
+    <>
+      <EmojiText style={style} numberOfLines={!expanded && long ? 6 : undefined}>{text}</EmojiText>
+      {long ? <TouchableOpacity onPress={() => setExpanded(value => !value)}><Text style={[styles.readMoreComment, { color: theme.primary }]}>{expanded ? 'Show less' : 'Read more'}</Text></TouchableOpacity> : null}
+    </>
+  );
+};
 
 const PostSkeleton = ({ theme }) => {
   const opacity = useRef(new Animated.Value(0.45)).current;
@@ -84,6 +96,11 @@ const PostSkeleton = ({ theme }) => {
 export default function PostScreen({ route, navigation }) {
   const { postId } = route.params;
   const [post, setPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentPage, setCommentPage] = useState(1);
+  const [hasMoreComments, setHasMoreComments] = useState(false);
+  const [loadingMoreComments, setLoadingMoreComments] = useState(false);
+  const [repliesByParent, setRepliesByParent] = useState({});
   const [commentText, setCommentText] = useState('');
   const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
@@ -101,8 +118,43 @@ export default function PostScreen({ route, navigation }) {
   }, [navigation, postId]);
 
   const loadPost = async () => {
-    const data = await apiService.getPost(postId);
-    setPost(data);
+    const [postData, commentData] = await Promise.all([apiService.getPost(postId), apiService.getComments(postId, 1)]);
+    setPost(postData);
+    setComments(commentData.data);
+    setCommentPage(commentData.currentPage);
+    setHasMoreComments(commentData.hasMorePages);
+  };
+
+  const loadMoreComments = async () => {
+    if (!hasMoreComments || loadingMoreComments) return;
+    setLoadingMoreComments(true);
+    try {
+      const response = await apiService.getComments(postId, commentPage + 1);
+      setComments(current => [...current, ...response.data]);
+      setCommentPage(response.currentPage);
+      setHasMoreComments(response.hasMorePages);
+    } finally {
+      setLoadingMoreComments(false);
+    }
+  };
+
+  const loadReplies = async (comment, requestedPage = 1) => {
+    const key = String(comment.id);
+    setRepliesByParent(current => ({ ...current, [key]: { ...(current[key] || {}), loading: true } }));
+    try {
+      const response = await apiService.getCommentReplies(postId, comment.id, requestedPage);
+      setRepliesByParent(current => ({
+        ...current,
+        [key]: {
+          data: requestedPage === 1 ? response.data : [...(current[key]?.data || []), ...response.data],
+          page: response.currentPage,
+          hasMore: response.hasMorePages,
+          loading: false,
+        },
+      }));
+    } catch (error) {
+      setRepliesByParent(current => ({ ...current, [key]: { ...(current[key] || {}), loading: false } }));
+    }
   };
 
   const handleLike = async () => {
@@ -124,8 +176,10 @@ export default function PostScreen({ route, navigation }) {
     setSending(true);
     try {
       await apiService.addComment(postId, commentText.trim(), replyTo?.id || null);
+      const parent = replyTo;
       setCommentText('');
       setReplyTo(null);
+      if (parent) await loadReplies(parent, 1);
       await loadPost();
     } finally {
       setSending(false);
@@ -153,7 +207,15 @@ export default function PostScreen({ route, navigation }) {
   const handleCommentLike = async comment => {
     try {
       await apiService.likeComment(comment.id);
-      await loadPost();
+      if (comment.parentId) {
+        const parent = comments.find(item => String(item.id) === String(comment.parentId));
+        if (parent) await loadReplies(parent, 1);
+      } else {
+        const response = await apiService.getComments(postId, 1);
+        setComments(response.data);
+        setCommentPage(response.currentPage);
+        setHasMoreComments(response.hasMorePages);
+      }
     } catch (error) {
       Alert.alert('Couldn’t update comment', error.message);
     }
@@ -218,7 +280,7 @@ export default function PostScreen({ route, navigation }) {
           </TouchableOpacity>
           <TouchableOpacity style={styles.action} accessibilityLabel="View comments">
             <AppIcon name="comment" size={19} color={theme.primary} />
-            <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.comments.length}</Text>
+            <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={handleShare}>
             <AppIcon name="share-alt" size={18} color={theme.secondaryText} />
@@ -236,7 +298,7 @@ export default function PostScreen({ route, navigation }) {
       <View style={styles.commentsHeading}>
         <View>
           <Text style={[styles.commentTitle, { color: theme.text }]}>Conversation</Text>
-          <Text style={[styles.commentSubtitle, { color: theme.secondaryText }]}>{post.comments.length} responses</Text>
+          <Text style={[styles.commentSubtitle, { color: theme.secondaryText }]}>{post.commentsCount || 0} responses</Text>
         </View>
       </View>
     </>
@@ -250,32 +312,37 @@ export default function PostScreen({ route, navigation }) {
     >
       <FlatList
         ref={listRef}
-        data={post.comments}
+        data={comments}
         keyExtractor={item => item.id}
         ListHeaderComponent={<PostContent />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={[styles.commentRow, item.parentId ? styles.replyRow : null]}>
+        onEndReached={loadMoreComments}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={loadingMoreComments ? <ActivityIndicator style={styles.commentsLoader} color={theme.primary} /> : null}
+        renderItem={({ item }) => {
+          const replyState = repliesByParent[String(item.id)];
+          const CommentRow = ({ comment, reply = false }) => <View style={[styles.commentRow, reply && styles.replyRow]}>
             <View style={[styles.commentAvatar, { backgroundColor: theme.primarySoft }]}>
-              <Text style={[styles.initial, { color: theme.primary }]}>{item.userName.charAt(0).toUpperCase()}</Text>
+              <Text style={[styles.initial, { color: theme.primary }]}>{comment.userName.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={[styles.commentBubble, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <View style={styles.commentMeta}>
-                <Text style={[styles.commentUser, { color: theme.text }]}>{item.userName}</Text>
-                <Text style={[styles.commentTime, { color: theme.secondaryText }]}>{item.timestamp}</Text>
+                <Text style={[styles.commentUser, { color: theme.text }]}>{comment.userName}</Text>
+                <Text style={[styles.commentTime, { color: theme.secondaryText }]}>{comment.timestamp}</Text>
               </View>
-              <EmojiText style={[styles.commentText, { color: theme.text }]}>{item.text}</EmojiText>
+              <CommentText text={comment.text} style={[styles.commentText, { color: theme.text }]} theme={theme} />
               <View style={styles.commentActions}>
-                <TouchableOpacity onPress={() => startReply(item)} accessibilityLabel={`Reply to ${item.userName}`}><Text style={[styles.replyText, { color: theme.primary }]}>Reply</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.commentLike} onPress={() => handleCommentLike(item)} accessibilityLabel={`Like ${item.userName}'s comment`}>
-                  <AppIcon name="heart" solid={item.likedByCurrentUser} size={13} color={item.likedByCurrentUser ? theme.accent : theme.secondaryText} />
-                  {item.likes ? <Text style={[styles.commentLikeCount, { color: theme.secondaryText }]}>{item.likes}</Text> : null}
+                <TouchableOpacity onPress={() => startReply(item)} accessibilityLabel={`Reply to ${comment.userName}`}><Text style={[styles.replyText, { color: theme.primary }]}>Reply</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.commentLike} onPress={() => handleCommentLike(comment)} accessibilityLabel={`Like ${comment.userName}'s comment`}>
+                  <AppIcon name="heart" solid={comment.likedByCurrentUser} size={13} color={comment.likedByCurrentUser ? theme.accent : theme.secondaryText} />
+                  {comment.likes ? <Text style={[styles.commentLikeCount, { color: theme.secondaryText }]}>{comment.likes}</Text> : null}
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
-        )}
+          </View>;
+          return <View><CommentRow comment={item} />{replyState?.data?.map(reply => <CommentRow key={reply.id} comment={reply} reply />)}{item.repliesCount > 0 && (!replyState?.data || replyState?.hasMore || replyState?.loading) ? <TouchableOpacity style={styles.repliesButton} onPress={() => loadReplies(item, replyState?.hasMore ? replyState.page + 1 : 1)} disabled={replyState?.loading}><Text style={[styles.repliesText, { color: theme.primary }]}>{replyState?.loading ? 'Loading replies…' : replyState?.hasMore ? 'View more replies' : `View ${item.repliesCount} replies`}</Text></TouchableOpacity> : null}</View>;
+        }}
         ListEmptyComponent={
           <View style={styles.empty}>
             <AppIcon name="comments" size={28} color={theme.secondaryText} />
@@ -370,11 +437,15 @@ const styles = StyleSheet.create({
   commentMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   commentUser: { fontWeight: '700', fontSize: 13 },
   commentText: { fontSize: 13, lineHeight: 20, marginTop: 6 },
+  readMoreComment: { alignSelf: 'flex-start', fontSize: 11, fontWeight: '700', marginTop: 5 },
   commentTime: { fontSize: 11 },
   commentActions: { flexDirection: 'row', gap: 16, alignItems: 'center', marginTop: 9 },
   commentLike: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   commentLikeCount: { fontSize: 11, fontWeight: '600' },
   replyText: { fontSize: 11, fontWeight: '700' },
+  repliesButton: { marginLeft: 71, marginTop: -4, marginBottom: 12, alignSelf: 'flex-start' },
+  repliesText: { fontSize: 11, fontWeight: '800' },
+  commentsLoader: { paddingVertical: 18 },
   empty: { alignItems: 'center', paddingVertical: 34, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 10 },
   emptyText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 5 },

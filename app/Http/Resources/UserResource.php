@@ -16,9 +16,11 @@ class UserResource extends JsonResource
         return [
             'id' => (string) $this->id,
             'name' => $this->name,
-            'firstName' => $this->first_name,
-            'lastName' => $this->last_name,
+            'firstName' => $this->when($isOwner, $this->first_name),
+            'lastName' => $this->when($isOwner, $this->last_name),
             'email' => $this->when($isOwner, $this->email),
+            'emailVerified' => $this->when($isOwner, $this->hasVerifiedEmail()),
+            'phoneNumber' => $this->when($canSeeDetails, $this->phone_number),
             'avatar' => $this->mediaUrl($request, $this->avatar),
             'bio' => $this->when($canSeeDetails, $this->bio),
             'hobbies' => $this->when($canSeeDetails, $this->hobbies),
@@ -29,7 +31,7 @@ class UserResource extends JsonResource
             'isProfilePrivate' => (bool) $this->is_profile_private,
             'canSeePrivateDetails' => $canSeeDetails,
             'role' => $this->role,
-            'joinedCommunities' => $this->whenLoaded('communities', fn () => $this->communities->pluck('id')->map(fn ($id) => (string) $id)->values()),
+            'joinedCommunities' => $this->when($canSeeDetails && $this->relationLoaded('communities'), fn () => $this->communities->pluck('id')->map(fn ($id) => (string) $id)->values()),
         ];
     }
 

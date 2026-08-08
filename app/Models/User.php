@@ -9,15 +9,17 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
+use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'first_name', 'last_name', 'email', 'password', 'avatar', 'bio', 'hobbies', 'marital_status', 'date_of_birth', 'workplace', 'occupation', 'is_profile_private', 'role'])]
+#[Fillable(['name', 'first_name', 'last_name', 'email', 'phone_number', 'password', 'avatar', 'bio', 'hobbies', 'marital_status', 'date_of_birth', 'workplace', 'occupation', 'is_profile_private', 'role'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable;
 
     /**
      * Get the attributes that should be cast.

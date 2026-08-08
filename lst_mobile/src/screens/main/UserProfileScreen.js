@@ -114,6 +114,12 @@ export default function UserProfileScreen({ route, navigation }) {
       <Text style={[styles.role, { color: theme.secondaryText }]}>{profile.role || 'LST community member'}</Text>
       <Text style={[styles.bio, { color: theme.text }]}>{profile.bio}</Text>
 
+      {!profile.canSeePrivateDetails ? <View style={[styles.privateNotice, { backgroundColor: theme.primarySoft }]}><AppIcon name="lock" size={16} color={theme.primary} /><Text style={[styles.privateText, { color: theme.primary }]}>This profile is private. Personal details are hidden.</Text></View> : null}
+
+      {profile.canSeePrivateDetails ? <View style={[styles.personalDetails, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        {[['Phone number', profile.phoneNumber], ['Occupation', profile.occupation], ['Place of work', profile.workplace], ['Marital status', profile.maritalStatus?.replaceAll('_', ' ')], ['Date of birth', profile.dateOfBirth], ['Hobbies', profile.hobbies]].filter(([, value]) => value).map(([label, value]) => <View key={label} style={styles.personalRow}><Text style={[styles.personalLabel, { color: theme.secondaryText }]}>{label}</Text><Text style={[styles.personalValue, { color: theme.text }]}>{value}</Text></View>)}
+      </View> : null}
+
       <View style={[styles.stats, { borderColor: theme.border }]}>
         <View style={styles.stat}><Text style={[styles.statValue, { color: theme.text }]}>{postsCount}</Text><Text style={[styles.statLabel, { color: theme.secondaryText }]}>Posts</Text></View>
         <View style={[styles.stat, styles.middleStat, { borderColor: theme.border }]}><Text style={[styles.statValue, { color: theme.text }]}>{joinedCommunities.length}</Text><Text style={[styles.statLabel, { color: theme.secondaryText }]}>Circles</Text></View>
@@ -177,6 +183,12 @@ const styles = StyleSheet.create({
   name: { fontSize: 25, fontWeight: '700', marginTop: 15 },
   role: { fontSize: 13, marginTop: 4 },
   bio: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 16, paddingHorizontal: 14 },
+  privateNotice: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 9, padding: 14, borderRadius: 15, marginTop: 18 },
+  privateText: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: '600' },
+  personalDetails: { width: '100%', borderWidth: 1, borderRadius: 16, padding: 14, marginTop: 18 },
+  personalRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, paddingVertical: 6 },
+  personalLabel: { fontSize: 12 },
+  personalValue: { flex: 1, textAlign: 'right', fontSize: 12, fontWeight: '700', textTransform: 'capitalize' },
   stats: { width: '100%', flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, marginTop: 24, paddingVertical: 16 },
   stat: { flex: 1, alignItems: 'center' },
   middleStat: { borderLeftWidth: 1, borderRightWidth: 1 },

@@ -20,6 +20,10 @@ import CommunityApplicationScreen from '../screens/main/CommunityApplicationScre
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import EditPostScreen from '../screens/main/EditPostScreen';
 import CommunityMembersScreen from '../screens/main/CommunityMembersScreen';
+import EditProfileScreen from '../screens/main/EditProfileScreen';
+import HelpCenterScreen from '../screens/main/HelpCenterScreen';
+import FeedbackScreen from '../screens/main/FeedbackScreen';
+import LegalScreen from '../screens/main/LegalScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -50,6 +54,10 @@ import CommunityMembersScreen from '../screens/main/CommunityMembersScreen';
                   <Stack.Screen name="ChatDetail" component={ChatDetailScreen} options={{ headerShown: true, title: 'Chat' }} />
                   <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: true, title: 'Create Post' }} />
                   <Stack.Screen name="EditPost" component={EditPostScreen} options={{ headerShown: true, title: 'Edit Post' }} />
+                  <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Edit Profile' }} />
+                  <Stack.Screen name="HelpCenter" component={HelpCenterScreen} options={{ headerShown: true, title: 'Help Center' }} />
+                  <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ headerShown: true, title: 'Contact Us' }} />
+                  <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal' }} />
                   <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ headerShown: true, title: 'Saved Posts' }} />
                   <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
                   <Stack.Screen name="FriendRequests" component={FriendRequestsScreen} options={{ headerShown: true, title: 'Friend Requests' }} />

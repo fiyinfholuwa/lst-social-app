@@ -13,6 +13,13 @@ const apiService = {
   logout: () => httpClient.post('/logout'),
   getUserProfile: async () => (await httpClient.get('/user')).user,
   updateUserProfile: updates => httpClient.patch('/user', updates),
+  updateUserProfileForm: (updates, avatar) => {
+    const form = new FormData();
+    form.append('_method', 'PATCH');
+    Object.entries(updates).forEach(([key, value]) => form.append(key, value == null ? '' : String(value)));
+    if (avatar) form.append('avatar_image', { uri: avatar.uri, name: avatar.fileName || 'profile.jpg', type: avatar.mimeType || 'image/jpeg' });
+    return httpClient.postForm('/user', form);
+  },
   getUser: userId => httpClient.get(`/users/${userId}`),
   getPosts: () => httpClient.get('/posts'),
   getPostsPage: page => httpClient.get(`/posts?page=${page}`),
@@ -80,6 +87,8 @@ const apiService = {
   getNotifications: () => httpClient.get('/notifications'),
   markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
   markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),
+  sendEmailVerification: () => httpClient.post('/email/verification-notification'),
+  submitSupportRequest: (type, subject, message) => httpClient.post('/support-requests', { type, subject, message }),
 };
 
 export default apiService;

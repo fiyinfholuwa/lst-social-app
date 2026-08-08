@@ -9,6 +9,7 @@ use App\Models\CommunityApplication;
 use App\Models\Comment;
 use App\Models\Notification;
 use App\Models\Post;
+use App\Models\SupportRequest;
 use App\Models\User;
 use App\Repositories\SocialRepository;
 use App\Services\CacheService;
@@ -233,7 +234,7 @@ class SocialController extends Controller
             'data' => $members->getCollection()->map(fn (User $user) => [
                 'id' => (string) $user->id,
                 'name' => $user->name,
-                'avatar' => $user->avatar,
+                'avatar' => $this->service->mediaUrl($user->avatar),
                 'bio' => $user->bio,
             ])->values(),
             'currentPage' => $members->currentPage(),
@@ -316,7 +317,9 @@ class SocialController extends Controller
     public function updateProfile(Request $r)
     {
         $d = $r->validate([
-            'name' => 'sometimes|string|max:255',
+            'first_name' => 'sometimes|required|string|max:100',
+            'last_name' => 'sometimes|required|string|max:100',
+            'phone_number' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9 ()-]{7,30}$/'],
             'bio' => 'nullable|string|max:5000',
             'hobbies' => 'nullable|string|max:1000',
             'marital_status' => 'nullable|in:single,married,divorced,widowed,separated,prefer_not_to_say',
@@ -326,6 +329,11 @@ class SocialController extends Controller
             'is_profile_private' => 'sometimes|boolean',
             'avatar_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
         ]);
+        if (array_key_exists('first_name', $d) || array_key_exists('last_name', $d)) {
+            $d['first_name'] = trim($d['first_name'] ?? $r->user()->first_name ?? '');
+            $d['last_name'] = trim($d['last_name'] ?? $r->user()->last_name ?? '');
+            $d['name'] = trim($d['first_name'].' '.$d['last_name']);
+        }
         if ($r->hasFile('avatar_image')) {
             $directory = public_path('custom_folder/profiles');
             File::ensureDirectoryExists($directory);
@@ -365,6 +373,18 @@ class SocialController extends Controller
         $this->cache->invalidate("notifications:{$r->user()->id}");
 
         return response()->json(['success' => true]);
+    }
+
+    public function submitSupportRequest(Request $r)
+    {
+        $data = $r->validate([
+            'type' => 'required|in:feedback,issue,support',
+            'subject' => 'required|string|max:150',
+            'message' => 'required|string|max:5000',
+        ]);
+        SupportRequest::create([...$data, 'user_id' => $r->user()->id]);
+
+        return response()->json(['message' => 'Your message has been received.'], 201);
     }
 
     private function storePostImage($image): string

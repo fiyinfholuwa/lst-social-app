@@ -67,4 +67,15 @@ class AuthController extends Controller
             'user' => new UserResource($request->user()->load('communities')),
         ]);
     }
+
+    public function sendVerification(Request $request): JsonResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Your email is already verified.']);
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'A verification link has been sent to your email.']);
+    }
 }

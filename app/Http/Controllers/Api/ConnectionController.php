@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\User;
+use App\Http\Resources\UserResource;
 use App\Repositories\ConnectionRepository;
 use App\Services\ConnectionService;
 use Illuminate\Http\Request;
@@ -23,12 +24,7 @@ class ConnectionController extends Controller
         $data = $r->validate(['q' => 'required|string|min:2|max:100']);
 
         return response()->json([
-            'data' => $this->repo->searchUsers($r->user(), $data['q'])->map(fn (User $user) => [
-                'id' => (string) $user->id,
-                'name' => $user->name,
-                'avatar' => $user->avatar,
-                'bio' => $user->bio,
-            ]),
+            'data' => $this->repo->searchUsers($r->user(), $data['q'])->map(fn (User $user) => (new UserResource($user))->resolve($r)),
         ]);
     }
 

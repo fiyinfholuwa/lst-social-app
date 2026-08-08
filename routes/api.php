@@ -15,6 +15,7 @@ Route::middleware('throttle:6,1')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
+    Route::post('/email/verification-notification', [AuthController::class, 'sendVerification'])->middleware('throttle:3,1');
     Route::patch('/user', [SocialController::class, 'updateProfile']);
     Route::get('/users/search', [ConnectionController::class, 'searchUsers']);
     Route::get('/users/{user}', [SocialController::class, 'user']);
@@ -52,4 +53,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [SocialController::class, 'notifications']);
     Route::post('/notifications/read-all', [SocialController::class, 'readAll']);
     Route::post('/notifications/{notification}/read', [SocialController::class, 'readNotification']);
+    Route::post('/support-requests', [SocialController::class, 'submitSupportRequest']);
 });

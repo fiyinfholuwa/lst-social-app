@@ -47,7 +47,9 @@ const apiService = {
   toggleSavedPost: postId => httpClient.post(`/posts/${postId}/save`),
   getCommunities: () => httpClient.get('/communities'),
   getCommunity: communityId => httpClient.get(`/communities/${communityId}`),
+  getCommunityPosts: (communityId, page = 1) => httpClient.get(`/communities/${communityId}/posts?page=${page}`),
   getCommunityMembers: async communityId => (await httpClient.get(`/communities/${communityId}/members`)).data,
+  getCommunityMemberDirectory: (communityId, query = '', page = 1) => httpClient.get(`/communities/${communityId}/member-directory?q=${encodeURIComponent(query)}&page=${page}`),
   joinCommunity: communityId => httpClient.post(`/communities/${communityId}/join`),
   leaveCommunity: communityId => httpClient.delete(`/communities/${communityId}/leave`),
   createCommunityPost: (communityId, content, images = []) => {

@@ -30,7 +30,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{post}/save', [SocialController::class, 'toggleSaved']);
     Route::get('/communities', [SocialController::class, 'communities']);
     Route::get('/communities/{community}', [SocialController::class, 'community']);
+    Route::get('/communities/{community}/posts', [SocialController::class, 'communityPosts']);
     Route::get('/communities/{community}/members', [SocialController::class, 'members']);
+    Route::get('/communities/{community}/member-directory', [SocialController::class, 'memberDirectory']);
     Route::post('/communities/{community}/join', [SocialController::class, 'join']);
     Route::delete('/communities/{community}/leave', [SocialController::class, 'leave']);
     Route::post('/communities/{community}/posts', [SocialController::class, 'createCommunityPost']);

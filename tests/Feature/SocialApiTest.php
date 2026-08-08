@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Community;
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -52,14 +53,14 @@ class SocialApiTest extends TestCase
             ->json('id');
 
         $this->withHeaders($headers)
-            ->getJson("/api/communities/{$community->id}")
+            ->getJson("/api/communities/{$community->id}/posts")
             ->assertJsonFragment(['id' => $postId, 'status' => 'pending']);
         $other = User::factory()->create();
         $otherHeaders = ['Authorization' => 'Bearer '.$other->createToken('test')->plainTextToken];
         auth()->forgetGuards();
         $this->flushHeaders()->withHeaders($otherHeaders)
-            ->getJson("/api/communities/{$community->id}")
-            ->assertJsonCount(0, 'posts');
+            ->getJson("/api/communities/{$community->id}/posts")
+            ->assertJsonCount(0, 'data');
 
         auth()->forgetGuards();
         $this->flushHeaders()->withHeaders($headers)->getJson('/api/posts')->assertJsonMissing(['id' => $postId]);
@@ -71,6 +72,53 @@ class SocialApiTest extends TestCase
         $this->withHeaders($headers)
             ->postJson("/api/communities/{$community->id}/posts", ['content' => 'Not allowed now.'])
             ->assertForbidden();
+    }
+
+    public function test_community_member_endpoint_returns_a_bounded_preview(): void
+    {
+        $viewer = User::factory()->create();
+        $community = Community::create(['name' => 'Large circle']);
+        $community->members()->attach(User::factory()->count(25)->create());
+        $headers = ['Authorization' => 'Bearer '.$viewer->createToken('test')->plainTextToken];
+
+        $this->withHeaders($headers)
+            ->getJson("/api/communities/{$community->id}/members")
+            ->assertOk()
+            ->assertJsonCount(20, 'data')
+            ->assertJsonPath('total', 25)
+            ->assertJsonPath('hasMore', true);
+    }
+
+    public function test_community_member_directory_supports_name_search(): void
+    {
+        $viewer = User::factory()->create(['name' => 'Current Member']);
+        $ada = User::factory()->create(['name' => 'Ada Community Friend']);
+        $other = User::factory()->create(['name' => 'Different Person']);
+        $community = Community::create(['name' => 'Searchable circle']);
+        $community->members()->attach([$viewer->id, $ada->id, $other->id]);
+        $headers = ['Authorization' => 'Bearer '.$viewer->createToken('test')->plainTextToken];
+
+        $this->withHeaders($headers)
+            ->getJson("/api/communities/{$community->id}/member-directory?q=Ada")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', (string) $ada->id)
+            ->assertJsonPath('total', 1);
+    }
+
+    public function test_community_posts_are_paginated(): void
+    {
+        $user = User::factory()->create();
+        $community = Community::create(['name' => 'Busy circle']);
+        foreach (range(1, 15) as $number) {
+            Post::create(['user_id' => $user->id, 'community_id' => $community->id, 'content' => "Post {$number}", 'status' => 'approved']);
+        }
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        $this->withHeaders($headers)->getJson("/api/communities/{$community->id}/posts?page=1")
+            ->assertOk()->assertJsonCount(10, 'data')->assertJsonPath('hasMorePages', true);
+        $this->withHeaders($headers)->getJson("/api/communities/{$community->id}/posts?page=2")
+            ->assertOk()->assertJsonCount(5, 'data')->assertJsonPath('hasMorePages', false);
     }
 
     public function test_user_can_search_for_people_and_send_a_friend_request(): void

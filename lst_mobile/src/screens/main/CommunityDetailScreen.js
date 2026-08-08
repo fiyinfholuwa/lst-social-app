@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, Image, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
@@ -17,6 +17,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const { communityId } = route.params;
   const [community, setCommunity] = useState(null);
   const [members, setMembers] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [postPage, setPostPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
   const [leaveVisible, setLeaveVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const { theme } = useTheme();
@@ -30,19 +34,39 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
 
   const loadCommunity = async () => {
-    const [communityData, memberData] = await Promise.all([
+    const [communityResult, membersResult, postsResult] = await Promise.allSettled([
       apiService.getCommunity(communityId),
       apiService.getCommunityMembers(communityId),
+      apiService.getCommunityPosts(communityId, 1),
     ]);
-    setCommunity(communityData);
-    setMembers(memberData);
+    if (communityResult.status === 'rejected') throw communityResult.reason;
+    setCommunity(communityResult.value);
+    setMembers(membersResult.status === 'fulfilled' ? membersResult.value : []);
+    if (postsResult.status === 'fulfilled') {
+      setPosts(postsResult.value.data);
+      setPostPage(postsResult.value.currentPage);
+      setHasMorePosts(postsResult.value.hasMorePages);
+    }
+  };
+
+  const loadMorePosts = async () => {
+    if (!hasMorePosts || loadingMorePosts) return;
+    setLoadingMorePosts(true);
+    try {
+      const response = await apiService.getCommunityPosts(communityId, postPage + 1);
+      setPosts(current => [...current, ...response.data]);
+      setPostPage(response.currentPage);
+      setHasMorePosts(response.hasMorePages);
+    } finally {
+      setLoadingMorePosts(false);
+    }
   };
 
   const deletePost = async post => {
     try {
       await apiService.deletePost(post.id);
       forgetDeletedPost(post.id);
-      setCommunity(current => ({ ...current, posts: current.posts.filter(item => item.id !== post.id) }));
+      setPosts(current => current.filter(item => item.id !== post.id));
     } catch (error) {
       Alert.alert('Couldn’t delete post', error.message);
     }
@@ -89,7 +113,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
             <Text style={[styles.overviewLabel, { color: theme.secondaryText }]}>Members</Text>
           </View>
           <View style={[styles.overviewItem, styles.overviewMiddle, { borderColor: theme.border }]}>
-            <Text style={[styles.overviewValue, { color: theme.text }]}>{community.posts.length}</Text>
+            <Text style={[styles.overviewValue, { color: theme.text }]}>{community.postCount}</Text>
             <Text style={[styles.overviewLabel, { color: theme.secondaryText }]}>Posts</Text>
           </View>
           <View style={styles.overviewItem}>
@@ -147,7 +171,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>People</Text>
             <Text style={[styles.sectionMeta, { color: theme.secondaryText }]}>Connect after becoming friends</Text>
           </View>
-          <Text style={[styles.sectionLink, { color: theme.primary }]}>{community.memberCount} members</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('CommunityMembers', { communityId, communityName: community.name })}>
+            <View style={styles.seeAllMembers}>
+              <Text style={[styles.sectionLink, { color: theme.primary }]}>See all members</Text>
+              <AppIcon name="chevron-right" size={12} color={theme.primary} />
+            </View>
+          </TouchableOpacity>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.members}>
           {visibleMembers.map(member => (
@@ -172,11 +201,14 @@ export default function CommunityDetailScreen({ route, navigation }) {
     <>
     <FlatList
       style={{ backgroundColor: theme.background }}
-      data={community.posts}
+      data={posts}
       keyExtractor={item => item.id}
       ListHeaderComponent={<Header />}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      onEndReached={loadMorePosts}
+      onEndReachedThreshold={0.4}
+      ListFooterComponent={loadingMorePosts ? <ActivityIndicator style={styles.postsLoader} color={theme.primary} /> : null}
       renderItem={({ item }) => (
         <PostCard
           post={item}
@@ -242,6 +274,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: '700' },
   sectionMeta: { fontSize: 11, marginTop: 3 },
   sectionLink: { fontSize: 11, fontWeight: '700' },
+  seeAllMembers: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   members: { paddingHorizontal: 18, gap: 14 },
   member: { width: 58, alignItems: 'center' },
   memberAvatar: { width: 52, height: 52, borderRadius: 26 },
@@ -259,4 +292,5 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 32 },
   emptyTitle: { fontSize: 15, fontWeight: '700', marginTop: 10 },
   emptyText: { fontSize: 11, marginTop: 4 },
+  postsLoader: { paddingVertical: 20 },
 });

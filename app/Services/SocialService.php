@@ -78,6 +78,6 @@ class SocialService
             'All-Round Wholeness for Singles' => 'comm7',
         ];
 
-        return ['id' => (string) $c->id, 'requirementKey' => $requirementKeys[$c->name] ?? null, 'name' => $c->name, 'description' => $c->description, 'rules' => $c->rules, 'image' => $c->image, 'admin' => $c->admin?->name, 'memberCount' => $c->members_count ?? $c->members()->count(), 'memberIds' => $c->relationLoaded('members') ? $c->members->pluck('id')->map(fn ($id) => (string) $id) : [], 'posts' => $c->relationLoaded('posts') ? $c->posts->map(fn ($p) => $this->postData($p))->values() : []];
+        return ['id' => (string) $c->id, 'requirementKey' => $requirementKeys[$c->name] ?? null, 'name' => $c->name, 'description' => $c->description, 'rules' => $c->rules, 'image' => $c->image, 'admin' => $c->admin?->name, 'memberCount' => $c->members_count ?? $c->members()->count(), 'postCount' => $c->posts_count ?? $c->posts()->where('status', 'approved')->count(), 'memberIds' => $c->relationLoaded('members') ? $c->members->pluck('id')->map(fn ($id) => (string) $id) : []];
     }
 }

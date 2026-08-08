@@ -183,12 +183,61 @@ class SocialController extends Controller
         return response()->json($this->service->communityData($this->repo->community($community->id, $r->user())));
     }
 
+    public function communityPosts(Request $r, Community $community)
+    {
+        $page = $this->repo->communityPostsPage($community, $r->user());
+
+        return response()->json([
+            'data' => $page->getCollection()->map(fn (Post $post) => $this->service->postData($post))->values(),
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+        ]);
+    }
+
     public function members(Community $community)
     {
-        $members = $this->cache->remember("community:{$community->id}", 'members', CacheService::MEDIUM,
-            fn () => UserResource::collection($community->members()->get())->resolve());
+        $preview = $this->cache->remember("community:{$community->id}", 'members-preview-v2', CacheService::MEDIUM, function () use ($community) {
+            $query = $community->members();
+            $total = (clone $query)->count();
 
-        return response()->json(['data' => $members]);
+            return [
+                'data' => UserResource::collection($query->orderBy('community_user.created_at')->limit(20)->get())->resolve(),
+                'total' => $total,
+            ];
+        });
+
+        return response()->json([
+            ...$preview,
+            'hasMore' => $preview['total'] > count($preview['data']),
+        ]);
+    }
+
+    public function memberDirectory(Request $r, Community $community)
+    {
+        $filters = $r->validate([
+            'q' => 'nullable|string|max:100',
+            'page' => 'nullable|integer|min:1',
+        ]);
+        $search = trim($filters['q'] ?? '');
+        $members = $community->members()
+            ->whereKeyNot($r->user()->id)
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
+            ->orderBy('name')
+            ->paginate(30);
+
+        return response()->json([
+            'data' => $members->getCollection()->map(fn (User $user) => [
+                'id' => (string) $user->id,
+                'name' => $user->name,
+                'avatar' => $user->avatar,
+                'bio' => $user->bio,
+            ])->values(),
+            'currentPage' => $members->currentPage(),
+            'lastPage' => $members->lastPage(),
+            'hasMorePages' => $members->hasMorePages(),
+            'total' => $members->total(),
+        ]);
     }
 
     public function join(Request $r, Community $community)

@@ -77,21 +77,24 @@ class SocialRepository
         return Community::with([
             'admin',
             'members',
-            'posts' => fn ($query) => $query
-                ->with([
-                    'user',
-                    'comments.user',
-                    'comments.likes' => fn ($likes) => $viewer ? $likes->whereKey($viewer->id) : $likes->whereRaw('1 = 0'),
-                    'likes' => fn ($likes) => $viewer ? $likes->whereKey($viewer->id) : $likes->whereRaw('1 = 0'),
-                ])
-                ->withCount('likes')
-                ->where(function ($posts) use ($viewer) {
-                    $posts->where('status', 'approved');
-                    if ($viewer) {
-                        $posts->orWhere(fn ($own) => $own->where('user_id', $viewer->id)->where('status', 'pending'));
-                    }
-                })->latest(),
-        ])->withCount('members')->findOrFail($id);
+        ])->withCount(['members', 'posts' => fn ($query) => $query->where('status', 'approved')])->findOrFail($id);
+    }
+
+    public function communityPostsPage(Community $community, User $viewer, int $perPage = 10)
+    {
+        return $community->posts()
+            ->with([
+                'user',
+                'comments.user',
+                'comments.likes' => fn ($likes) => $likes->whereKey($viewer->id),
+                'likes' => fn ($likes) => $likes->whereKey($viewer->id),
+            ])
+            ->withCount('likes')
+            ->where(fn ($posts) => $posts
+                ->where('status', 'approved')
+                ->orWhere(fn ($own) => $own->where('user_id', $viewer->id)->where('status', 'pending')))
+            ->latest()
+            ->paginate($perPage);
     }
 
     public function apply(User $user, Community $community, array $answers): CommunityApplication

@@ -19,6 +19,7 @@ import FriendsScreen from '../screens/main/FriendsScreen';
 import CommunityApplicationScreen from '../screens/main/CommunityApplicationScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import EditPostScreen from '../screens/main/EditPostScreen';
+import CommunityMembersScreen from '../screens/main/CommunityMembersScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -45,6 +46,7 @@ import EditPostScreen from '../screens/main/EditPostScreen';
                   <Stack.Screen name="MainTabs" component={MainTabNavigator} />
                   <Stack.Screen name="PostDetail" component={PostScreen} options={{ headerShown: true, title: 'Post' }} />
                   <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: 'Community' }} />
+                  <Stack.Screen name="CommunityMembers" component={CommunityMembersScreen} options={{ headerShown: true, title: 'Community Members' }} />
                   <Stack.Screen name="ChatDetail" component={ChatDetailScreen} options={{ headerShown: true, title: 'Chat' }} />
                   <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: true, title: 'Create Post' }} />
                   <Stack.Screen name="EditPost" component={EditPostScreen} options={{ headerShown: true, title: 'Edit Post' }} />

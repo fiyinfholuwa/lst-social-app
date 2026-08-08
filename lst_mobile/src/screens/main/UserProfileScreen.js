@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
+import ConfirmModal from '../../components/ConfirmModal';
 import Loader from '../../components/Loader';
 import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
@@ -12,6 +13,8 @@ export default function UserProfileScreen({ route, navigation }) {
   const { userId } = route.params;
   const [profile, setProfile] = useState(null);
   const [postsCount, setPostsCount] = useState(0);
+  const [showCancelRequest, setShowCancelRequest] = useState(false);
+  const [cancellingRequest, setCancellingRequest] = useState(false);
   const { user } = useAuth();
   const { theme } = useTheme();
   const {
@@ -28,15 +31,17 @@ export default function UserProfileScreen({ route, navigation }) {
   useEffect(() => {
     Promise.all([apiService.getUser(userId), apiService.getPosts()]).then(([person, posts]) => {
       setProfile(person);
-      setPostsCount(posts.filter(post => post.userId === userId).length);
+      setPostsCount(posts.filter(post => String(post.userId) === String(userId)).length);
     });
   }, [userId]);
 
   if (!profile) return <Loader />;
 
   const relationship = getRelationship(userId);
-  const isOwnProfile = userId === user.id;
-  const sharedCommunities = profile.joinedCommunities.filter(id => user.joinedCommunities?.includes(id)).length;
+  const isOwnProfile = String(userId) === String(user.id);
+  const joinedCommunities = Array.isArray(profile.joinedCommunities) ? profile.joinedCommunities.map(String) : [];
+  const ownCommunities = Array.isArray(user.joinedCommunities) ? user.joinedCommunities.map(String) : [];
+  const sharedCommunities = joinedCommunities.filter(id => ownCommunities.includes(id)).length;
 
   const openChat = async () => {
     if (relationship !== 'friends') {
@@ -51,7 +56,7 @@ export default function UserProfileScreen({ route, navigation }) {
     if (relationship === 'blocked') return unblockUser(userId);
     if (relationship === 'friends') return openChat();
     if (relationship === 'incoming') return acceptFriendRequest(userId);
-    if (relationship === 'outgoing') return cancelFriendRequest(userId);
+    if (relationship === 'outgoing') return undefined;
     return sendFriendRequest(userId);
   };
 
@@ -80,6 +85,19 @@ export default function UserProfileScreen({ route, navigation }) {
     ],
   );
 
+  const confirmCancelRequest = async () => {
+    if (cancellingRequest) return;
+    setCancellingRequest(true);
+    try {
+      await cancelFriendRequest(userId);
+      setShowCancelRequest(false);
+    } catch (error) {
+      Alert.alert('Request not cancelled', error.message || 'Please try again.');
+    } finally {
+      setCancellingRequest(false);
+    }
+  };
+
   const confirmBlock = () => Alert.alert(
     `Block ${profile.name}?`,
     'Their posts and chats will be hidden. They will not be able to send you requests or messages.',
@@ -98,17 +116,21 @@ export default function UserProfileScreen({ route, navigation }) {
 
       <View style={[styles.stats, { borderColor: theme.border }]}>
         <View style={styles.stat}><Text style={[styles.statValue, { color: theme.text }]}>{postsCount}</Text><Text style={[styles.statLabel, { color: theme.secondaryText }]}>Posts</Text></View>
-        <View style={[styles.stat, styles.middleStat, { borderColor: theme.border }]}><Text style={[styles.statValue, { color: theme.text }]}>{profile.joinedCommunities.length}</Text><Text style={[styles.statLabel, { color: theme.secondaryText }]}>Circles</Text></View>
+        <View style={[styles.stat, styles.middleStat, { borderColor: theme.border }]}><Text style={[styles.statValue, { color: theme.text }]}>{joinedCommunities.length}</Text><Text style={[styles.statLabel, { color: theme.secondaryText }]}>Circles</Text></View>
         <View style={styles.stat}><Text style={[styles.statValue, { color: theme.text }]}>{sharedCommunities}</Text><Text style={[styles.statLabel, { color: theme.secondaryText }]}>In common</Text></View>
       </View>
 
       {!isOwnProfile ? <View style={styles.actions}>
-        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: relationship === 'outgoing' ? theme.primarySoft : theme.primary }]} onPress={primaryAction}>
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: relationship === 'outgoing' ? theme.primarySoft : theme.primary }]}
+          onPress={primaryAction}
+          disabled={relationship === 'outgoing'}
+        >
           <AppIcon name={actionIcon} size={16} color={relationship === 'outgoing' ? theme.primary : '#FFFFFF'} />
           <Text style={[styles.primaryText, { color: relationship === 'outgoing' ? theme.primary : '#FFFFFF' }]}>{actionLabel}</Text>
         </TouchableOpacity>
-        {relationship === 'incoming' ? (
-          <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border }]} onPress={() => declineFriendRequest(userId)}>
+        {relationship === 'incoming' || relationship === 'outgoing' ? (
+          <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border }]} onPress={relationship === 'outgoing' ? () => setShowCancelRequest(true) : () => declineFriendRequest(userId)}>
             <AppIcon name="times" size={16} color={theme.secondaryText} />
           </TouchableOpacity>
         ) : null}
@@ -133,6 +155,17 @@ export default function UserProfileScreen({ route, navigation }) {
           Messaging becomes available only after a friend request is accepted.
         </Text>
       </View> : null}
+      <ConfirmModal
+        visible={showCancelRequest}
+        title={`Cancel request to ${profile.name}?`}
+        message="They will no longer see this friend request. You can send another one later."
+        confirmLabel="Cancel request"
+        cancelLabel="Keep request"
+        icon="user-minus"
+        loading={cancellingRequest}
+        onCancel={() => setShowCancelRequest(false)}
+        onConfirm={confirmCancelRequest}
+      />
     </ScrollView>
   );
 }

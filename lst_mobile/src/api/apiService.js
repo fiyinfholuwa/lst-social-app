@@ -53,6 +53,7 @@ const apiService = {
   submitApplication: (communityId, answers) => httpClient.post(`/communities/${communityId}/applications`, { answers }),
   withdrawApplication: communityId => httpClient.delete(`/communities/${communityId}/applications`),
   getFriendships: () => httpClient.get('/friendships'),
+  searchUsers: async query => (await httpClient.get(`/users/search?q=${encodeURIComponent(query)}`)).data,
   sendFriendRequest: userId => httpClient.post(`/users/${userId}/friend-request`),
   updateRelationship: (userId, action) => httpClient.post(`/users/${userId}/relationship`, { action }),
   getChats: () => httpClient.get('/chats'),

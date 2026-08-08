@@ -22,4 +22,9 @@ class Community extends Model
     {
         return $this->hasMany(Post::class);
     }
+
+    public function applications()
+    {
+        return $this->hasMany(CommunityApplication::class);
+    }
 }

@@ -37,4 +37,39 @@ class SocialApiTest extends TestCase
         $this->assertDatabaseHas('posts', ['content' => 'A persisted encouragement']);
         $this->assertDatabaseHas('messages', ['text' => 'Hello']);
     }
+
+    public function test_user_can_search_for_people_and_send_a_friend_request(): void
+    {
+        $user = User::factory()->create(['name' => 'Current User']);
+        $match = User::factory()->create(['name' => 'Ada Friend']);
+        User::factory()->create(['name' => 'Someone Else']);
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        $this->withHeaders($headers)
+            ->getJson('/api/users/search?q=Ada')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', (string) $match->id)
+            ->assertJsonMissing(['email' => $match->email]);
+
+        $this->withHeaders($headers)
+            ->postJson("/api/users/{$match->id}/friend-request")
+            ->assertOk()
+            ->assertJsonPath('outgoingRequestIds.0', (string) $match->id);
+
+        $this->withHeaders($headers)
+            ->getJson('/api/friendships')
+            ->assertOk()
+            ->assertJsonPath('outgoingRequestIds.0', (string) $match->id);
+
+        $this->withHeaders($headers)
+            ->postJson("/api/users/{$match->id}/relationship", ['action' => 'cancel'])
+            ->assertOk()
+            ->assertJsonCount(0, 'outgoingRequestIds');
+
+        $this->assertDatabaseMissing('friendships', [
+            'sender_id' => $user->id,
+            'receiver_id' => $match->id,
+        ]);
+    }
 }

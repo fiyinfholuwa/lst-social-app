@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -7,6 +7,37 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
 const filters = ['All', 'My circles', 'Relationships', 'Recovery', 'Singles'];
+const loadingRows = Array.from({ length: 5 }, (_, index) => ({ id: `loading-${index}` }));
+
+const CommunitySkeleton = ({ theme }) => {
+  const opacity = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.9, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.45, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+
+  const fill = theme.border;
+
+  return (
+    <Animated.View style={[styles.communityRow, { backgroundColor: theme.card, borderColor: theme.border, opacity }]}>
+      <View style={[styles.skeletonImage, { backgroundColor: fill }]} />
+      <View style={styles.communityInfo}>
+        <View style={[styles.skeletonTitle, { backgroundColor: fill }]} />
+        <View style={[styles.skeletonLine, { backgroundColor: fill }]} />
+        <View style={[styles.skeletonLineShort, { backgroundColor: fill }]} />
+        <View style={[styles.skeletonMeta, { backgroundColor: fill }]} />
+      </View>
+      <View style={[styles.skeletonChevron, { backgroundColor: fill }]} />
+    </Animated.View>
+  );
+};
 
 const matchesFilter = (community, filter, joinedIds) => {
   if (filter === 'My circles') return joinedIds.includes(community.id);
@@ -27,6 +58,7 @@ export default function CommunitiesScreen({ navigation }) {
   const joinedIds = user?.joinedCommunities || [];
 
   const loadCommunities = async () => {
+    setLoading(true);
     setLoadError(null);
     try {
       const data = await apiService.getCommunities();
@@ -110,7 +142,7 @@ export default function CommunitiesScreen({ navigation }) {
             {activeFilter === 'My circles' ? 'Your communities' : 'Discover communities'}
           </Text>
           <Text style={[styles.sectionSubtitle, { color: theme.secondaryText }]}>
-            {visibleCommunities.length} {visibleCommunities.length === 1 ? 'circle' : 'circles'}
+            {loading ? 'Loading circles…' : `${visibleCommunities.length} ${visibleCommunities.length === 1 ? 'circle' : 'circles'}`}
           </Text>
         </View>
       </View>
@@ -119,14 +151,16 @@ export default function CommunitiesScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScreenHeader eyebrow="BELONG & GROW" title="Communities" actionIcon="user-plus" />
+      <ScreenHeader eyebrow="BELONG & GROW" title="Communities" />
       <FlatList
-        data={visibleCommunities}
+        data={loading ? loadingRows : visibleCommunities}
         keyExtractor={item => item.id}
         ListHeaderComponent={<ListHeader />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
+          if (loading) return <CommunitySkeleton theme={theme} />;
+
           const joined = joinedIds.includes(item.id);
           return (
             <TouchableOpacity
@@ -157,8 +191,8 @@ export default function CommunitiesScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.empty}>
             <AppIcon name="search" size={26} color={theme.secondaryText} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>{loading ? 'Loading communities…' : loadError ? 'Could not load communities' : 'No communities found'}</Text>
-            <Text style={[styles.emptyText, { color: theme.secondaryText }]}>{loadError || (loading ? 'Please wait.' : 'Try a different search or category.')}</Text>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>{loadError ? 'Could not load communities' : 'No communities found'}</Text>
+            <Text style={[styles.emptyText, { color: theme.secondaryText }]}>{loadError || 'Try a different search or category.'}</Text>
             {loadError ? <TouchableOpacity style={[styles.retry, { backgroundColor: theme.primary }]} onPress={loadCommunities}><Text style={styles.retryText}>Try again</Text></TouchableOpacity> : null}
           </View>
         }
@@ -188,6 +222,12 @@ const styles = StyleSheet.create({
   joinedMeta: { color: 'rgba(255,255,255,0.82)', fontSize: 11, marginTop: 4 },
   communityRow: { marginHorizontal: 14, marginBottom: 9, padding: 11, borderWidth: 1, borderRadius: 17, flexDirection: 'row', alignItems: 'center' },
   communityImage: { width: 66, height: 66, borderRadius: 14, marginRight: 12 },
+  skeletonImage: { width: 66, height: 66, borderRadius: 14, marginRight: 12 },
+  skeletonTitle: { width: '52%', height: 12, borderRadius: 6 },
+  skeletonLine: { width: '92%', height: 9, borderRadius: 5, marginTop: 8 },
+  skeletonLineShort: { width: '68%', height: 9, borderRadius: 5, marginTop: 5 },
+  skeletonMeta: { width: '45%', height: 9, borderRadius: 5, marginTop: 9 },
+  skeletonChevron: { width: 8, height: 14, borderRadius: 4, marginLeft: 8 },
   communityInfo: { flex: 1 },
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   communityName: { flexShrink: 1, fontSize: 13, fontWeight: '700' },

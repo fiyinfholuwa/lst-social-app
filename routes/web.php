@@ -1,18 +1,16 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/admin/{section?}', function (Illuminate\Http\Request $request, string $section = 'overview') {
-    $sections = ['overview', 'members', 'communities', 'posts', 'quizzes', 'moderation', 'analytics', 'settings'];
-    abort_unless(in_array($section, $sections, true), 404);
-
-    if ($request->ajax()) {
-        return view('admin.sections.index', compact('section'));
-    }
-
-    return view('admin', compact('section'));
-})->name('admin.dashboard');
+Route::get('/admin/{section?}', [AdminController::class, 'index'])->name('admin.dashboard');
+Route::patch('/admin/members/{user}', [AdminController::class, 'updateMember'])->name('admin.members.update');
+Route::delete('/admin/members/{user}', [AdminController::class, 'destroyMember'])->name('admin.members.destroy');
+Route::post('/admin/communities', [AdminController::class, 'storeCommunity'])->name('admin.communities.store');
+Route::patch('/admin/communities/{community}', [AdminController::class, 'updateCommunity'])->name('admin.communities.update');
+Route::delete('/admin/communities/{community}', [AdminController::class, 'destroyCommunity'])->name('admin.communities.destroy');
+Route::post('/admin/community-applications/{application}', [AdminController::class, 'reviewApplication'])->name('admin.applications.review');

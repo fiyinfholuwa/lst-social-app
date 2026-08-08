@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   Dimensions,
   FlatList,
   Image,
@@ -20,13 +21,65 @@ import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
-import Loader from '../../components/Loader';
 import PostOptionsMenu from '../../components/PostOptionsMenu';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import EmojiPicker from '../../components/EmojiPicker';
 import EmojiText from '../../components/EmojiText';
 
 const DETAIL_IMAGE_WIDTH = Dimensions.get('window').width - 36;
+
+const PostSkeleton = ({ theme }) => {
+  const opacity = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.9, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.45, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+
+  const blockStyle = { backgroundColor: theme.border };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Animated.ScrollView style={{ opacity }} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={[styles.skeletonAvatar, blockStyle]} />
+          <View style={styles.author}>
+            <View style={[styles.skeletonAuthor, blockStyle]} />
+            <View style={[styles.skeletonTimestamp, blockStyle]} />
+          </View>
+        </View>
+        <View style={[styles.skeletonContext, blockStyle]} />
+        <View style={[styles.skeletonContent, blockStyle]} />
+        <View style={[styles.skeletonContent, styles.skeletonContentMedium, blockStyle]} />
+        <View style={[styles.skeletonContent, styles.skeletonContentShort, blockStyle]} />
+        <View style={[styles.skeletonMedia, blockStyle]} />
+        <View style={[styles.skeletonActions, { borderTopColor: theme.border }]}>
+          {[48, 48, 38, 38].map((width, index) => <View key={index} style={[styles.skeletonAction, { width }, blockStyle]} />)}
+        </View>
+        <View style={[styles.commentsHeading, { borderTopColor: theme.border }]}>
+          <View style={[styles.skeletonCommentTitle, blockStyle]} />
+          <View style={[styles.skeletonTimestamp, blockStyle]} />
+        </View>
+        {[0, 1, 2].map(index => (
+          <View key={index} style={[styles.commentRow, index === 2 ? styles.replyRow : null]}>
+            <View style={[styles.skeletonCommentAvatar, blockStyle]} />
+            <View style={[styles.skeletonCommentBubble, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={[styles.skeletonCommentName, blockStyle]} />
+              <View style={[styles.skeletonCommentLine, blockStyle]} />
+              <View style={[styles.skeletonCommentLineShort, blockStyle]} />
+            </View>
+          </View>
+        ))}
+      </Animated.ScrollView>
+    </View>
+  );
+};
 
 export default function PostScreen({ route, navigation }) {
   const { postId } = route.params;
@@ -117,7 +170,7 @@ export default function PostScreen({ route, navigation }) {
     }
   };
 
-  if (!post) return <Loader />;
+  if (!post) return <PostSkeleton theme={theme} />;
 
   const postType = post.type || (post.communityId ? 'Community' : 'Encouragement');
 
@@ -270,6 +323,22 @@ const styles = StyleSheet.create({
   postCard: { paddingBottom: 8, overflow: 'visible' },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, position: 'relative', zIndex: 100, elevation: 20 },
   avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 11 },
+  skeletonAvatar: { width: 48, height: 48, borderRadius: 24, marginRight: 11 },
+  skeletonAuthor: { width: 125, height: 14, borderRadius: 7 },
+  skeletonTimestamp: { width: 88, height: 9, borderRadius: 5, marginTop: 7 },
+  skeletonContext: { width: 80, height: 10, borderRadius: 5, marginBottom: 14 },
+  skeletonContent: { width: '100%', height: 13, borderRadius: 7, marginBottom: 9 },
+  skeletonContentMedium: { width: '86%' },
+  skeletonContentShort: { width: '58%' },
+  skeletonMedia: { width: '100%', height: 280, borderRadius: 14, marginTop: 8 },
+  skeletonActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, marginTop: 18, paddingTop: 14 },
+  skeletonAction: { height: 20, borderRadius: 10 },
+  skeletonCommentTitle: { width: 130, height: 16, borderRadius: 8 },
+  skeletonCommentAvatar: { width: 36, height: 36, borderRadius: 18, marginRight: 9 },
+  skeletonCommentBubble: { flex: 1, height: 84, borderWidth: 1, borderRadius: 16, padding: 12 },
+  skeletonCommentName: { width: '38%', height: 10, borderRadius: 5 },
+  skeletonCommentLine: { width: '92%', height: 9, borderRadius: 5, marginTop: 12 },
+  skeletonCommentLineShort: { width: '62%', height: 9, borderRadius: 5, marginTop: 7 },
   author: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   userName: { fontWeight: '700', fontSize: 16 },

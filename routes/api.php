@@ -16,6 +16,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
     Route::patch('/user', [SocialController::class, 'updateProfile']);
+    Route::get('/users/search', [ConnectionController::class, 'searchUsers']);
     Route::get('/users/{user}', [SocialController::class, 'user']);
     Route::get('/posts', [SocialController::class, 'posts']);
     Route::post('/posts', [SocialController::class, 'createPost']);

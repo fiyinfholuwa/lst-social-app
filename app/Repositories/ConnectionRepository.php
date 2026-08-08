@@ -10,15 +10,42 @@ use Illuminate\Support\Facades\DB;
 
 class ConnectionRepository
 {
+    public function searchUsers(User $user, string $term)
+    {
+        $term = trim($term);
+
+        return User::query()
+            ->select(['id', 'name', 'avatar', 'bio'])
+            ->whereKeyNot($user->id)
+            ->where(function ($query) use ($term) {
+                $query->where('name', 'like', "%{$term}%")
+                    ->orWhere('first_name', 'like', "%{$term}%")
+                    ->orWhere('last_name', 'like', "%{$term}%");
+            })
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('user_blocks')
+                ->where(function ($blocks) use ($user) {
+                    $blocks->where(fn ($block) => $block
+                        ->whereColumn('user_blocks.blocked_user_id', 'users.id')
+                        ->where('user_blocks.user_id', $user->id))
+                        ->orWhere(fn ($block) => $block
+                            ->whereColumn('user_blocks.user_id', 'users.id')
+                            ->where('user_blocks.blocked_user_id', $user->id));
+                }))
+            ->orderBy('name')
+            ->limit(20)
+            ->get();
+    }
+
     public function friendshipState(User $user): array
     {
         $accepted = Friendship::where('status', 'accepted')->where(fn ($q) => $q->where('sender_id', $user->id)->orWhere('receiver_id', $user->id))->get();
 
         return [
-            'friendIds' => $accepted->map(fn ($f) => (string) ($f->sender_id === $user->id ? $f->receiver_id : $f->sender_id))->values(),
-            'outgoingRequestIds' => Friendship::where('sender_id', $user->id)->where('status', 'pending')->pluck('receiver_id')->map(fn ($id) => (string) $id),
-            'incomingRequestIds' => Friendship::where('receiver_id', $user->id)->where('status', 'pending')->pluck('sender_id')->map(fn ($id) => (string) $id),
-            'blockedUserIds' => DB::table('user_blocks')->where('user_id', $user->id)->pluck('blocked_user_id')->map(fn ($id) => (string) $id),
+            'friendIds' => $accepted->map(fn ($f) => (string) ($f->sender_id === $user->id ? $f->receiver_id : $f->sender_id))->values()->all(),
+            'outgoingRequestIds' => Friendship::where('sender_id', $user->id)->where('status', 'pending')->pluck('receiver_id')->map(fn ($id) => (string) $id)->values()->all(),
+            'incomingRequestIds' => Friendship::where('receiver_id', $user->id)->where('status', 'pending')->pluck('sender_id')->map(fn ($id) => (string) $id)->values()->all(),
+            'blockedUserIds' => DB::table('user_blocks')->where('user_id', $user->id)->pluck('blocked_user_id')->map(fn ($id) => (string) $id)->values()->all(),
         ];
     }
 

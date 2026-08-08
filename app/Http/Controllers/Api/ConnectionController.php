@@ -18,8 +18,23 @@ class ConnectionController extends Controller
         return response()->json($this->service->friendshipState($r->user()));
     }
 
+    public function searchUsers(Request $r)
+    {
+        $data = $r->validate(['q' => 'required|string|min:2|max:100']);
+
+        return response()->json([
+            'data' => $this->repo->searchUsers($r->user(), $data['q'])->map(fn (User $user) => [
+                'id' => (string) $user->id,
+                'name' => $user->name,
+                'avatar' => $user->avatar,
+                'bio' => $user->bio,
+            ]),
+        ]);
+    }
+
     public function request(Request $r, User $user)
     {
+        abort_if($r->user()->is($user), 422, 'You cannot send a friend request to yourself.');
         $this->repo->request($r->user(), $user);
         $this->service->invalidateFriendships($r->user(), $user);
 

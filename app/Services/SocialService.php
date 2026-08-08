@@ -6,6 +6,7 @@ use App\Models\Community;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\SocialRepository;
+use Illuminate\Support\Str;
 
 class SocialService
 {
@@ -13,9 +14,13 @@ class SocialService
 
     public function postData(Post $post): array
     {
-        $images = $post->images ?: ($post->image ? [$post->image] : []);
+        $images = collect($post->images ?: ($post->image ? [$post->image] : []))
+            ->map(fn ($image) => $this->mediaUrl($image))
+            ->filter()
+            ->values()
+            ->all();
 
-        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $post->user->avatar, 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'likedByCurrentUser' => $post->likes->isNotEmpty(), 'comments' => $post->comments->map(fn ($c) => $this->commentData($c))->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'status' => $post->status, 'verified' => $post->user->role === 'Community leader'];
+        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $this->mediaUrl($post->user->avatar), 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'likedByCurrentUser' => $post->likes->isNotEmpty(), 'comments' => $post->comments->map(fn ($c) => $this->commentData($c))->values(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'status' => $post->status, 'verified' => $post->user->role === 'Community leader'];
     }
 
     public function commentData($comment): array
@@ -78,6 +83,20 @@ class SocialService
             'All-Round Wholeness for Singles' => 'comm7',
         ];
 
-        return ['id' => (string) $c->id, 'requirementKey' => $requirementKeys[$c->name] ?? null, 'name' => $c->name, 'description' => $c->description, 'rules' => $c->rules, 'image' => $c->image, 'admin' => $c->admin?->name, 'memberCount' => $c->members_count ?? $c->members()->count(), 'postCount' => $c->posts_count ?? $c->posts()->where('status', 'approved')->count(), 'memberIds' => $c->relationLoaded('members') ? $c->members->pluck('id')->map(fn ($id) => (string) $id) : []];
+        return ['id' => (string) $c->id, 'requirementKey' => $requirementKeys[$c->name] ?? null, 'name' => $c->name, 'description' => $c->description, 'rules' => $c->rules, 'image' => $this->mediaUrl($c->image), 'admin' => $c->admin?->name, 'memberCount' => $c->members_count ?? $c->members()->count(), 'postCount' => $c->posts_count ?? $c->posts()->where('status', 'approved')->count(), 'memberIds' => $c->relationLoaded('members') ? $c->members->pluck('id')->map(fn ($id) => (string) $id) : []];
+    }
+
+    private function mediaUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        if ($path && (Str::startsWith($path, '/storage/') || Str::startsWith($path, '/custom_folder/'))) {
+            return request()->getSchemeAndHttpHost().$path;
+        }
+
+        return $url;
     }
 }

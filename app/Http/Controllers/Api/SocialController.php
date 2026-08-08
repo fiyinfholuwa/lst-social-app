@@ -16,6 +16,7 @@ use App\Services\SocialService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -48,11 +49,7 @@ class SocialController extends Controller
             throw ValidationException::withMessages(['images' => 'A post can have up to 6 photos.']);
         }
 
-        $images = collect($r->file('images', []))->map(function ($image) use ($r) {
-            $path = $image->store('posts', 'public');
-
-            return $r->getSchemeAndHttpHost().Storage::url($path);
-        })->values()->all();
+        $images = collect($r->file('images', []))->map(fn ($image) => $this->storePostImage($image))->values()->all();
 
         return response()->json($this->service->create($r->user(), ['content' => $d['content'], 'images' => $images ?: null, 'image' => $images[0] ?? null, 'community_id' => null, 'type' => 'Post', 'audience' => 'Everyone']), 201);
     }
@@ -69,22 +66,17 @@ class SocialController extends Controller
         ]);
 
         $currentImages = $post->images ?: ($post->image ? [$post->image] : []);
+        $currentImagesByPath = collect($currentImages)->keyBy(fn ($image) => parse_url($image, PHP_URL_PATH));
         $keptImages = collect($d['existing_images'] ?? [])
-            ->filter(fn ($image) => in_array($image, $currentImages, true))
+            ->map(fn ($image) => $currentImagesByPath->get(parse_url($image, PHP_URL_PATH)))
+            ->filter()
             ->unique()
             ->values();
-        $newImages = collect($r->file('images', []))->map(function ($image) use ($r) {
-            $path = $image->store('posts', 'public');
-
-            return $r->getSchemeAndHttpHost().Storage::url($path);
-        });
+        $newImages = collect($r->file('images', []))->map(fn ($image) => $this->storePostImage($image));
         $images = $keptImages->concat($newImages)->take(6)->values()->all();
 
         foreach (array_diff($currentImages, $keptImages->all()) as $image) {
-            $path = parse_url($image, PHP_URL_PATH);
-            if ($path && Str::contains($path, '/storage/posts/')) {
-                Storage::disk('public')->delete(Str::after($path, '/storage/'));
-            }
+            $this->deletePostImage($image);
         }
 
         $post->update([
@@ -110,10 +102,7 @@ class SocialController extends Controller
         $post->delete();
 
         foreach ($images as $image) {
-            $path = parse_url($image, PHP_URL_PATH);
-            if ($path && Str::contains($path, '/storage/posts/')) {
-                Storage::disk('public')->delete(Str::after($path, '/storage/'));
-            }
+            $this->deletePostImage($image);
         }
 
         $scopes = ['posts', "post:{$postId}", "user:{$userId}"];
@@ -264,11 +253,7 @@ class SocialController extends Controller
             'images' => 'nullable|array|max:6',
             'images.*' => 'image|max:2048',
         ]);
-        $images = collect($r->file('images', []))->map(function ($image) use ($r) {
-            $path = $image->store('posts', 'public');
-
-            return $r->getSchemeAndHttpHost().Storage::url($path);
-        })->values()->all();
+        $images = collect($r->file('images', []))->map(fn ($image) => $this->storePostImage($image))->values()->all();
         $post = $this->repo->createPost($r->user(), [
             'community_id' => $community->id,
             'content' => trim($data['content']),
@@ -344,5 +329,25 @@ class SocialController extends Controller
         $this->cache->invalidate("notifications:{$r->user()->id}");
 
         return response()->json(['success' => true]);
+    }
+
+    private function storePostImage($image): string
+    {
+        $directory = public_path('custom_folder/posts');
+        File::ensureDirectoryExists($directory);
+        $filename = Str::uuid().'.'.($image->guessExtension() ?: 'jpg');
+        $image->move($directory, $filename);
+
+        return "/custom_folder/posts/{$filename}";
+    }
+
+    private function deletePostImage(string $image): void
+    {
+        $path = parse_url($image, PHP_URL_PATH);
+        if ($path && Str::startsWith($path, '/custom_folder/posts/')) {
+            File::delete(public_path(ltrim($path, '/')));
+        } elseif ($path && Str::contains($path, '/storage/posts/')) {
+            Storage::disk('public')->delete(Str::after($path, '/storage/'));
+        }
     }
 }

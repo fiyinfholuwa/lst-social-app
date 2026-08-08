@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
         import AsyncStorage from '@react-native-async-storage/async-storage';
         import apiService from '../api/apiService';
 
@@ -8,13 +8,18 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
           const [user, setUser] = useState(null);
           const [loading, setLoading] = useState(true);
 
+          const refreshUser = useCallback(async () => {
+            const profile = await apiService.getUserProfile();
+            setUser(profile);
+            return profile;
+          }, []);
+
           useEffect(() => {
             const loadUser = async () => {
               const token = await AsyncStorage.getItem('@auth_token');
               if (token) {
                 try {
-                  const profile = await apiService.getUserProfile();
-                  setUser(profile);
+                  await refreshUser();
                 } catch (e) {
                   await AsyncStorage.removeItem('@auth_token');
                   setUser(null);
@@ -23,7 +28,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
               setLoading(false);
             };
             loadUser();
-          }, []);
+          }, [refreshUser]);
 
           const login = async (email, password) => {
             const data = await apiService.login(email, password);
@@ -50,7 +55,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
           };
 
           return (
-            <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+            <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
               {children}
             </AuthContext.Provider>
           );

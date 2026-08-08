@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Post extends Model
 {
-    protected $fillable = ['user_id', 'community_id', 'content', 'image', 'images', 'type', 'audience'];
+    protected $fillable = ['user_id', 'community_id', 'content', 'image', 'images', 'type', 'audience', 'status'];
 
     protected function casts(): array
     {

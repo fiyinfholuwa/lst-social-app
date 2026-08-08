@@ -47,6 +47,7 @@ const OUTLINE_ICONS = {
   'search-outline': 'search-outline',
   seedling: 'leaf-outline',
   'settings-outline': 'settings-outline',
+  'sign-out-alt': 'exit-outline',
   'share-alt': 'share-social-outline',
   'shield-alt': 'shield-outline',
   'shield-checkmark-outline': 'shield-checkmark-outline',

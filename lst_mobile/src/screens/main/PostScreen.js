@@ -181,7 +181,7 @@ export default function PostScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: post.userId })}>
             <Avatar uri={post.userAvatar} size={48} style={styles.avatar} accessibilityLabel={`${post.userName}'s profile avatar`} />
           </TouchableOpacity>
-          <View style={styles.author}>
+          <TouchableOpacity style={styles.author} onPress={() => navigation.navigate('UserProfile', { userId: post.userId })} accessibilityRole="button">
             <View style={styles.nameRow}>
               <Text style={[styles.userName, { color: theme.text }]}>{post.userName}</Text>
               {post.verified ? <AppIcon name="check-circle" solid size={14} color={theme.primary} /> : null}
@@ -189,7 +189,8 @@ export default function PostScreen({ route, navigation }) {
             <Text style={[styles.timestamp, { color: theme.secondaryText }]}>
               {post.timestamp} • {post.audience || 'LST community'}
             </Text>
-          </View>
+            {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
+          </TouchableOpacity>
           {String(post.userId) === String(user?.id) ? <PostOptionsMenu onEdit={() => navigation.navigate('EditPost', { postId: post.id })} onDelete={deletePost} /> : null}
         </View>
 
@@ -343,6 +344,7 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   userName: { fontWeight: '700', fontSize: 16 },
   timestamp: { fontSize: 11, marginTop: 3 },
+  pending: { alignSelf: 'flex-start', marginTop: 5, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, overflow: 'hidden', fontSize: 9, fontWeight: '800' },
   headerAction: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   contextRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 10, zIndex: 0 },
   contextText: { fontSize: 11, fontWeight: '600' },

@@ -1,36 +1,76 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, FlatList, Image, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
-import EmojiText from '../../components/EmojiText';
 import Avatar from '../../components/Avatar';
 import Loader from '../../components/Loader';
+import ConfirmModal from '../../components/ConfirmModal';
+import PostCard from '../../components/PostCard';
 import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
+import { useSavedPosts } from '../../context/SavedPostsContext';
 
 export default function CommunityDetailScreen({ route, navigation }) {
   const { communityId } = route.params;
   const [community, setCommunity] = useState(null);
   const [members, setMembers] = useState([]);
+  const [leaveVisible, setLeaveVisible] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const friendshipState = useFriendships();
   const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds) ? friendshipState.blockedUserIds : [];
-  const [joined, setJoined] = useState(user.joinedCommunities?.includes(communityId));
-  const { getApplication, withdrawApplication } = useCommunityApplications();
+  const { getApplication, withdrawApplication, refreshApplications } = useCommunityApplications();
   const application = getApplication(communityId);
+  const joined = Array.isArray(user?.joinedCommunities) && user.joinedCommunities.map(String).includes(String(communityId));
+  const pendingApplication = application?.status === 'pending';
+  const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
 
-  useEffect(() => {
-    Promise.all([
+  const loadCommunity = async () => {
+    const [communityData, memberData] = await Promise.all([
       apiService.getCommunity(communityId),
       apiService.getCommunityMembers(communityId),
-    ]).then(([communityData, memberData]) => {
-      setCommunity(communityData);
-      setMembers(memberData);
-    });
-  }, [communityId]);
+    ]);
+    setCommunity(communityData);
+    setMembers(memberData);
+  };
+
+  const deletePost = async post => {
+    try {
+      await apiService.deletePost(post.id);
+      forgetDeletedPost(post.id);
+      setCommunity(current => ({ ...current, posts: current.posts.filter(item => item.id !== post.id) }));
+    } catch (error) {
+      Alert.alert('Couldn’t delete post', error.message);
+    }
+  };
+
+  const sharePost = post => Share.share({
+    title: `${post.userName} on LST Social`,
+    message: `${post.userName} shared on LST Social:\n\n${post.content}`,
+  });
+
+  const leaveCommunity = async () => {
+    setLeaving(true);
+    try {
+      await apiService.leaveCommunity(communityId);
+      await refreshUser();
+      setMembers(current => current.filter(member => String(member.id) !== String(user.id)));
+      setCommunity(current => ({ ...current, memberCount: Math.max(0, current.memberCount - 1) }));
+      setLeaveVisible(false);
+    } finally {
+      setLeaving(false);
+    }
+  };
+
+  useFocusEffect(React.useCallback(() => {
+    refreshUser().catch(() => {});
+    refreshApplications().catch(() => {});
+    loadCommunity().catch(() => {});
+  }, [communityId, refreshApplications, refreshUser]));
 
   if (!community) return <Loader />;
 
@@ -59,17 +99,29 @@ export default function CommunityDetailScreen({ route, navigation }) {
         </View>
 
         <TouchableOpacity
-          style={[styles.joinButton, { backgroundColor: joined || application ? theme.primarySoft : theme.primary }]}
+          style={[styles.joinButton, { backgroundColor: joined || pendingApplication ? theme.primarySoft : theme.primary }]}
           onPress={() => navigation.navigate('CommunityApplication', { communityId })}
-          disabled={joined || Boolean(application)}
+          disabled={joined || pendingApplication}
         >
-          <AppIcon name={joined ? 'check' : application ? 'clock' : 'file-alt'} size={14} color={joined || application ? theme.primary : '#FFFFFF'} />
-          <Text style={[styles.joinText, { color: joined || application ? theme.primary : '#FFFFFF' }]}>
-            {joined ? 'You are a member' : application ? 'Application under review' : 'View requirements & apply'}
+          <AppIcon name={joined ? 'check' : pendingApplication ? 'clock' : 'file-alt'} size={14} color={joined || pendingApplication ? theme.primary : '#FFFFFF'} />
+          <Text style={[styles.joinText, { color: joined || pendingApplication ? theme.primary : '#FFFFFF' }]}>
+            {joined ? 'You are a member' : pendingApplication ? 'Application under review' : 'View requirements & apply'}
           </Text>
         </TouchableOpacity>
 
-        {application ? (
+        {joined ? (
+          <View style={styles.memberActions}>
+            <TouchableOpacity style={[styles.postButton, { backgroundColor: theme.primary }]} onPress={() => navigation.navigate('CreatePost', { communityId, communityName: community.name })}>
+              <AppIcon name="create-outline" size={14} color="#FFFFFF" />
+              <Text style={styles.postButtonText}>Create post</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.leaveButton, { borderColor: theme.danger }]} onPress={() => setLeaveVisible(true)}>
+              <Text style={[styles.leaveButtonText, { color: theme.danger }]}>Leave community</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {pendingApplication ? (
           <View style={styles.applicationMeta}>
             <Text style={[styles.applicationDate, { color: theme.secondaryText }]}>
               Submitted {new Date(application.submittedAt).toLocaleDateString()}
@@ -117,6 +169,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   );
 
   return (
+    <>
     <FlatList
       style={{ backgroundColor: theme.background }}
       data={community.posts}
@@ -125,21 +178,17 @@ export default function CommunityDetailScreen({ route, navigation }) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       renderItem={({ item }) => (
-        <View style={[styles.post, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <View style={styles.postTop}>
-            <Image source={{ uri: community.image }} style={styles.postAvatar} />
-            <View>
-              <Text style={[styles.postAuthor, { color: theme.text }]}>{community.name}</Text>
-              <Text style={[styles.postTime, { color: theme.secondaryText }]}>{item.timestamp}</Text>
-            </View>
-          </View>
-          <EmojiText style={[styles.postContent, { color: theme.text }]}>{item.content}</EmojiText>
-          <View style={[styles.postActions, { borderTopColor: theme.border }]}>
-            <AppIcon name="heart" size={15} color={theme.secondaryText} />
-            <AppIcon name="comment" size={15} color={theme.secondaryText} />
-            <AppIcon name="bookmark" size={15} color={theme.secondaryText} />
-          </View>
-        </View>
+        <PostCard
+          post={item}
+          onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
+          onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
+          onLike={() => apiService.likePost(item.id).then(loadCommunity)}
+          onShare={() => sharePost(item)}
+          onSave={() => toggleSavedPost(item.id)}
+          onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}
+          onDelete={String(item.userId) === String(user?.id) ? () => deletePost(item) : undefined}
+          isSaved={isPostSaved(item.id)}
+        />
       )}
       ListEmptyComponent={
         <View style={styles.empty}>
@@ -149,6 +198,17 @@ export default function CommunityDetailScreen({ route, navigation }) {
         </View>
       }
     />
+    <ConfirmModal
+      visible={leaveVisible}
+      title="Leave this community?"
+      message="You will lose member access. You can apply again later if you want to return."
+      confirmLabel="Leave community"
+      icon="sign-out-alt"
+      loading={leaving}
+      onCancel={() => setLeaveVisible(false)}
+      onConfirm={leaveCommunity}
+    />
+    </>
   );
 }
 
@@ -165,6 +225,11 @@ const styles = StyleSheet.create({
   overviewLabel: { fontSize: 11, marginTop: 3 },
   joinButton: { height: 50, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 },
   joinText: { fontSize: 14, fontWeight: '700' },
+  memberActions: { flexDirection: 'row', gap: 9, marginTop: 10 },
+  postButton: { flex: 1, minHeight: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  postButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  leaveButton: { flex: 1, minHeight: 46, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  leaveButtonText: { fontSize: 12, fontWeight: '800' },
   applicationMeta: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, marginTop: 9 },
   applicationDate: { fontSize: 11 },
   withdrawText: { fontSize: 11, fontWeight: '700' },
@@ -184,6 +249,8 @@ const styles = StyleSheet.create({
   postsHeading: { marginTop: 28 },
   post: { marginHorizontal: 18, marginBottom: 10, padding: 14, borderWidth: 1, borderRadius: 17 },
   postTop: { flexDirection: 'row', alignItems: 'center' },
+  postAuthorLine: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  pendingBadge: { fontSize: 9, fontWeight: '800', paddingHorizontal: 7, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
   postAvatar: { width: 34, height: 34, borderRadius: 10, marginRight: 9 },
   postAuthor: { fontSize: 12, fontWeight: '700' },
   postTime: { fontSize: 11, marginTop: 2 },

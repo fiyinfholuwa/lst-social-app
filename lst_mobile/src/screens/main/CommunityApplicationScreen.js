@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
+import NoticeModal from '../../components/NoticeModal';
 import QuickMaritalReadingGate from '../../components/QuickMaritalReadingGate';
 import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -22,6 +23,7 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   const [motivation, setMotivation] = useState('');
   const [agreements, setAgreements] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState(null);
   const requirementKey = community?.requirementKey || communityId;
   const requirement = getCommunityRequirement(requirementKey);
 
@@ -43,56 +45,68 @@ export default function CommunityApplicationScreen({ route, navigation }) {
 
   const submit = async () => {
     if (requirementKey === 'comm4' && !readingComplete) {
-      Alert.alert('Complete the required reading', 'Pass all three article quizzes before submitting your application.');
+      setNotice({ title: 'Complete the required reading', message: 'Pass all three article quizzes before submitting your application.' });
       return;
     }
     if (requirement.paths && !selectedPath) {
-      Alert.alert('Choose the option that describes you', 'This helps the reviewers assess the correct prerequisite.');
+      setNotice({ title: 'Choose the option that describes you', message: 'This helps the reviewers assess the correct prerequisite.' });
       return;
     }
     if (selectedPath === 'puritan' && !abstinenceBand) {
-      Alert.alert('Select an abstinence period', 'Choose the range that most accurately reflects your current journey.');
+      setNotice({ title: 'Select an abstinence period', message: 'Choose the range that most accurately reflects your current journey.' });
       return;
     }
     if (requirement.supportAreas && !supportArea) {
-      Alert.alert('Select an area', 'Choose the option that best describes your situation.');
+      setNotice({ title: 'Select an area', message: 'Choose the option that best describes your situation.' });
       return;
     }
     if (requirement.struggleDurations && !struggleDuration) {
-      Alert.alert('Select a duration', 'Choose the option that best describes your journey.');
+      setNotice({ title: 'Select a duration', message: 'Choose the option that best describes your journey.' });
       return;
     }
     if (requirement.supportTypes && !supportType) {
-      Alert.alert('Select support', 'Choose the type of support you need.');
+      setNotice({ title: 'Select support', message: 'Choose the type of support you need.' });
       return;
     }
     const motivationMinimum = requirement.motivationMinimum || 20;
     if (motivation.trim().length < motivationMinimum) {
-      Alert.alert('Tell us a little more', `Please write at least ${motivationMinimum} characters.`);
+      setNotice({ title: 'Tell us a little more', message: `Please write at least ${motivationMinimum} characters.` });
       return;
     }
     if (agreements.length !== requirement.commitments.length) {
-      Alert.alert('Confirm every commitment', 'All community commitments must be accepted before applying.');
+      setNotice({ title: 'Confirm every commitment', message: 'All community commitments must be accepted before applying.' });
       return;
     }
 
     setSubmitting(true);
-    await submitApplication(communityId, {
-      applicantPath: selectedPath,
-      abstinenceBand: selectedPath === 'puritan' ? abstinenceBand : null,
-      supportArea,
-      struggleDuration,
-      supportType,
-      motivation: motivation.trim(),
-      commitmentsAccepted: true,
-    });
-    setSubmitting(false);
-    Alert.alert('Application submitted', `${community.admin} and the review team will assess your application.`, [
-      { text: 'Done', onPress: () => navigation.goBack() },
-    ]);
+    try {
+      const answers = {
+        motivation: motivation.trim(),
+        commitmentsAccepted: true,
+      };
+      if (requirement.paths) answers.applicantPath = selectedPath;
+      if (selectedPath === 'puritan') answers.abstinenceBand = abstinenceBand;
+      if (requirement.supportAreas) answers.supportArea = supportArea;
+      if (requirement.struggleDurations) answers.struggleDuration = struggleDuration;
+      if (requirement.supportTypes) answers.supportType = supportType;
+
+      await submitApplication(communityId, answers);
+      setNotice({ title: 'Application submitted', message: `${community.admin} and the review team will assess your application.`, tone: 'success', submitted: true });
+    } catch (error) {
+      setNotice({ title: 'Could not submit application', message: error.message || 'Please check your connection and try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const closeNotice = () => {
+    const submitted = notice?.submitted;
+    setNotice(null);
+    if (submitted) navigation.goBack();
   };
 
   return (
+    <>
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={[styles.eyebrow, { color: theme.primary }]}>MEMBERSHIP APPLICATION</Text>
       <Text style={[styles.title, { color: theme.text }]}>{requirement.title}</Text>
@@ -241,6 +255,8 @@ export default function CommunityApplicationScreen({ route, navigation }) {
         <Text style={styles.submitText}>{submitting ? 'Submitting...' : 'Submit for review'}</Text>
       </TouchableOpacity>
     </ScrollView>
+    <NoticeModal visible={Boolean(notice)} title={notice?.title} message={notice?.message} tone={notice?.tone} buttonLabel={notice?.submitted ? 'Done' : 'Review form'} onClose={closeNotice} />
+    </>
   );
 }
 

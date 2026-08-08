@@ -35,7 +35,7 @@
         </table></div>
     </section>
 @elseif($section === 'communities')
-    <div class="page-heading"><div><div class="eyebrow">Spaces & membership</div><h1>Communities</h1><p>Create communities, assign owners and review membership applications.</p></div><button class="btn btn-primary" type="button" onclick="document.getElementById('newCommunity').showModal()">+ New community</button></div>
+    <div class="page-heading"><div><div class="eyebrow">Spaces & membership</div><h1>Communities</h1><p>Manage community details, assign owners and review membership applications.</p></div></div>
     <section class="stats">
         @foreach($communityMetrics as $label => $value)
             <article class="card stat"><div class="stat-top"><span class="stat-icon">{{ substr($label, 0, 1) }}</span><span class="trend">Live</span></div><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>
@@ -46,33 +46,45 @@
         <div class="community-grid">
         @forelse($communities as $community)
             <article class="community-admin-card">
-                <div class="community-admin-head"><div><h3>{{ $community->name }}</h3><p>{{ $community->description ?: 'No description provided.' }}</p></div><span class="admin-pill">{{ $community->members_count }} members</span></div>
+                <div class="community-card-main">@if($community->image)<img class="community-card-thumb" src="{{ $community->image }}" alt="">@else<div class="community-card-placeholder">{{ strtoupper(substr($community->name, 0, 1)) }}</div>@endif<div class="community-admin-head"><div><h3>{{ $community->name }}</h3><p>{{ $community->description ?: 'No description provided.' }}</p></div></div></div>
                 <div class="community-meta"><span>Owner: {{ $community->admin?->name ?? 'Unassigned' }}</span><span>{{ $community->pending_applications_count }} pending</span></div>
-                <details><summary class="mini-btn">Edit community</summary>
-                    <form class="admin-form compact" method="POST" action="{{ route('admin.communities.update', $community) }}">@csrf @method('PATCH')
-                        <label>Name<input name="name" value="{{ $community->name }}" required></label><label>Description<textarea name="description">{{ $community->description }}</textarea></label><label>Rules<textarea name="rules">{{ $community->rules }}</textarea></label><label>Image URL<input name="image" type="url" value="{{ $community->image }}"></label><label>Owner<select name="admin_id"><option value="">Unassigned</option>@foreach($admins as $admin)<option value="{{ $admin->id }}" @selected($community->admin_id === $admin->id)>{{ $admin->name }}</option>@endforeach</select></label><button class="btn btn-primary" type="submit">Save changes</button>
+                <div class="community-card-actions"><a class="manage-applications-link" href="{{ route('admin.communities.applications', $community) }}">Manage applications <span>{{ $community->pending_applications_count }}</span></a><span class="admin-pill">{{ number_format($community->members_count) }} members</span></div>
+                <details><summary class="mini-btn">Edit details</summary>
+                    <form class="admin-form compact" method="POST" action="{{ route('admin.communities.update', $community) }}" enctype="multipart/form-data">@csrf @method('PATCH')
+                        <label>Name<input name="name" value="{{ $community->name }}" required></label>
+                        <label>Description<textarea name="description">{{ $community->description }}</textarea></label>
+                        <label>Rules<textarea name="rules">{{ $community->rules }}</textarea></label>
+                        <label>Community image
+                            @if($community->image)<img class="community-image-preview" src="{{ $community->image }}" alt="Current {{ $community->name }} image">@endif
+                            <input name="image" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG or WebP, up to 4 MB.</small>
+                        </label>
+                        <label>Administrator<select name="admin_id"><option value="">Unassigned</option>@foreach($admins as $admin)<option value="{{ $admin->id }}" @selected((int) $community->admin_id === (int) $admin->id)>{{ $admin->name }} · {{ $admin->role === 'super_admin' ? 'Super administrator' : 'Administrator' }}</option>@endforeach</select></label>
+                        <button class="btn btn-primary" type="submit">Save changes</button>
                     </form>
                 </details>
-                <form method="POST" action="{{ route('admin.communities.destroy', $community) }}" onsubmit="return confirm('Delete this community, its applications and community posts?')">@csrf @method('DELETE')<button class="text-danger" type="submit">Delete community</button></form>
             </article>
         @empty<div class="empty-cell">No communities created yet.</div>@endforelse
         </div>
+        @if($communities->hasPages())<nav class="admin-pagination" aria-label="Community pages">@if($communities->onFirstPage())<span>← Previous</span>@else<a href="{{ $communities->previousPageUrl() }}">← Previous</a>@endif<strong>Page {{ $communities->currentPage() }} of {{ $communities->lastPage() }}</strong>@if($communities->hasMorePages())<a href="{{ $communities->nextPageUrl() }}">Next →</a>@else<span>Next →</span>@endif</nav>@endif
     </section>
-    <section class="card panel admin-section-gap">
-        <div class="panel-head"><div><h2>Membership applications</h2><div class="panel-sub">Review requests submitted from the mobile community application form.</div></div><span class="admin-pill">{{ $applications->where('status', 'pending')->count() }} pending</span></div>
-        <div class="application-list">
-        @forelse($applications as $application)
-            <article class="application-row">
-                <div class="avatar">{{ strtoupper(substr($application->user?->name ?? '?', 0, 2)) }}</div>
-                <div class="application-copy"><strong>{{ $application->user?->name ?? 'Deleted member' }}</strong><small>{{ $application->user?->email }} · {{ $application->community?->name ?? 'Deleted community' }} · {{ $application->created_at->diffForHumans() }}</small>
-                    @if($application->answers)<details><summary>View answers</summary><div class="answers">@foreach($application->answers as $question => $answer)<p><b>{{ is_string($question) ? $question : 'Answer '.($loop->index + 1) }}</b><br>{{ is_array($answer) ? implode(', ', $answer) : $answer }}</p>@endforeach</div></details>@endif
-                </div>
-                <div class="application-actions"><span class="admin-pill {{ $application->status }}">{{ ucfirst($application->status) }}</span>@if($application->status === 'pending')<form method="POST" action="{{ route('admin.applications.review', $application) }}">@csrf<input type="hidden" name="action" value="approve"><button class="mini-btn approve">Approve</button></form><form method="POST" action="{{ route('admin.applications.review', $application) }}">@csrf<input type="hidden" name="action" value="reject"><button class="mini-btn danger">Reject</button></form>@endif</div>
-            </article>
-        @empty<div class="empty-cell">No community applications yet.</div>@endforelse
-        </div>
+@elseif($section === 'posts')
+    <div class="page-heading"><div><div class="eyebrow">Community moderation</div><h1>Community posts</h1><p>Review member posts before they become visible in their community.</p></div></div>
+    <section class="stats">
+        @foreach($postMetrics as $label => $value)<article class="card stat"><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>@endforeach
     </section>
-    <dialog class="admin-dialog" id="newCommunity"><form method="POST" action="{{ route('admin.communities.store') }}" class="admin-form">@csrf<div class="dialog-heading"><div><h2>New community</h2><p>Create a space members can discover and apply to join.</p></div><button type="button" onclick="this.closest('dialog').close()">×</button></div><label>Name<input name="name" required></label><label>Description<textarea name="description"></textarea></label><label>Rules<textarea name="rules"></textarea></label><label>Image URL<input name="image" type="url"></label><label>Owner<select name="admin_id"><option value="">Unassigned</option>@foreach($admins as $admin)<option value="{{ $admin->id }}">{{ $admin->name }}</option>@endforeach</select></label><button class="btn btn-primary" type="submit">Create community</button></form></dialog>
+    <section class="card panel">
+        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Author</th><th>Community</th><th>Post</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>
+        @forelse($posts as $post)<tr>
+            <td><strong>{{ $post->user->name }}</strong><small>{{ $post->user->email }}</small></td>
+            <td>{{ $post->community->name }}</td>
+            <td style="max-width:420px">{{ Str::limit($post->content, 180) }}</td>
+            <td><span class="admin-pill {{ $post->status }}">{{ ucfirst($post->status) }}</span></td>
+            <td>{{ $post->created_at->format('d M Y, H:i') }}</td>
+            <td><div class="application-actions">@if($post->status === 'pending')<form method="POST" action="{{ route('admin.posts.review', $post) }}">@csrf<input type="hidden" name="action" value="approve"><button class="mini-btn approve">Approve</button></form><form method="POST" action="{{ route('admin.posts.review', $post) }}">@csrf<input type="hidden" name="action" value="reject"><button class="mini-btn danger">Reject</button></form>@else<span>Reviewed</span>@endif</div></td>
+        </tr>@empty<tr><td colspan="6" class="empty-cell">No community posts have been submitted.</td></tr>@endforelse
+        </tbody></table></div>
+        @if($posts->hasPages()){{ $posts->links() }}@endif
+    </section>
 @else
     @php
         $content = [

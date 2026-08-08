@@ -23,7 +23,7 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
           <TouchableOpacity onPress={onUserPress} disabled={!onUserPress}>
             <Avatar uri={post.userAvatar} size={44} style={styles.avatar} accessibilityLabel={`${post.userName}'s profile avatar`} />
           </TouchableOpacity>
-          <View style={styles.userInfo}>
+          <TouchableOpacity style={styles.userInfo} onPress={onUserPress} disabled={!onUserPress} accessibilityRole="button">
             <View style={styles.nameRow}>
               <Text style={[styles.userName, { color: theme.text }]}>{post.userName}</Text>
               {post.verified ? <Icon name="check-circle" solid size={13} color={theme.primary} /> : null}
@@ -31,7 +31,8 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
             <Text style={[styles.meta, { color: theme.secondaryText }]}>
               {post.timestamp}{post.audience ? `  •  ${post.audience}` : '  •  LST community'}
             </Text>
-          </View>
+            {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
+          </TouchableOpacity>
           {onEdit && onDelete ? <PostOptionsMenu onEdit={onEdit} onDelete={onDelete} /> : null}
         </View>
 
@@ -100,6 +101,7 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   userName: { fontWeight: '700', fontSize: 15 },
   meta: { fontSize: 11, marginTop: 3 },
+  pending: { alignSelf: 'flex-start', marginTop: 5, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, overflow: 'hidden', fontSize: 9, fontWeight: '800' },
   moreButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   contextRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, zIndex: 0 },
   contextText: { fontSize: 11, fontWeight: '600' },

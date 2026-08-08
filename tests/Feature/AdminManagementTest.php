@@ -6,6 +6,8 @@ use App\Models\Community;
 use App\Models\CommunityApplication;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminManagementTest extends TestCase
@@ -14,19 +16,27 @@ class AdminManagementTest extends TestCase
 
     public function test_admin_can_manage_members_and_communities(): void
     {
+        Storage::fake('public');
         $member = User::factory()->create(['name' => 'Managed Member']);
+        $administrator = User::factory()->create(['name' => 'Community Administrator', 'role' => 'admin']);
 
         $this->get('/admin/members')->assertOk()->assertSee('Managed Member');
         $this->patch("/admin/members/{$member->id}", ['role' => 'moderator'])->assertRedirect();
         $this->assertDatabaseHas('users', ['id' => $member->id, 'role' => 'moderator']);
 
-        $this->post('/admin/communities', [
-            'name' => 'Admin Created Circle',
+        $community = Community::create(['name' => 'Managed Circle']);
+        $this->patch("/admin/communities/{$community->id}", [
+            'name' => 'Updated Managed Circle',
             'description' => 'A managed community',
-            'admin_id' => $member->id,
+            'admin_id' => $administrator->id,
+            'image' => UploadedFile::fake()->image('community.jpg', 800, 600),
         ])->assertRedirect();
-        $this->assertDatabaseHas('communities', ['name' => 'Admin Created Circle', 'admin_id' => $member->id]);
-        $this->get('/admin/communities')->assertOk()->assertSee('Admin Created Circle');
+        $community->refresh();
+        $this->assertDatabaseHas('communities', ['id' => $community->id, 'name' => 'Updated Managed Circle', 'admin_id' => $administrator->id]);
+        Storage::disk('public')->assertExists(str_replace('/storage/', '', parse_url($community->image, PHP_URL_PATH)));
+        $this->get('/admin/communities')->assertOk()->assertDontSee('New community')->assertDontSee('Delete community');
+        $this->post('/admin/communities', ['name' => 'Forbidden Circle'])->assertMethodNotAllowed();
+        $this->delete("/admin/communities/{$community->id}")->assertMethodNotAllowed();
     }
 
     public function test_admin_can_review_a_community_application(): void
@@ -39,6 +49,19 @@ class AdminManagementTest extends TestCase
             'answers' => ['motivation' => 'I would like to join this community.'],
             'status' => 'pending',
         ]);
+        $otherCommunity = Community::create(['name' => 'Other Circle']);
+        CommunityApplication::create([
+            'community_id' => $otherCommunity->id,
+            'user_id' => User::factory()->create()->id,
+            'answers' => ['motivation' => 'Another application'],
+            'status' => 'pending',
+        ]);
+
+        $this->get("/admin/communities/{$community->id}/applications")
+            ->assertOk()
+            ->assertSee('Review Circle')
+            ->assertSee($member->email)
+            ->assertDontSee('Another application');
 
         $this->post("/admin/community-applications/{$application->id}", ['action' => 'approve'])->assertRedirect();
 

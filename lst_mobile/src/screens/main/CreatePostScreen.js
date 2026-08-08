@@ -13,7 +13,7 @@ import EmojiPicker from '../../components/EmojiPicker';
 
 const MAX_IMAGES = 6;
 
-export default function CreatePostScreen({ navigation }) {
+export default function CreatePostScreen({ navigation, route }) {
   const [content, setContent] = useState('');
   const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -23,6 +23,8 @@ export default function CreatePostScreen({ navigation }) {
   const inputRef = useRef(null);
   const { theme } = useTheme();
   const { user } = useAuth();
+  const communityId = route?.params?.communityId;
+  const communityName = route?.params?.communityName;
 
   const pickImages = async () => {
     if (images.length >= MAX_IMAGES) {
@@ -108,7 +110,11 @@ export default function CreatePostScreen({ navigation }) {
 
     setSubmitting(true);
     try {
-      await apiService.createPost(content.trim(), images);
+      if (communityId) {
+        await apiService.createCommunityPost(communityId, content.trim(), images);
+      } else {
+        await apiService.createPost(content.trim(), images);
+      }
       navigation.goBack();
     } catch (error) {
       Alert.alert('Couldn’t share post', error.message);
@@ -119,16 +125,16 @@ export default function CreatePostScreen({ navigation }) {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
-      <Text style={[styles.eyebrow, { color: theme.accent }]}>CREATE A POST</Text>
+      <Text style={[styles.eyebrow, { color: theme.accent }]}>{communityId ? 'COMMUNITY POST' : 'CREATE A POST'}</Text>
       <Text style={[styles.heading, { color: theme.text }]}>Share what’s on your heart.</Text>
-      <Text style={[styles.subheading, { color: theme.secondaryText }]}>Your post will be shared with the entire LST community.</Text>
+      <Text style={[styles.subheading, { color: theme.secondaryText }]}>{communityId ? `Your post will be sent to ${communityName || 'this community'} for approval before it appears.` : 'Your post will be shared with the entire LST community.'}</Text>
 
       <View style={[styles.composer, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.authorRow}>
           <Avatar uri={user?.avatar} size={44} style={styles.avatar} accessibilityLabel="Your profile avatar" />
           <View>
             <Text style={[styles.authorName, { color: theme.text }]}>{user?.name || 'LST member'}</Text>
-            <View style={styles.audience}><Icon name="people-outline" size={12} color={theme.secondaryText} /><Text style={[styles.audienceText, { color: theme.secondaryText }]}>Everyone</Text></View>
+            <View style={styles.audience}><Icon name="people-outline" size={12} color={theme.secondaryText} /><Text style={[styles.audienceText, { color: theme.secondaryText }]}>{communityName || 'Everyone'}</Text></View>
           </View>
         </View>
 
@@ -189,7 +195,7 @@ export default function CreatePostScreen({ navigation }) {
 
       <TouchableOpacity activeOpacity={0.86} onPress={handleSubmit} disabled={submitting}>
         <LinearGradient colors={[theme.primary, theme.accentDark]} style={styles.button}>
-          {submitting ? <ActivityIndicator color="#FFFFFF" /> : <><Text style={styles.buttonText}>Share post</Text><Icon name="paper-plane" size={17} color="#FFFFFF" /></>}
+          {submitting ? <ActivityIndicator color="#FFFFFF" /> : <><Text style={styles.buttonText}>{communityId ? 'Submit for approval' : 'Share post'}</Text><Icon name="paper-plane" size={17} color="#FFFFFF" /></>}
         </LinearGradient>
       </TouchableOpacity>
     </ScrollView>

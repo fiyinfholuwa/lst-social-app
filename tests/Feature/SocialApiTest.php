@@ -38,6 +38,41 @@ class SocialApiTest extends TestCase
         $this->assertDatabaseHas('messages', ['text' => 'Hello']);
     }
 
+    public function test_member_can_submit_a_moderated_community_post_and_leave(): void
+    {
+        $user = User::factory()->create();
+        $community = Community::create(['name' => 'Moderated circle']);
+        $community->members()->attach($user);
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        $postId = $this->withHeaders($headers)
+            ->postJson("/api/communities/{$community->id}/posts", ['content' => 'Please review this testimony.'])
+            ->assertCreated()
+            ->assertJsonPath('status', 'pending')
+            ->json('id');
+
+        $this->withHeaders($headers)
+            ->getJson("/api/communities/{$community->id}")
+            ->assertJsonFragment(['id' => $postId, 'status' => 'pending']);
+        $other = User::factory()->create();
+        $otherHeaders = ['Authorization' => 'Bearer '.$other->createToken('test')->plainTextToken];
+        auth()->forgetGuards();
+        $this->flushHeaders()->withHeaders($otherHeaders)
+            ->getJson("/api/communities/{$community->id}")
+            ->assertJsonCount(0, 'posts');
+
+        auth()->forgetGuards();
+        $this->flushHeaders()->withHeaders($headers)->getJson('/api/posts')->assertJsonMissing(['id' => $postId]);
+        $this->post("/admin/posts/{$postId}/review", ['action' => 'approve'])->assertRedirect();
+        $this->withHeaders($headers)->getJson('/api/posts')->assertJsonFragment(['id' => $postId]);
+
+        $this->withHeaders($headers)->deleteJson("/api/communities/{$community->id}/leave")->assertOk();
+        $this->assertDatabaseMissing('community_user', ['community_id' => $community->id, 'user_id' => $user->id]);
+        $this->withHeaders($headers)
+            ->postJson("/api/communities/{$community->id}/posts", ['content' => 'Not allowed now.'])
+            ->assertForbidden();
+    }
+
     public function test_user_can_search_for_people_and_send_a_friend_request(): void
     {
         $user = User::factory()->create(['name' => 'Current User']);

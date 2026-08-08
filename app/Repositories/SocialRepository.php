@@ -23,13 +23,16 @@ class SocialRepository
     public function post(int $id, User $viewer): Post
     {
         return Post::with(['user', 'comments.user', 'comments.likes' => fn ($query) => $query->whereKey($viewer->id), 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->where(function ($query) use ($viewer) {
+                $query->where('status', 'approved')->orWhere('user_id', $viewer->id);
+            })
             ->withCount('likes')->findOrFail($id);
     }
 
     private function postsQuery(User $viewer)
     {
         return Post::with(['user', 'comments.user', 'comments.likes' => fn ($query) => $query->whereKey($viewer->id), 'likes' => fn ($query) => $query->whereKey($viewer->id)])
-            ->withCount('likes')->latest();
+            ->where('status', 'approved')->withCount('likes')->latest();
     }
 
     public function createPost(User $user, array $data): Post
@@ -69,9 +72,26 @@ class SocialRepository
         return Community::with('admin')->withCount('members')->get();
     }
 
-    public function community(int $id): Community
+    public function community(int $id, ?User $viewer = null): Community
     {
-        return Community::with(['admin', 'members', 'posts'])->withCount('members')->findOrFail($id);
+        return Community::with([
+            'admin',
+            'members',
+            'posts' => fn ($query) => $query
+                ->with([
+                    'user',
+                    'comments.user',
+                    'comments.likes' => fn ($likes) => $viewer ? $likes->whereKey($viewer->id) : $likes->whereRaw('1 = 0'),
+                    'likes' => fn ($likes) => $viewer ? $likes->whereKey($viewer->id) : $likes->whereRaw('1 = 0'),
+                ])
+                ->withCount('likes')
+                ->where(function ($posts) use ($viewer) {
+                    $posts->where('status', 'approved');
+                    if ($viewer) {
+                        $posts->orWhere(fn ($own) => $own->where('user_id', $viewer->id)->where('status', 'pending'));
+                    }
+                })->latest(),
+        ])->withCount('members')->findOrFail($id);
     }
 
     public function apply(User $user, Community $community, array $answers): CommunityApplication

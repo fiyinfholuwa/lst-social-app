@@ -91,6 +91,7 @@ class SocialController extends Controller
             'content' => trim($d['content']),
             'images' => $images ?: null,
             'image' => $images[0] ?? null,
+            'status' => $post->community_id ? 'pending' : $post->status,
         ]);
         $this->service->invalidatePost($post);
 
@@ -177,10 +178,9 @@ class SocialController extends Controller
             fn () => $this->repo->communities()->map(fn ($c) => $this->service->communityData($c))->all()));
     }
 
-    public function community(Community $community)
+    public function community(Request $r, Community $community)
     {
-        return response()->json($this->cache->remember("community:{$community->id}", 'detail', CacheService::MEDIUM,
-            fn () => $this->service->communityData($this->repo->community($community->id))));
+        return response()->json($this->service->communityData($this->repo->community($community->id, $r->user())));
     }
 
     public function members(Community $community)
@@ -197,6 +197,40 @@ class SocialController extends Controller
         $this->cache->invalidate('communities', "community:{$community->id}", "user:{$r->user()->id}");
 
         return response()->json(['success' => true]);
+    }
+
+    public function leave(Request $r, Community $community)
+    {
+        $community->members()->detach($r->user()->id);
+        $this->cache->invalidate('communities', "community:{$community->id}", "user:{$r->user()->id}");
+
+        return response()->json(['success' => true]);
+    }
+
+    public function createCommunityPost(Request $r, Community $community)
+    {
+        abort_unless($community->members()->whereKey($r->user()->id)->exists(), 403, 'Only community members can submit posts.');
+        $data = $r->validate([
+            'content' => 'required|string|max:10000',
+            'images' => 'nullable|array|max:6',
+            'images.*' => 'image|max:2048',
+        ]);
+        $images = collect($r->file('images', []))->map(function ($image) use ($r) {
+            $path = $image->store('posts', 'public');
+
+            return $r->getSchemeAndHttpHost().Storage::url($path);
+        })->values()->all();
+        $post = $this->repo->createPost($r->user(), [
+            'community_id' => $community->id,
+            'content' => trim($data['content']),
+            'type' => 'Community post',
+            'audience' => $community->name,
+            'status' => 'pending',
+            'images' => $images ?: null,
+            'image' => $images[0] ?? null,
+        ]);
+
+        return response()->json(['id' => (string) $post->id, 'status' => $post->status, 'message' => 'Your post was submitted for approval.'], 201);
     }
 
     public function applications(Request $r)

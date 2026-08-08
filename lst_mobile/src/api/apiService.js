@@ -49,6 +49,17 @@ const apiService = {
   getCommunity: communityId => httpClient.get(`/communities/${communityId}`),
   getCommunityMembers: async communityId => (await httpClient.get(`/communities/${communityId}/members`)).data,
   joinCommunity: communityId => httpClient.post(`/communities/${communityId}/join`),
+  leaveCommunity: communityId => httpClient.delete(`/communities/${communityId}/leave`),
+  createCommunityPost: (communityId, content, images = []) => {
+    const form = new FormData();
+    form.append('content', content);
+    images.forEach((asset, index) => form.append('images[]', {
+      uri: asset.uri,
+      name: asset.fileName || `community-post-image-${index + 1}.jpg`,
+      type: asset.mimeType || 'image/jpeg',
+    }));
+    return httpClient.postForm(`/communities/${communityId}/posts`, form);
+  },
   getApplications: async () => (await httpClient.get('/community-applications')).applications,
   submitApplication: (communityId, answers) => httpClient.post(`/communities/${communityId}/applications`, { answers }),
   withdrawApplication: communityId => httpClient.delete(`/communities/${communityId}/applications`),

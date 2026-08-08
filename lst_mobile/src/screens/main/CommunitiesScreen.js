@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -54,8 +55,12 @@ export default function CommunitiesScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const { theme } = useTheme();
-  const { user } = useAuth();
-  const joinedIds = user?.joinedCommunities || [];
+  const { user, refreshUser } = useAuth();
+  const joinedIds = Array.isArray(user?.joinedCommunities) ? user.joinedCommunities.map(String) : [];
+
+  useFocusEffect(React.useCallback(() => {
+    refreshUser().catch(() => {});
+  }, [refreshUser]));
 
   const loadCommunities = async () => {
     setLoading(true);

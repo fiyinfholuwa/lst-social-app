@@ -7,10 +7,9 @@ use App\Models\CommunityApplication;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\CacheService;
+use App\Services\UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
@@ -121,17 +120,12 @@ class AdminController extends Controller
         return back()->with('status', "{$name} was removed.");
     }
 
-    public function updateCommunity(Request $request, Community $community, CacheService $cache)
+    public function updateCommunity(Request $request, Community $community, CacheService $cache, UploadService $uploads)
     {
         $data = $this->communityData($request);
         if ($request->hasFile('image')) {
-            $oldPath = parse_url((string) $community->image, PHP_URL_PATH);
-            if ($oldPath && Str::contains($oldPath, '/storage/communities/')) {
-                Storage::disk('public')->delete(Str::after($oldPath, '/storage/'));
-            }
-
-            $path = $request->file('image')->store('communities', 'public');
-            $data['image'] = $request->getSchemeAndHttpHost().Storage::url($path);
+            $uploads->delete($community->image, 'communities');
+            $data['image'] = $uploads->store($request->file('image'), 'communities');
         }
 
         $community->update($data);

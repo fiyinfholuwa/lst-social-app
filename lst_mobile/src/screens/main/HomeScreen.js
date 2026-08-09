@@ -105,7 +105,13 @@ import { useNotifications } from '../../context/NotificationsContext';
                     onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
                     onOriginalPress={item.originalPost ? () => navigation.navigate('PostDetail', { postId: item.originalPost.id }) : undefined}
                     onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
-                    onLike={() => apiService.likePost(item.id).then(loadPosts)}
+                    onLike={() => apiService.likePost(item.id).then(loadPosts).catch(error => {
+                      if (error.message?.includes('No query results for model')) {
+                        setPosts(current => current.filter(post => String(post.id) !== String(item.id)));
+                      } else {
+                        Alert.alert('Couldn’t update post', error.message);
+                      }
+                    })}
                     onShare={() => navigation.navigate('SharePost', { postId: item.id })}
                     onSave={() => toggleSavedPost(item.id)}
                     onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}

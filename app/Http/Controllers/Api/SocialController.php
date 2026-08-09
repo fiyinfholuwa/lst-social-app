@@ -14,17 +14,15 @@ use App\Models\User;
 use App\Repositories\SocialRepository;
 use App\Services\CacheService;
 use App\Services\SocialService;
+use App\Services\UploadService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 
 class SocialController extends Controller
 {
-    public function __construct(private SocialRepository $repo, private SocialService $service, private CacheService $cache) {}
+    public function __construct(private SocialRepository $repo, private SocialService $service, private CacheService $cache, private UploadService $uploads) {}
 
     public function posts(Request $r)
     {
@@ -454,15 +452,8 @@ class SocialController extends Controller
             $d['name'] = trim($d['first_name'].' '.$d['last_name']);
         }
         if ($r->hasFile('avatar_image')) {
-            $directory = public_path('custom_folder/profiles');
-            File::ensureDirectoryExists($directory);
-            $filename = Str::uuid().'.'.($r->file('avatar_image')->guessExtension() ?: 'jpg');
-            $r->file('avatar_image')->move($directory, $filename);
-            $oldPath = parse_url((string) $r->user()->avatar, PHP_URL_PATH);
-            if ($oldPath && Str::startsWith($oldPath, '/custom_folder/profiles/')) {
-                File::delete(public_path(ltrim($oldPath, '/')));
-            }
-            $d['avatar'] = "/custom_folder/profiles/{$filename}";
+            $this->uploads->delete($r->user()->avatar, 'profiles');
+            $d['avatar'] = $this->uploads->store($r->file('avatar_image'), 'profiles');
         }
         unset($d['avatar_image']);
         $r->user()->update($d);
@@ -512,22 +503,12 @@ class SocialController extends Controller
 
     private function storePostImage($image): string
     {
-        $directory = public_path('custom_folder/posts');
-        File::ensureDirectoryExists($directory);
-        $filename = Str::uuid().'.'.($image->guessExtension() ?: 'jpg');
-        $image->move($directory, $filename);
-
-        return "/custom_folder/posts/{$filename}";
+        return $this->uploads->store($image, 'posts');
     }
 
     private function deletePostImage(string $image): void
     {
-        $path = parse_url($image, PHP_URL_PATH);
-        if ($path && Str::startsWith($path, '/custom_folder/posts/')) {
-            File::delete(public_path(ltrim($path, '/')));
-        } elseif ($path && Str::contains($path, '/storage/posts/')) {
-            Storage::disk('public')->delete(Str::after($path, '/storage/'));
-        }
+        $this->uploads->delete($image, 'posts');
     }
 
     private function authorizeCommunityModerator(Request $request, Community $community): void

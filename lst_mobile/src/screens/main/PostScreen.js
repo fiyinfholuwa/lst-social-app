@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
@@ -114,18 +115,32 @@ export default function PostScreen({ route, navigation }) {
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
-    loadPost();
-    return navigation.addListener('focus', loadPost);
-  }, [navigation, postId]);
+  const missingPostHandled = useRef(false);
 
-  const loadPost = async () => {
-    const [postData, commentData] = await Promise.all([apiService.getPost(postId), apiService.getComments(postId, 1)]);
-    setPost(postData);
-    setComments(commentData.data);
-    setCommentPage(commentData.currentPage);
-    setHasMoreComments(commentData.hasMorePages);
-  };
+  const loadPost = useCallback(async () => {
+    try {
+      const [postData, commentData] = await Promise.all([apiService.getPost(postId), apiService.getComments(postId, 1)]);
+      setPost(postData);
+      setComments(commentData.data);
+      setCommentPage(commentData.currentPage);
+      setHasMoreComments(commentData.hasMorePages);
+    } catch (error) {
+      const missing = error.message?.includes('No query results for model [App\\Models\\Post]');
+      if (missing && !missingPostHandled.current) {
+        missingPostHandled.current = true;
+        forgetDeletedPost(postId);
+        Alert.alert('Post unavailable', 'This post has been deleted or is no longer available.', [
+          { text: 'Go back', onPress: () => navigation.goBack() },
+        ]);
+        return;
+      }
+      if (!missing) Alert.alert('Couldn’t load post', error.message || 'Please try again.');
+    }
+  }, [forgetDeletedPost, navigation, postId]);
+
+  useFocusEffect(useCallback(() => {
+    loadPost();
+  }, [loadPost]));
 
   const loadMoreComments = async () => {
     if (!hasMoreComments || loadingMoreComments) return;
@@ -135,6 +150,10 @@ export default function PostScreen({ route, navigation }) {
       setComments(current => [...current, ...response.data]);
       setCommentPage(response.currentPage);
       setHasMoreComments(response.hasMorePages);
+    } catch (error) {
+      if (!error.message?.includes('No query results for model')) {
+        Alert.alert('Couldn’t load comments', error.message || 'Please try again.');
+      }
     } finally {
       setLoadingMoreComments(false);
     }
@@ -160,8 +179,12 @@ export default function PostScreen({ route, navigation }) {
   };
 
   const handleLike = async () => {
-    await apiService.likePost(postId);
-    loadPost();
+    try {
+      await apiService.likePost(postId);
+      await loadPost();
+    } catch (error) {
+      Alert.alert('Couldn’t update post', error.message || 'Please try again.');
+    }
   };
 
   const handleShare = () => navigation.navigate('SharePost', { postId: post.id });

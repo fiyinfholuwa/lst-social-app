@@ -216,7 +216,7 @@ export default function UserProfileScreen({ route, navigation }) {
             onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
             onOriginalPress={post.originalPost ? () => navigation.navigate('PostDetail', { postId: post.originalPost.id }) : undefined}
             onUserPress={() => {}}
-            onLike={() => apiService.likePost(post.id).then(refreshPosts)}
+            onLike={() => apiService.likePost(post.id).then(refreshPosts).catch(error => Alert.alert('Couldn’t update post', error.message))}
             onShare={() => sharePost(post)}
             onSave={() => toggleSavedPost(post.id)}
             onEdit={isOwnProfile ? () => navigation.navigate('EditPost', { postId: post.id }) : undefined}

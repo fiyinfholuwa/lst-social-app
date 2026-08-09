@@ -53,7 +53,7 @@ export default function SavedPostsScreen({ navigation }) {
             onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
             onOriginalPress={item.originalPost ? () => navigation.navigate('PostDetail', { postId: item.originalPost.id }) : undefined}
             onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
-            onLike={() => apiService.likePost(item.id).then(loadSavedPosts)}
+            onLike={() => apiService.likePost(item.id).then(loadSavedPosts).catch(error => Alert.alert('Couldn’t update post', error.message))}
             onShare={() => sharePost(item)}
             onSave={() => toggleSavedPost(item.id)}
             onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}

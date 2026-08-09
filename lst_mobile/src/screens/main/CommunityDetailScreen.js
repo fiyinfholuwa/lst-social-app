@@ -245,7 +245,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
           post={item}
           onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
           onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
-          onLike={() => apiService.likePost(item.id).then(loadCommunity)}
+          onLike={() => apiService.likePost(item.id).then(loadCommunity).catch(error => Alert.alert('Couldn’t update post', error.message))}
           onSave={() => toggleSavedPost(item.id)}
           onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}
           onDelete={String(item.userId) === String(user?.id) ? () => deletePost(item) : undefined}

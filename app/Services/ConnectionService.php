@@ -39,6 +39,7 @@ class ConnectionService
             'lastPage' => $page->lastPage(),
             'hasMorePages' => $page->hasMorePages(),
             'total' => $page->total(),
+            'unreadTotal' => $this->repo->unreadChatCount($user),
         ];
     }
 

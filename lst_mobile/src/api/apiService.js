@@ -1,4 +1,10 @@
 import httpClient from './httpClient';
+import { File } from 'expo-file-system';
+
+const appendFile = (form, field, asset, fallbackName) => {
+  const file = new File(asset.uri);
+  form.append(field, file, asset.fileName || file.name || fallbackName);
+};
 
 const apiService = {
   login: (email, password) => httpClient.post('/login', { email, password }, { auth: false }),
@@ -21,7 +27,7 @@ const apiService = {
     const form = new FormData();
     form.append('_method', 'PATCH');
     Object.entries(updates).forEach(([key, value]) => form.append(key, value == null ? '' : String(value)));
-    if (avatar) form.append('avatar_image', { uri: avatar.uri, name: avatar.fileName || 'profile.jpg', type: avatar.mimeType || 'image/jpeg' });
+    if (avatar) appendFile(form, 'avatar_image', avatar, 'profile.jpg');
     return httpClient.postForm('/user', form);
   },
   getUser: userId => httpClient.get(`/users/${userId}`),
@@ -31,11 +37,7 @@ const apiService = {
   createPost: (content, images = []) => {
     const form = new FormData();
     form.append('content', content);
-    images.forEach((asset, index) => form.append('images[]', {
-      uri: asset.uri,
-      name: asset.fileName || `post-image-${index + 1}.jpg`,
-      type: asset.mimeType || 'image/jpeg',
-    }));
+    images.forEach((asset, index) => appendFile(form, 'images[]', asset, `post-image-${index + 1}.jpg`));
     return httpClient.postForm('/posts', form);
   },
   updatePost: (postId, content, postImages = []) => {
@@ -43,11 +45,7 @@ const apiService = {
     form.append('_method', 'PATCH');
     form.append('content', content);
     postImages.filter(image => image.existing).forEach(image => form.append('existing_images[]', image.uri));
-    postImages.filter(image => !image.existing).forEach((image, index) => form.append('images[]', {
-      uri: image.uri,
-      name: image.fileName || `post-image-${index + 1}.jpg`,
-      type: image.mimeType || 'image/jpeg',
-    }));
+    postImages.filter(image => !image.existing).forEach((image, index) => appendFile(form, 'images[]', image, `post-image-${index + 1}.jpg`));
     return httpClient.postForm(`/posts/${postId}`, form);
   },
   deletePost: postId => httpClient.delete(`/posts/${postId}`),
@@ -71,11 +69,7 @@ const apiService = {
   createCommunityPost: (communityId, content, images = []) => {
     const form = new FormData();
     form.append('content', content);
-    images.forEach((asset, index) => form.append('images[]', {
-      uri: asset.uri,
-      name: asset.fileName || `community-post-image-${index + 1}.jpg`,
-      type: asset.mimeType || 'image/jpeg',
-    }));
+    images.forEach((asset, index) => appendFile(form, 'images[]', asset, `community-post-image-${index + 1}.jpg`));
     return httpClient.postForm(`/communities/${communityId}/posts`, form);
   },
   getApplications: async () => (await httpClient.get('/community-applications')).applications,
@@ -90,12 +84,22 @@ const apiService = {
   sendFriendRequest: userId => httpClient.post(`/users/${userId}/friend-request`),
   updateRelationship: (userId, action) => httpClient.post(`/users/${userId}/relationship`, { action }),
   getChatsPage: (page = 1, query = '') => httpClient.get(`/chats?page=${page}&q=${encodeURIComponent(query)}`),
-  getUnreadChatCount: async () => (await httpClient.get('/chats-unread-count')).count,
+  getUnreadChatCount: async () => {
+    const response = await httpClient.get('/chats?page=1');
+    return response.unreadTotal ?? (response.data || []).filter(chat => Number(chat.unreadCount) > 0).length;
+  },
   getChat: chatId => httpClient.get(`/chats/${chatId}`),
   getOrCreateChat: otherUser => httpClient.post(`/chats/with/${otherUser.id}`),
   getMessages: chatId => httpClient.get(`/chats/${chatId}/messages`),
   sendMessage: (chatId, text) => httpClient.post(`/chats/${chatId}/messages`, { text }),
-  sendVoiceMessage: (chatId, audioUri, duration) => httpClient.post(`/chats/${chatId}/messages`, { type: 'voice', audioUri, duration }),
+  sendVoiceMessage: (chatId, audioUri, duration) => {
+    const form = new FormData();
+    const extension = audioUri.split('?')[0].split('.').pop()?.toLowerCase();
+    form.append('type', 'voice');
+    form.append('duration', String(Math.round(duration)));
+    appendFile(form, 'audio', { uri: audioUri, fileName: `voice-note.${extension || 'm4a'}` }, `voice-note.${extension || 'm4a'}`);
+    return httpClient.postForm(`/chats/${chatId}/messages`, form);
+  },
   getNotifications: () => httpClient.get('/notifications'),
   markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
   markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),

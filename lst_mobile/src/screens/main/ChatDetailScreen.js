@@ -27,21 +27,40 @@ const formatDuration = milliseconds => {
 };
 
 function VoiceNote({ message, mine, theme }) {
-  const player = useAudioPlayer(message.audioUri || null, { updateInterval: 250 });
+  const player = useAudioPlayer(message.audioUri ? { uri: message.audioUri } : null, {
+    updateInterval: 250,
+    downloadFirst: true,
+    keepAudioSessionActive: true,
+  });
   const status = useAudioPlayerStatus(player);
   const playing = Boolean(status.playing);
   const position = (status.currentTime || 0) * 1000;
+  const duration = status.duration > 0 ? status.duration * 1000 : Number(message.duration || 0);
 
   const togglePlayback = async () => {
-    if (!message.audioUri) return;
-    if (playing) player.pause();
-    else {
-      if (position >= (message.duration || 0) - 300) await player.seekTo(0);
+    if (!message.audioUri) {
+      Alert.alert('Voice note unavailable', 'This voice note does not have a playable audio file.');
+      return;
+    }
+    try {
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      if (playing) {
+        player.pause();
+        return;
+      }
+      if (!status.isLoaded) {
+        Alert.alert('Loading voice note', 'The audio is still downloading. Please tap play again in a moment.');
+        return;
+      }
+      if (status.didJustFinish || (duration > 0 && position >= duration - 300)) await player.seekTo(0);
       player.play();
+    } catch (error) {
+      console.error('Unable to play voice note:', error);
+      Alert.alert('Couldn’t play voice note', error.message || 'Please check your connection and try again.');
     }
   };
 
-  const progress = Math.min(1, position / Math.max(message.duration || 1, 1));
+  const progress = Math.min(1, position / Math.max(duration || 1, 1));
 
   return (
     <View style={styles.voiceNote}>
@@ -50,7 +69,7 @@ function VoiceNote({ message, mine, theme }) {
         onPress={togglePlayback}
         accessibilityLabel={playing ? 'Pause voice note' : 'Play voice note'}
       >
-        <AppIcon name={playing ? 'pause' : 'play'} size={13} color={mine ? '#FFFFFF' : theme.primary} />
+        <AppIcon name={status.isBuffering || !status.isLoaded ? 'hourglass' : playing ? 'pause' : 'play'} size={13} color={mine ? '#FFFFFF' : theme.primary} />
       </TouchableOpacity>
       <View style={styles.voiceProgressArea}>
         <View style={[styles.voiceTrack, { backgroundColor: mine ? 'rgba(255,255,255,0.28)' : theme.border }]}>
@@ -58,7 +77,7 @@ function VoiceNote({ message, mine, theme }) {
         </View>
         <View style={styles.voiceMeta}>
           <Text style={[styles.voiceDuration, { color: mine ? 'rgba(255,255,255,0.76)' : theme.secondaryText }]}>
-            {formatDuration(playing ? position : message.duration)}
+            {formatDuration(playing ? position : duration)}
           </Text>
           <AppIcon name="microphone" size={9} color={mine ? 'rgba(255,255,255,0.76)' : theme.secondaryText} />
         </View>
@@ -152,14 +171,21 @@ export default function ChatDetailScreen({ route, navigation }) {
     try {
       await audioRecorder.stop();
       const uri = audioRecorder.uri;
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
-      if (shouldSend && uri && recordingDuration >= 500) {
+      if (shouldSend) {
+        if (!uri) throw new Error('The recording file was not created.');
+        if (recordingDuration < 500) throw new Error('The voice note is too short. Record for at least one second.');
         await apiService.sendVoiceMessage(chatId, uri, recordingDuration);
         await loadMessages();
       }
     } catch (error) {
-      if (shouldSend) Alert.alert('Voice note failed', 'The recording could not be sent. Please try again.');
+      console.error('Unable to send voice note:', error);
+      if (shouldSend) Alert.alert('Voice note failed', error.message || 'The recording could not be sent. Please try again.');
     } finally {
+      try {
+        await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      } catch (error) {
+        console.warn('Unable to restore audio mode:', error);
+      }
     }
   };
 
@@ -224,38 +250,43 @@ export default function ChatDetailScreen({ route, navigation }) {
       ) : (
         <View style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10) }]}>
           <View style={styles.inputRow}>
-            <TextInput
-              ref={inputRef}
-              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
-              placeholder="Type a message..."
-              placeholderTextColor={theme.secondaryText}
-              value={inputText}
-              onChangeText={setInputText}
-              onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
-              multiline
-            />
-            <TouchableOpacity
-              style={[styles.emojiButton, { backgroundColor: theme.primarySoft }]}
-              onPress={() => { Keyboard.dismiss(); setShowEmojiPicker(true); }}
-              accessibilityLabel="Add emoji"
-            >
-              <AppIcon name="happy" size={18} color={theme.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.voiceButton, { backgroundColor: theme.card, borderColor: theme.border }]}
-              onPress={startRecording}
-              accessibilityLabel="Record voice note"
-            >
-              <AppIcon name="microphone" size={15} color={theme.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.sendButton, { backgroundColor: inputText.trim() ? theme.primary : theme.border }]}
-              onPress={sendMessage}
-              disabled={!inputText.trim() || sending}
-              accessibilityLabel="Send text message"
-            >
-              <AppIcon name="paper-plane" size={14} color="#FFFFFF" />
-            </TouchableOpacity>
+            <View style={[styles.inputPill, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <TouchableOpacity
+                style={styles.emojiButton}
+                onPress={() => { Keyboard.dismiss(); setShowEmojiPicker(true); }}
+                accessibilityLabel="Add emoji"
+              >
+                <AppIcon name="happy" size={20} color={theme.primary} />
+              </TouchableOpacity>
+              <TextInput
+                ref={inputRef}
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Message..."
+                placeholderTextColor={theme.secondaryText}
+                value={inputText}
+                onChangeText={setInputText}
+                onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
+                multiline
+              />
+            </View>
+            {inputText.trim() ? (
+              <TouchableOpacity
+                style={[styles.roundAction, { backgroundColor: theme.primary }]}
+                onPress={sendMessage}
+                disabled={sending}
+                accessibilityLabel="Send text message"
+              >
+                <AppIcon name="paper-plane" size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.roundAction, { backgroundColor: theme.primary }]}
+                onPress={startRecording}
+                accessibilityLabel="Record voice note"
+              >
+                <AppIcon name="microphone" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -281,11 +312,11 @@ const styles = StyleSheet.create({
   messageMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 5 },
   messageTime: { fontSize: 10 },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -12, paddingHorizontal: 12, paddingTop: 9 },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 7 },
-  input: { flex: 1, minHeight: 43, maxHeight: 100, borderWidth: 1, borderRadius: 16, paddingHorizontal: 13, paddingTop: 11, paddingBottom: 10, fontSize: 13 },
-  sendButton: { width: 43, height: 43, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  voiceButton: { width: 43, height: 43, borderRadius: 15, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  emojiButton: { width: 43, height: 43, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  inputPill: { flex: 1, minHeight: 46, maxHeight: 108, borderWidth: StyleSheet.hairlineWidth, borderRadius: 23, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },
+  input: { flex: 1, minHeight: 45, maxHeight: 107, paddingRight: 14, paddingTop: 12, paddingBottom: 11, fontSize: 14 },
+  emojiButton: { width: 40, height: 45, alignItems: 'center', justifyContent: 'center' },
+  roundAction: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   emptyConversation: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
   emptyConversationIcon: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   emptyConversationTitle: { fontSize: 16, fontWeight: '800', marginTop: 12 },

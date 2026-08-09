@@ -3,7 +3,6 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import AppIcon from './AppIcon';
 
 export default function AuthField({ label, icon, secureTextEntry, theme, style, ...inputProps }) {
-  const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(Boolean(secureTextEntry));
 
   return (
@@ -12,12 +11,11 @@ export default function AuthField({ label, icon, secureTextEntry, theme, style, 
       <View
         style={[
           styles.field,
-          { backgroundColor: theme.background, borderColor: focused ? theme.accent : theme.border },
-          focused && { shadowColor: theme.accent },
+          { backgroundColor: theme.background, borderColor: theme.border },
         ]}
       >
-        <View style={[styles.icon, { backgroundColor: focused ? theme.accentSoft : theme.primarySoft }]}>
-          <AppIcon name={icon} size={17} color={focused ? theme.accent : theme.primary} />
+        <View style={[styles.icon, { backgroundColor: theme.primarySoft }]}> 
+          <AppIcon name={icon} size={17} color={theme.primary} />
         </View>
         <TextInput
           {...inputProps}
@@ -25,14 +23,8 @@ export default function AuthField({ label, icon, secureTextEntry, theme, style, 
           placeholderTextColor={theme.secondaryText}
           editable={inputProps.editable !== false}
           secureTextEntry={secureTextEntry ? hidden : false}
-          onFocus={event => {
-            setFocused(true);
-            inputProps.onFocus?.(event);
-          }}
-          onBlur={event => {
-            setFocused(false);
-            inputProps.onBlur?.(event);
-          }}
+          onFocus={inputProps.onFocus}
+          onBlur={inputProps.onBlur}
         />
         {secureTextEntry ? (
           <TouchableOpacity

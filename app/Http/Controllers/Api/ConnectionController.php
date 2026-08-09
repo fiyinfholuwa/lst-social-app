@@ -19,6 +19,19 @@ class ConnectionController extends Controller
         return response()->json($this->service->friendshipState($r->user()));
     }
 
+    public function friends(Request $r)
+    {
+        $page = $this->repo->friendsPage($r->user());
+
+        return response()->json([
+            'data' => $page->getCollection()->map(fn (User $user) => (new UserResource($user))->resolve($r))->values(),
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
+        ]);
+    }
+
     public function searchUsers(Request $r)
     {
         $data = $r->validate(['q' => 'required|string|min:2|max:100']);

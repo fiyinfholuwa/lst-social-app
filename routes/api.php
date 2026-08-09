@@ -55,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/communities/{community}/moderation/applications/{application}', [SocialController::class, 'reviewCommunityApplication']);
     Route::post('/communities/{community}/moderation/posts/{post}', [SocialController::class, 'reviewCommunityPost']);
     Route::get('/friendships', [ConnectionController::class, 'friendships']);
+    Route::get('/friends', [ConnectionController::class, 'friends']);
     Route::post('/users/{user}/friend-request', [ConnectionController::class, 'request']);
     Route::post('/users/{user}/relationship', [ConnectionController::class, 'act']);
     Route::get('/chats', [ConnectionController::class, 'chats']);

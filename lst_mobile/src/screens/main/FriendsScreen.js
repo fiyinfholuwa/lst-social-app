@@ -13,6 +13,10 @@ export default function FriendsScreen({ navigation }) {
   const { theme } = useTheme();
   const { friendIds, outgoingRequestIds, blockedUserIds, blockUser, friendshipsLoading, refreshFriendships, getRelationship, sendFriendRequest, cancelFriendRequest, acceptFriendRequest } = useFriendships();
   const [friends, setFriends] = useState([]);
+  const [friendPage, setFriendPage] = useState(1);
+  const [hasMoreFriends, setHasMoreFriends] = useState(false);
+  const [loadingFriends, setLoadingFriends] = useState(true);
+  const [loadingMoreFriends, setLoadingMoreFriends] = useState(false);
   const [sentRequests, setSentRequests] = useState([]);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -30,17 +34,43 @@ export default function FriendsScreen({ navigation }) {
   useEffect(() => {
     let active = true;
 
+    setLoadingFriends(true);
     Promise.all([
-      Promise.allSettled(friendIds.map(id => apiService.getUser(id))),
+      apiService.getFriendsPage(1),
       Promise.allSettled(outgoingRequestIds.map(id => apiService.getUser(id))),
-    ]).then(([friendResults, requestResults]) => {
+    ]).then(([friendResponse, requestResults]) => {
       if (!active) return;
-      setFriends(friendResults.filter(result => result.status === 'fulfilled').map(result => result.value).filter(Boolean));
+      setFriends(friendResponse.data || []);
+      setFriendPage(friendResponse.currentPage || 1);
+      setHasMoreFriends(Boolean(friendResponse.hasMorePages));
       setSentRequests(requestResults.filter(result => result.status === 'fulfilled').map(result => result.value).filter(Boolean));
-    });
+    }).catch(error => {
+      if (active) {
+        setFriends([]);
+        console.error('Unable to load friends:', error);
+      }
+    }).finally(() => { if (active) setLoadingFriends(false); });
 
     return () => { active = false; };
   }, [friendIds, outgoingRequestIds]);
+
+  const loadMoreFriends = async () => {
+    if (!hasMoreFriends || loadingMoreFriends || isSearching) return;
+    setLoadingMoreFriends(true);
+    try {
+      const response = await apiService.getFriendsPage(friendPage + 1);
+      setFriends(current => {
+        const known = new Set(current.map(friend => String(friend.id)));
+        return [...current, ...(response.data || []).filter(friend => !known.has(String(friend.id)))];
+      });
+      setFriendPage(response.currentPage);
+      setHasMoreFriends(Boolean(response.hasMorePages));
+    } catch (error) {
+      console.error('Unable to load more friends:', error);
+    } finally {
+      setLoadingMoreFriends(false);
+    }
+  };
 
   useEffect(() => {
     const term = query.trim();
@@ -107,7 +137,7 @@ export default function FriendsScreen({ navigation }) {
     ],
   );
 
-  if (friendshipsLoading) return <Loader />;
+  if (friendshipsLoading || loadingFriends) return <Loader />;
 
   const isSearching = query.trim().length >= 2;
   const displayedPeople = isSearching ? results : [
@@ -195,6 +225,9 @@ export default function FriendsScreen({ navigation }) {
         keyExtractor={item => String(item.id)}
         contentContainerStyle={[styles.content, displayedPeople.length === 0 && styles.emptyContent]}
         renderItem={renderPerson}
+        onEndReached={loadMoreFriends}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={loadingMoreFriends ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
         ListEmptyComponent={
           <View style={styles.empty}>
             <AppIcon name={isSearching ? 'search' : 'users'} size={31} color={theme.secondaryText} />
@@ -234,6 +267,7 @@ const styles = StyleSheet.create({
   searchBox: { minHeight: 48, marginHorizontal: 14, marginTop: 10, paddingHorizontal: 13, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 },
   content: { padding: 14 },
+  moreLoader: { paddingVertical: 18 },
   sectionHeading: { marginTop: 5, marginBottom: 9, paddingHorizontal: 3, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
   emptyContent: { flexGrow: 1 },
   friendRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: 1, borderRadius: 17, marginBottom: 10, gap: 7 },

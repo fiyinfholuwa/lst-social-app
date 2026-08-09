@@ -49,6 +49,24 @@ class ConnectionRepository
         ];
     }
 
+    public function friendsPage(User $user, int $perPage = 30)
+    {
+        return User::query()
+            ->whereKeyNot($user->id)
+            ->whereExists(fn ($query) => $query->selectRaw('1')
+                ->from('friendships')
+                ->where('status', 'accepted')
+                ->where(fn ($friendship) => $friendship
+                    ->where(fn ($pair) => $pair
+                        ->where('sender_id', $user->id)
+                        ->whereColumn('receiver_id', 'users.id'))
+                    ->orWhere(fn ($pair) => $pair
+                        ->where('receiver_id', $user->id)
+                        ->whereColumn('sender_id', 'users.id'))))
+            ->orderBy('name')
+            ->paginate($perPage);
+    }
+
     public function request(User $user, User $other): void
     {
         Friendship::updateOrCreate(['sender_id' => $user->id, 'receiver_id' => $other->id], ['status' => 'pending']);

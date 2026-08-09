@@ -85,6 +85,7 @@ const apiService = {
   reviewCommunityApplication: (communityId, applicationId, action) => httpClient.post(`/communities/${communityId}/moderation/applications/${applicationId}`, { action }),
   reviewCommunityPost: (communityId, postId, action) => httpClient.post(`/communities/${communityId}/moderation/posts/${postId}`, { action }),
   getFriendships: () => httpClient.get('/friendships'),
+  getFriendsPage: (page = 1) => httpClient.get(`/friends?page=${page}`),
   searchUsers: async query => (await httpClient.get(`/users/search?q=${encodeURIComponent(query)}`)).data,
   sendFriendRequest: userId => httpClient.post(`/users/${userId}/friend-request`),
   updateRelationship: (userId, action) => httpClient.post(`/users/${userId}/relationship`, { action }),

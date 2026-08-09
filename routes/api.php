@@ -16,6 +16,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
     Route::post('/email/verification-notification', [AuthController::class, 'sendVerification'])->middleware('throttle:3,1');
+    Route::post('/email/verify-otp', [AuthController::class, 'verifyEmailOtp'])->middleware('throttle:6,1');
+    Route::delete('/user', [AuthController::class, 'destroy'])->middleware('throttle:3,1');
     Route::patch('/user', [SocialController::class, 'updateProfile']);
     Route::get('/users/search', [ConnectionController::class, 'searchUsers']);
     Route::get('/users/{user}', [SocialController::class, 'user']);

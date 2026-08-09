@@ -23,6 +23,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [loadingMorePosts, setLoadingMorePosts] = useState(false);
   const [leaveVisible, setLeaveVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [checkingApplicationAccess, setCheckingApplicationAccess] = useState(false);
   const { theme } = useTheme();
   const { user, refreshUser } = useAuth();
   const friendshipState = useFriendships();
@@ -34,18 +35,23 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
 
   const loadCommunity = async () => {
-    const [communityResult, membersResult, postsResult] = await Promise.allSettled([
-      apiService.getCommunity(communityId),
-      apiService.getCommunityMembers(communityId),
-      apiService.getCommunityPosts(communityId, 1),
-    ]);
+    const requests = [apiService.getCommunity(communityId)];
+    if (joined) {
+      requests.push(apiService.getCommunityMembers(communityId));
+      requests.push(apiService.getCommunityPosts(communityId, 1));
+    }
+    const [communityResult, membersResult, postsResult] = await Promise.allSettled(requests);
     if (communityResult.status === 'rejected') throw communityResult.reason;
     setCommunity(communityResult.value);
-    setMembers(membersResult.status === 'fulfilled' ? membersResult.value : []);
-    if (postsResult.status === 'fulfilled') {
+    setMembers(joined && membersResult?.status === 'fulfilled' ? membersResult.value : []);
+    if (joined && postsResult?.status === 'fulfilled') {
       setPosts(postsResult.value.data);
       setPostPage(postsResult.value.currentPage);
       setHasMorePosts(postsResult.value.hasMorePages);
+    } else if (!joined) {
+      setPosts([]);
+      setPostPage(1);
+      setHasMorePosts(false);
     }
   };
 
@@ -77,6 +83,29 @@ export default function CommunityDetailScreen({ route, navigation }) {
     message: `${post.userName} shared on LST Social:\n\n${post.content}`,
   });
 
+  const openApplication = async () => {
+    if (checkingApplicationAccess) return;
+    setCheckingApplicationAccess(true);
+    try {
+      const latestUser = await refreshUser();
+      if (!latestUser?.emailVerified) {
+        Alert.alert('Verify your email', 'You need to verify your email before viewing or filling a community application.', [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Verify email', onPress: () => navigation.navigate('Profile') },
+        ]);
+        return;
+      }
+      navigation.navigate('CommunityApplication', { communityId });
+    } catch (error) {
+      Alert.alert('Verify your email', 'Verify your email before applying to join a community.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Verify email', onPress: () => navigation.navigate('Profile') },
+      ]);
+    } finally {
+      setCheckingApplicationAccess(false);
+    }
+  };
+
   const leaveCommunity = async () => {
     setLeaving(true);
     try {
@@ -84,6 +113,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
       await refreshUser();
       setMembers(current => current.filter(member => String(member.id) !== String(user.id)));
       setCommunity(current => ({ ...current, memberCount: Math.max(0, current.memberCount - 1) }));
+      setPosts([]);
+      setHasMorePosts(false);
       setLeaveVisible(false);
     } finally {
       setLeaving(false);
@@ -94,7 +125,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
     refreshUser().catch(() => {});
     refreshApplications().catch(() => {});
     loadCommunity().catch(() => {});
-  }, [communityId, refreshApplications, refreshUser]));
+  }, [communityId, joined, refreshApplications, refreshUser]));
 
   if (!community) return <Loader />;
 
@@ -124,12 +155,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
         <TouchableOpacity
           style={[styles.joinButton, { backgroundColor: joined || pendingApplication ? theme.primarySoft : theme.primary }]}
-          onPress={() => navigation.navigate('CommunityApplication', { communityId })}
-          disabled={joined || pendingApplication}
+          onPress={openApplication}
+          disabled={joined || pendingApplication || checkingApplicationAccess}
         >
-          <AppIcon name={joined ? 'check' : pendingApplication ? 'clock' : 'file-alt'} size={14} color={joined || pendingApplication ? theme.primary : '#FFFFFF'} />
+          {checkingApplicationAccess ? <ActivityIndicator size="small" color="#FFFFFF" /> : <AppIcon name={joined ? 'check' : pendingApplication ? 'clock' : user?.emailVerified ? 'file-alt' : 'lock'} size={14} color={joined || pendingApplication ? theme.primary : '#FFFFFF'} />}
           <Text style={[styles.joinText, { color: joined || pendingApplication ? theme.primary : '#FFFFFF' }]}>
-            {joined ? 'You are a member' : pendingApplication ? 'Application under review' : 'View requirements & apply'}
+            {joined ? 'You are a member' : pendingApplication ? 'Application under review' : checkingApplicationAccess ? 'Checking access…' : user?.emailVerified ? 'View requirements & apply' : 'Verify email to apply'}
           </Text>
         </TouchableOpacity>
 
@@ -165,7 +196,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         </View>
       </View>
 
-      <View style={styles.section}>
+      {joined ? <View style={styles.section}>
         <View style={styles.sectionHeading}>
           <View>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>People</Text>
@@ -186,14 +217,17 @@ export default function CommunityDetailScreen({ route, navigation }) {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>
+      </View> : null}
 
-      <View style={[styles.sectionHeading, styles.postsHeading]}>
+      {joined ? <View style={[styles.sectionHeading, styles.postsHeading]}>
         <View>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Latest posts</Text>
           <Text style={[styles.sectionMeta, { color: theme.secondaryText }]}>Updates from this community</Text>
         </View>
-      </View>
+      </View> : <View style={[styles.lockedPosts, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <View style={[styles.lockedIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="lock" size={20} color={theme.primary} /></View>
+        <View style={styles.lockedCopy}><Text style={[styles.lockedTitle, { color: theme.text }]}>Member posts are private</Text><Text style={[styles.lockedText, { color: theme.secondaryText }]}>Join this community to view posts shared by its members.</Text></View>
+      </View>}
     </>
   );
 
@@ -222,13 +256,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
           isSaved={isPostSaved(item.id)}
         />
       )}
-      ListEmptyComponent={
+      ListEmptyComponent={joined ? (
         <View style={styles.empty}>
           <AppIcon name="comments" size={26} color={theme.secondaryText} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No posts yet</Text>
           <Text style={[styles.emptyText, { color: theme.secondaryText }]}>Community updates will appear here.</Text>
         </View>
-      }
+      ) : null}
     />
     <ConfirmModal
       visible={leaveVisible}
@@ -280,6 +314,11 @@ const styles = StyleSheet.create({
   memberAvatar: { width: 52, height: 52, borderRadius: 26 },
   memberName: { fontSize: 11, fontWeight: '600', marginTop: 6, maxWidth: 58 },
   postsHeading: { marginTop: 28 },
+  lockedPosts: { marginHorizontal: 18, marginTop: 28, borderWidth: 1, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  lockedIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  lockedCopy: { flex: 1 },
+  lockedTitle: { fontSize: 13, fontWeight: '800' },
+  lockedText: { fontSize: 11, lineHeight: 16, marginTop: 3 },
   post: { marginHorizontal: 18, marginBottom: 10, padding: 14, borderWidth: 1, borderRadius: 17 },
   postTop: { flexDirection: 'row', alignItems: 'center' },
   postAuthorLine: { flexDirection: 'row', alignItems: 'center', gap: 7 },

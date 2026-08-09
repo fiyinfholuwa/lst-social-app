@@ -13,6 +13,28 @@ class SocialApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_unverified_user_cannot_post_or_join_a_community(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $community = Community::create(['name' => 'Verified members']);
+
+        $this->actingAs($user)->postJson('/api/posts', ['content' => 'Not allowed'])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Verify your email before posting to the timeline.');
+        $this->actingAs($user)->postJson("/api/communities/{$community->id}/join")
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Verify your email before joining a community.');
+        $this->actingAs($user)->postJson("/api/communities/{$community->id}/applications", ['answers' => ['answer']])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Verify your email before applying to join a community.');
+        $this->actingAs($user)->getJson("/api/communities/{$community->id}/members")
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Join this community to view its members.');
+
+        $this->assertDatabaseMissing('posts', ['user_id' => $user->id]);
+        $this->assertDatabaseMissing('community_user', ['user_id' => $user->id, 'community_id' => $community->id]);
+    }
+
     public function test_authenticated_social_flow_uses_persisted_data(): void
     {
         $user = User::factory()->create();
@@ -61,7 +83,8 @@ class SocialApiTest extends TestCase
         auth()->forgetGuards();
         $this->flushHeaders()->withHeaders($otherHeaders)
             ->getJson("/api/communities/{$community->id}/posts")
-            ->assertJsonCount(0, 'data');
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Join this community to view member posts.');
 
         auth()->forgetGuards();
         $this->flushHeaders()->withHeaders($headers)->getJson('/api/posts')->assertJsonMissing(['id' => $postId]);
@@ -82,13 +105,14 @@ class SocialApiTest extends TestCase
         $viewer = User::factory()->create();
         $community = Community::create(['name' => 'Large circle']);
         $community->members()->attach(User::factory()->count(25)->create());
+        $community->members()->attach($viewer);
         $headers = ['Authorization' => 'Bearer '.$viewer->createToken('test')->plainTextToken];
 
         $this->withHeaders($headers)
             ->getJson("/api/communities/{$community->id}/members")
             ->assertOk()
             ->assertJsonCount(20, 'data')
-            ->assertJsonPath('total', 25)
+            ->assertJsonPath('total', 26)
             ->assertJsonPath('hasMore', true);
     }
 
@@ -113,6 +137,7 @@ class SocialApiTest extends TestCase
     {
         $user = User::factory()->create();
         $community = Community::create(['name' => 'Busy circle']);
+        $community->members()->attach($user);
         foreach (range(1, 15) as $number) {
             Post::create(['user_id' => $user->id, 'community_id' => $community->id, 'content' => "Post {$number}", 'status' => 'approved']);
         }

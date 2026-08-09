@@ -88,6 +88,8 @@ const apiService = {
   markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
   markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),
   sendEmailVerification: () => httpClient.post('/email/verification-notification'),
+  verifyEmailOtp: code => httpClient.post('/email/verify-otp', { code }),
+  deleteAccount: password => httpClient.delete('/user', { body: { password } }),
   submitSupportRequest: (type, subject, message) => httpClient.post('/support-requests', { type, subject, message }),
 };
 

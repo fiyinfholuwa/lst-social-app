@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, S
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../../components/AppIcon';
 import AuthField from '../../components/AuthField';
+import BrandLogo from '../../components/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../api/apiService';
@@ -110,8 +111,7 @@ export default function RegisterScreen({ navigation }) {
             <Icon name="arrow-back" size={19} color={theme.text} />
           </TouchableOpacity>
           <View style={styles.brandRow}>
-            <LinearGradient colors={[theme.primary, theme.accent]} style={styles.logo}><Icon name="heart" solid size={17} color="#FFFFFF" /></LinearGradient>
-            <Text style={[styles.brand, { color: theme.text }]}>LST SOCIAL</Text>
+            <BrandLogo width={102} />
           </View>
           <Text style={[styles.stepCount, { color: theme.secondaryText }]}>{step + 1} of {steps.length}</Text>
         </View>
@@ -182,9 +182,7 @@ const getStyles = theme => StyleSheet.create({
   orbBottom: { width: 150, height: 150, bottom: 20, left: -86 },
   topRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   back: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  brandRow: { position: 'absolute', left: 60, right: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  brand: { fontSize: 11, fontWeight: '800', letterSpacing: 1.3 },
+  brandRow: { position: 'absolute', left: 60, right: 60, alignItems: 'center', justifyContent: 'center' },
   stepCount: { fontSize: 12, fontWeight: '700' },
   progressRow: { flexDirection: 'row', gap: 7, marginBottom: 22 },
   progressTrack: { flex: 1, height: 4, borderRadius: 4, overflow: 'hidden' },

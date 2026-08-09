@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
 import NoticeModal from '../../components/NoticeModal';
 import QuickMaritalReadingGate from '../../components/QuickMaritalReadingGate';
 import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getCommunityRequirement } from '../../data/communityRequirements';
 
 export default function CommunityApplicationScreen({ route, navigation }) {
   const { communityId } = route.params;
   const { theme } = useTheme();
+  const { user } = useAuth();
   const { submitApplication } = useCommunityApplications();
   const [community, setCommunity] = useState(null);
   const [selectedPath, setSelectedPath] = useState(null);
@@ -28,8 +30,17 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   const requirement = getCommunityRequirement(requirementKey);
 
   useEffect(() => {
+    if (!user?.emailVerified) {
+      Alert.alert('Verify your email', 'You need to verify your email before viewing or filling a community application.', [
+        { text: 'Go back', style: 'cancel', onPress: () => navigation.goBack() },
+        { text: 'Verify email', onPress: () => navigation.navigate('Profile') },
+      ], { cancelable: false });
+      return;
+    }
     apiService.getCommunity(communityId).then(setCommunity);
-  }, [communityId]);
+  }, [communityId, navigation, user?.emailVerified]);
+
+  if (!user?.emailVerified) return <Loader />;
 
   if (!community || !requirement) return <Loader />;
 

@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Auth\Notifications\VerifyEmail;
+use App\Notifications\VerifyEmailOtp;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -61,8 +61,18 @@ class ProfilePrivacyTest extends TestCase
 
         $this->actingAs($user)->postJson('/api/email/verification-notification')
             ->assertOk()
-            ->assertJsonPath('message', 'A verification link has been sent to your email.');
-        Notification::assertSentTo($user, VerifyEmail::class);
+            ->assertJsonPath('message', 'A six-digit verification code has been sent to your email.');
+        $code = null;
+        Notification::assertSentTo($user, VerifyEmailOtp::class, function (VerifyEmailOtp $notification) use (&$code) {
+            $code = $notification->code;
+            return true;
+        });
+        $this->actingAs($user)->postJson('/api/email/verify-otp', ['code' => '000000'])
+            ->assertUnprocessable();
+        $this->actingAs($user)->postJson('/api/email/verify-otp', ['code' => $code])
+            ->assertOk()
+            ->assertJsonPath('message', 'Your email has been verified.');
+        $this->assertNotNull($user->fresh()->email_verified_at);
 
         $this->actingAs($user)->postJson('/api/support-requests', [
             'type' => 'issue',
@@ -70,5 +80,19 @@ class ProfilePrivacyTest extends TestCase
             'message' => 'A clear description of the problem.',
         ])->assertCreated();
         $this->assertDatabaseHas('support_requests', ['user_id' => $user->id, 'type' => 'issue', 'status' => 'open']);
+    }
+
+    public function test_user_must_confirm_password_to_delete_account(): void
+    {
+        $user = User::factory()->create(['password' => 'correct-password']);
+
+        $this->actingAs($user)->deleteJson('/api/user', ['password' => 'wrong-password'])
+            ->assertUnprocessable();
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+
+        $this->actingAs($user)->deleteJson('/api/user', ['password' => 'correct-password'])
+            ->assertOk()
+            ->assertJsonPath('message', 'Your account has been permanently deleted.');
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 }

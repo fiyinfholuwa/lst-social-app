@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../../components/AppIcon';
 import AuthField from '../../components/AuthField';
+import BrandLogo from '../../components/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -48,13 +49,7 @@ export default function LoginScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.brandRow}>
-          <LinearGradient colors={[theme.primary, theme.accent]} style={styles.logo}>
-            <Icon name="heart" solid size={21} color="#FFFFFF" />
-          </LinearGradient>
-          <View>
-            <Text style={[styles.brand, { color: theme.text }]}>LST SOCIAL</Text>
-            <Text style={[styles.brandTag, { color: theme.secondaryText }]}>Love Straight Talks</Text>
-          </View>
+          <BrandLogo width={174} />
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -123,10 +118,7 @@ const getStyles = theme => StyleSheet.create({
   orb: { position: 'absolute', borderRadius: 999, opacity: 0.12 },
   orbTop: { width: 180, height: 180, top: -74, right: -54 },
   orbSide: { width: 120, height: 120, left: -66, top: '37%', opacity: 0.09 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24, paddingHorizontal: 4 },
-  logo: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  brand: { fontSize: 14, fontWeight: '800', letterSpacing: 1.7 },
-  brandTag: { fontSize: 11, marginTop: 3, letterSpacing: 0.25 },
+  brandRow: { alignItems: 'center', marginBottom: 22 },
   card: { borderWidth: 1, borderRadius: 28, padding: 22, shadowColor: '#54233D', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.1, shadowRadius: 28, elevation: 5 },
   welcomeIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   kicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1.8, marginBottom: 9 },

@@ -70,6 +70,17 @@ import { useNotifications } from '../../context/NotificationsContext';
           };
 
           const onRefresh = () => { setRefreshing(true); loadPosts(); };
+          const emailVerified = Boolean(user?.emailVerified);
+          const openComposer = () => {
+            if (!emailVerified) {
+              Alert.alert('Verify your email', 'Verify your email before posting to the timeline or joining a community.', [
+                { text: 'Not now', style: 'cancel' },
+                { text: 'Verify email', onPress: () => navigation.navigate('Profile') },
+              ]);
+              return;
+            }
+            navigation.navigate('CreatePost');
+          };
 
           if (loading) return <Loader />;
 
@@ -115,7 +126,15 @@ import { useNotifications } from '../../context/NotificationsContext';
                       <Text style={styles.verse}>“Let all that you do be done in love.”</Text>
                       <Text style={styles.reference}>1 Corinthians 16:14</Text>
                     </LinearGradient>
-                    <TouchableOpacity style={[styles.composer, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => navigation.navigate('CreatePost')}>
+                    {!emailVerified ? <TouchableOpacity activeOpacity={0.82} onPress={() => navigation.navigate('Profile')} style={[styles.verificationAlert, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
+                      <View style={[styles.verificationIcon, { backgroundColor: theme.card }]}><Icon name="mail-outline" size={20} color={theme.accent} /></View>
+                      <View style={styles.verificationCopy}>
+                        <Text style={[styles.verificationTitle, { color: theme.text }]}>Verify your email</Text>
+                        <Text style={[styles.verificationText, { color: theme.secondaryText }]} numberOfLines={1}>Required to post or join communities</Text>
+                      </View>
+                      <Icon name="chevron-right" size={16} color={theme.accent} />
+                    </TouchableOpacity> : null}
+                    <TouchableOpacity style={[styles.composer, { backgroundColor: theme.card, borderColor: emailVerified ? theme.border : theme.accent }]} onPress={openComposer}>
                       <View style={[styles.composerIcon, { backgroundColor: theme.primarySoft }]}><Icon name="create-outline" size={20} color={theme.primary} /></View>
                       <Text style={[styles.composerText, { color: theme.secondaryText }]}>Share an update or prayer...</Text>
                       <Icon name="image-outline" size={21} color={theme.primary} />
@@ -138,5 +157,10 @@ import { useNotifications } from '../../context/NotificationsContext';
           composer: { marginHorizontal: 14, marginBottom: 16, padding: 12, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
           composerIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
           composerText: { flex: 1, fontSize: 13 },
+          verificationAlert: { marginHorizontal: 14, marginBottom: 10, paddingHorizontal: 11, minHeight: 58, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 10 },
+          verificationIcon: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+          verificationCopy: { flex: 1 },
+          verificationTitle: { fontSize: 12, fontWeight: '800' },
+          verificationText: { fontSize: 10, marginTop: 2 },
         });
       

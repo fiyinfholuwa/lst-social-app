@@ -3,6 +3,7 @@ import { Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from '
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../../components/AppIcon';
+import BrandLogo from '../../components/BrandLogo';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { COLORS } from '../../styles/colors';
 
@@ -57,8 +58,7 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.brandRow}>
-        <View style={styles.brandMark}><Text style={styles.brandMarkText}>L</Text></View>
-        <Text style={styles.brand}>LST SOCIAL</Text>
+        <BrandLogo width={132} style={styles.brandLogo} />
         <TouchableOpacity style={styles.skipButton} onPress={completeOnboarding} hitSlop={12}>
           <Text style={styles.skip}>Skip</Text>
           <Icon name="arrow-right" size={11} color={COLORS.navy} />
@@ -118,9 +118,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.offWhite },
   brandRow: { position: 'absolute', top: 58, left: 24, right: 24, zIndex: 10, elevation: 10, flexDirection: 'row', alignItems: 'center' },
-  brandMark: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.red, alignItems: 'center', justifyContent: 'center', marginRight: 9 },
-  brandMarkText: { color: COLORS.white, fontWeight: '700', fontSize: 15 },
-  brand: { color: COLORS.navy, letterSpacing: 1.7, fontSize: 13, fontWeight: '700', flex: 1 },
+  brandLogo: { marginRight: 'auto' },
   skipButton: { minHeight: 38, paddingHorizontal: 13, borderRadius: 19, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: COLORS.white90, borderWidth: 1, borderColor: COLORS.border },
   skip: { color: COLORS.navy, fontSize: 13, fontWeight: '700' },
   slide: { width, flex: 1, backgroundColor: COLORS.offWhite },

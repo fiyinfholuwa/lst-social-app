@@ -42,7 +42,7 @@ const httpClient = {
   post: (path, body, options) => request(path, { ...options, method: 'POST', body }),
   postForm: (path, body, options) => request(path, { ...options, method: 'POST', body, formData: true }),
   patch: (path, body, options) => request(path, { ...options, method: 'PATCH', body }),
-  delete: (path, options) => request(path, { ...options, method: 'DELETE' }),
+  delete: (path, options = {}) => request(path, { ...options, method: 'DELETE', body: options.body }),
 };
 
 export default httpClient;

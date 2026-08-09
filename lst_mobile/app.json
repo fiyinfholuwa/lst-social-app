@@ -6,8 +6,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "splash": {
+      "image": "./assets/brand-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F7F8FB"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"

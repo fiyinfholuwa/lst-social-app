@@ -41,6 +41,7 @@ class SocialController extends Controller
 
     public function createPost(Request $r)
     {
+        abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before posting to the timeline.');
         $d = $r->validate([
             'content' => 'required|string|max:10000',
             'images' => 'nullable|array|max:6',
@@ -189,6 +190,11 @@ class SocialController extends Controller
 
     public function communityPosts(Request $r, Community $community)
     {
+        abort_unless(
+            $community->members()->whereKey($r->user()->id)->exists(),
+            403,
+            'Join this community to view member posts.'
+        );
         $page = $this->repo->communityPostsPage($community, $r->user());
 
         return response()->json([
@@ -199,8 +205,13 @@ class SocialController extends Controller
         ]);
     }
 
-    public function members(Community $community)
+    public function members(Request $r, Community $community)
     {
+        abort_unless(
+            $community->members()->whereKey($r->user()->id)->exists(),
+            403,
+            'Join this community to view its members.'
+        );
         $preview = $this->cache->remember("community:{$community->id}", 'members-preview-v2', CacheService::MEDIUM, function () use ($community) {
             $query = $community->members();
             $total = (clone $query)->count();
@@ -219,6 +230,11 @@ class SocialController extends Controller
 
     public function memberDirectory(Request $r, Community $community)
     {
+        abort_unless(
+            $community->members()->whereKey($r->user()->id)->exists(),
+            403,
+            'Join this community to view its members.'
+        );
         $filters = $r->validate([
             'q' => 'nullable|string|max:100',
             'page' => 'nullable|integer|min:1',
@@ -246,6 +262,7 @@ class SocialController extends Controller
 
     public function join(Request $r, Community $community)
     {
+        abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before joining a community.');
         $community->members()->syncWithoutDetaching($r->user()->id);
         $this->cache->invalidate('communities', "community:{$community->id}", "user:{$r->user()->id}");
 
@@ -262,6 +279,7 @@ class SocialController extends Controller
 
     public function createCommunityPost(Request $r, Community $community)
     {
+        abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before posting in a community.');
         abort_unless($community->members()->whereKey($r->user()->id)->exists(), 403, 'Only community members can submit posts.');
         $data = $r->validate([
             'content' => 'required|string|max:10000',
@@ -292,6 +310,7 @@ class SocialController extends Controller
 
     public function apply(Request $r, Community $community)
     {
+        abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before applying to join a community.');
         $d = $r->validate(['answers' => 'required']);
 
         $application = $this->repo->apply($r->user(), $community, $d['answers']);

@@ -4,6 +4,12 @@
  * through the theme instead of defining their own brand shades.
  */
 export const COLORS = {
+  // Sampled visually from the Love Straight Talks logo artwork.
+  brandRed: '#ED002B',
+  brandRedLight: '#FF3154',
+  brandRedDark: '#B80022',
+  brandRedSoft: '#FFF0F3',
+
   // Core brand: romantic without feeling playful or overly feminine.
   navy: '#54233D',
   navyLight: '#743552',
@@ -37,6 +43,8 @@ export const COLORS = {
   darkPrimarySoft: '#422332',
   darkAccent: '#F5A08F',
   darkAccentSoft: '#4B292B',
+  darkBrandRed: '#FF4D6B',
+  darkBrandRedSoft: '#4A1724',
 
   transparent: 'transparent',
   white68: 'rgba(255,255,255,0.68)',

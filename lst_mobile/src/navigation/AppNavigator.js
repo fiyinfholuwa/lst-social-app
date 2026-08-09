@@ -25,7 +25,8 @@ import HelpCenterScreen from '../screens/main/HelpCenterScreen';
 import FeedbackScreen from '../screens/main/FeedbackScreen';
 import LegalScreen from '../screens/main/LegalScreen';
 import PasswordFlowScreen from '../screens/auth/PasswordFlowScreen';
-import CommunityModerationScreen from '../screens/main/CommunityModerationScreen';
+import CommunityModerationScreen from '../screens/main/CommunityModerationScreen.js';
+import CommunityModerationDetailScreen from '../screens/main/CommunityModerationDetailScreen.js';
 import SharePostScreen from '../screens/main/SharePostScreen';
 
         const Stack = createNativeStackNavigator();
@@ -71,6 +72,7 @@ import SharePostScreen from '../screens/main/SharePostScreen';
                   <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends' }} />
                   <Stack.Screen name="CommunityApplication" component={CommunityApplicationScreen} options={{ headerShown: true, title: 'Membership Application' }} />
                   <Stack.Screen name="CommunityModeration" component={CommunityModerationScreen} options={{ headerShown: true, title: 'Review Requests' }} />
+                  <Stack.Screen name="CommunityModerationDetail" component={CommunityModerationDetailScreen} options={{ headerShown: true, title: 'Review Details' }} />
                   <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
                 </>
               )}

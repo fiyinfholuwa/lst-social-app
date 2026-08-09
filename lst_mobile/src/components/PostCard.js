@@ -95,9 +95,9 @@ export default function PostCard({ post, onPress, onOriginalPress, onUserPress, 
           <Icon name="comment" size={18} color={theme.primary} />
           <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
         </TouchableOpacity>
-        {onShare ? <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={onShare}>
+        {onShare ? <TouchableOpacity style={styles.countAction} accessibilityLabel={`${post.shareCount || 0} shares`} onPress={onShare}>
           <Icon name="share-alt" size={18} color={theme.secondaryText} />
-          {post.shareCount ? <Text style={[styles.shareCount, { color: theme.secondaryText }]}>{post.shareCount}</Text> : null}
+          <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.shareCount || 0}</Text>
         </TouchableOpacity> : null}
         <TouchableOpacity style={[styles.iconAction, styles.bookmarkButton]} accessibilityLabel={isSaved ? 'Remove saved post' : 'Save post'} onPress={onSave}>
           <Icon name="bookmark" size={18} color={isSaved ? theme.accent : theme.secondaryText} />
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
   countAction: { minWidth: 47, height: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 3 },
   actionCount: { fontSize: 12, fontWeight: '700' },
   iconAction: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  shareCount: { position: 'absolute', right: -2, top: 1, fontSize: 9, fontWeight: '800' },
   originalPost: { borderWidth: 1, borderRadius: 15, padding: 12, marginTop: 11 },
   originalAuthorRow: { flexDirection: 'row', alignItems: 'center' },
   originalAuthorCopy: { flex: 1, marginLeft: 9 },

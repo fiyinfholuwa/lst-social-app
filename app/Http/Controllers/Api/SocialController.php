@@ -375,22 +375,48 @@ class SocialController extends Controller
     public function moderationQueue(Request $r, Community $community)
     {
         $this->authorizeCommunityModerator($r, $community);
-        $applications = $community->applications()->where('status', 'pending')->with('user:id,name,email,avatar')->oldest()->get();
-        $posts = $community->posts()->where('status', 'pending')->with(['user', 'likes' => fn ($query) => $query->whereKey($r->user()->id)])->withCount(['likes', 'comments'])->oldest()->get();
+        $data = $r->validate(['type' => ['nullable', Rule::in(['applications', 'posts'])]]);
+        $type = $data['type'] ?? 'applications';
+        $counts = [
+            'applications' => $community->applications()->where('status', 'pending')->count(),
+            'posts' => $community->posts()->where('status', 'pending')->count(),
+        ];
 
-        return response()->json([
-            'applications' => $applications->map(fn (CommunityApplication $application) => [
+        if ($type === 'applications') {
+            $page = $community->applications()->where('status', 'pending')
+                ->with('user:id,name,email,avatar,bio')
+                ->oldest()
+                ->paginate(15);
+            $items = $page->getCollection()->map(fn (CommunityApplication $application) => [
                 'id' => (string) $application->id,
                 'submittedAt' => $application->created_at->diffForHumans(),
+                'submittedAtFull' => $application->created_at->format('M j, Y \a\t g:i A'),
                 'answers' => $this->cleanApplicationAnswers($application->answers),
                 'user' => [
                     'id' => (string) $application->user->id,
                     'name' => $application->user->name,
                     'email' => $application->user->email,
                     'avatar' => $this->service->mediaUrl($application->user->avatar),
+                    'bio' => $application->user->bio,
                 ],
-            ])->values(),
-            'posts' => $posts->map(fn (Post $post) => $this->service->postData($post))->values(),
+            ])->values();
+        } else {
+            $page = $community->posts()->where('status', 'pending')
+                ->with(['user', 'likes' => fn ($query) => $query->whereKey($r->user()->id)])
+                ->withCount(['likes', 'comments'])
+                ->oldest()
+                ->paginate(15);
+            $items = $page->getCollection()->map(fn (Post $post) => $this->service->postData($post))->values();
+        }
+
+        return response()->json([
+            'type' => $type,
+            'data' => $items,
+            'counts' => $counts,
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
         ]);
     }
 

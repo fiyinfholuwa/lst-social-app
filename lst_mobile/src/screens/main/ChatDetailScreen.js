@@ -26,7 +26,7 @@ const formatDuration = milliseconds => {
   return `${minutes}:${seconds}`;
 };
 
-function VoiceNote({ message, mine, theme }) {
+function VoiceNote({ message, mine, theme, activeVoiceId, onActivate }) {
   const player = useAudioPlayer(message.audioUri ? { uri: message.audioUri } : null, {
     updateInterval: 250,
     downloadFirst: true,
@@ -37,6 +37,18 @@ function VoiceNote({ message, mine, theme }) {
   const position = (status.currentTime || 0) * 1000;
   const duration = status.duration > 0 ? status.duration * 1000 : Number(message.duration || 0);
 
+  useEffect(() => {
+    if (playing && String(activeVoiceId) !== String(message.id)) {
+      player.pause();
+    }
+  }, [activeVoiceId, message.id, player, playing]);
+
+  useEffect(() => {
+    if (status.didJustFinish && String(activeVoiceId) === String(message.id)) {
+      onActivate(null);
+    }
+  }, [activeVoiceId, message.id, onActivate, status.didJustFinish]);
+
   const togglePlayback = async () => {
     if (!message.audioUri) {
       Alert.alert('Voice note unavailable', 'This voice note does not have a playable audio file.');
@@ -46,6 +58,7 @@ function VoiceNote({ message, mine, theme }) {
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
       if (playing) {
         player.pause();
+        onActivate(null);
         return;
       }
       if (!status.isLoaded) {
@@ -53,6 +66,7 @@ function VoiceNote({ message, mine, theme }) {
         return;
       }
       if (status.didJustFinish || (duration > 0 && position >= duration - 300)) await player.seekTo(0);
+      onActivate(message.id);
       player.play();
     } catch (error) {
       console.error('Unable to play voice note:', error);
@@ -91,6 +105,7 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [chat, setChat] = useState(null);
+  const [activeVoiceId, setActiveVoiceId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [sending, setSending] = useState(false);
@@ -150,6 +165,7 @@ export default function ChatDetailScreen({ route, navigation }) {
 
   const startRecording = async () => {
     try {
+      setActiveVoiceId(null);
       const permission = await AudioModule.requestRecordingPermissionsAsync();
       if (!permission.granted) {
         Alert.alert('Microphone permission required', 'Allow microphone access to record and send voice notes.');
@@ -219,7 +235,13 @@ export default function ChatDetailScreen({ route, navigation }) {
             <View style={[styles.messageRow, mine ? styles.myMessage : styles.otherMessage]}>
               <View style={[styles.bubble, item.type === 'voice' && styles.voiceBubble, { backgroundColor: mine ? theme.primary : theme.card }]}>
                 {item.type === 'voice' ? (
-                  <VoiceNote message={item} mine={mine} theme={theme} />
+                  <VoiceNote
+                    message={item}
+                    mine={mine}
+                    theme={theme}
+                    activeVoiceId={activeVoiceId}
+                    onActivate={setActiveVoiceId}
+                  />
                 ) : (
                   <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>
                 )}

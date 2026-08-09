@@ -75,7 +75,7 @@ const apiService = {
   getApplications: async () => (await httpClient.get('/community-applications')).applications,
   submitApplication: (communityId, answers) => httpClient.post(`/communities/${communityId}/applications`, { answers }),
   withdrawApplication: communityId => httpClient.delete(`/communities/${communityId}/applications`),
-  getCommunityModeration: communityId => httpClient.get(`/communities/${communityId}/moderation`),
+  getCommunityModeration: (communityId, type = 'applications', page = 1) => httpClient.get(`/communities/${communityId}/moderation?type=${type}&page=${page}`),
   reviewCommunityApplication: (communityId, applicationId, action) => httpClient.post(`/communities/${communityId}/moderation/applications/${applicationId}`, { action }),
   reviewCommunityPost: (communityId, postId, action) => httpClient.post(`/communities/${communityId}/moderation/posts/${postId}`, { action }),
   getFriendships: () => httpClient.get('/friendships'),

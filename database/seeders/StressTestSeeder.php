@@ -60,6 +60,14 @@ class StressTestSeeder extends Seeder
             }
             foreach (array_chunk($memberships, 500) as $chunk) DB::table('community_user')->insert($chunk);
 
+            $adminMemberships = DB::table('communities')->pluck('id')->map(fn ($id) => [
+                'community_id' => $id,
+                'user_id' => $adminId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->all();
+            foreach (array_chunk($adminMemberships, 500) as $chunk) DB::table('community_user')->insertOrIgnore($chunk);
+
             $friendships = [];
             foreach (array_slice(array_values(array_diff($userIds, [$memberId])), 0, 350) as $friendId) {
                 $friendships[] = ['sender_id' => min($memberId, $friendId), 'receiver_id' => max($memberId, $friendId), 'status' => 'accepted', 'created_at' => $now, 'updated_at' => $now];

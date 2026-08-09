@@ -8,6 +8,14 @@ class Community extends Model
 {
     protected $fillable = ['name', 'description', 'rules', 'image', 'admin_id'];
 
+    protected static function booted(): void
+    {
+        static::created(function (Community $community) {
+            $adminIds = User::query()->whereIn('role', ['admin', 'super_admin'])->pluck('id');
+            $community->members()->syncWithoutDetaching($adminIds);
+        });
+    }
+
     public function admin()
     {
         return $this->belongsTo(User::class, 'admin_id');

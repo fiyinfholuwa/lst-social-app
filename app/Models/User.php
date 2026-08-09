@@ -21,6 +21,15 @@ class User extends Authenticatable implements MustVerifyEmailContract
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable;
 
+    protected static function booted(): void
+    {
+        static::saved(function (User $user) {
+            if (in_array($user->role, ['admin', 'super_admin'], true)) {
+                $user->communities()->syncWithoutDetaching(Community::query()->pluck('id'));
+            }
+        });
+    }
+
     /**
      * Get the attributes that should be cast.
      *

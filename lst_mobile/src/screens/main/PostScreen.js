@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -356,9 +356,9 @@ export default function PostScreen({ route, navigation }) {
             <AppIcon name="comment" size={19} color={theme.primary} />
             <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
           </TouchableOpacity>
-          {!post.communityId ? <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={handleShare}>
+          {!post.communityId ? <TouchableOpacity style={styles.action} accessibilityLabel={`${post.shareCount || 0} shares`} onPress={handleShare}>
             <AppIcon name="share-alt" size={18} color={theme.secondaryText} />
-            {post.shareCount ? <Text style={[styles.detailShareCount, { color: theme.secondaryText }]}>{post.shareCount}</Text> : null}
+            <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.shareCount || 0}</Text>
           </TouchableOpacity> : null}
           <TouchableOpacity
             style={[styles.iconAction, styles.saveAction]}
@@ -513,7 +513,6 @@ const styles = StyleSheet.create({
   action: { minWidth: 48, height: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   actionCount: { fontSize: 11, fontWeight: '600' },
   iconAction: { width: 42, height: 38, alignItems: 'center', justifyContent: 'center' },
-  detailShareCount: { position: 'absolute', right: 0, top: 0, fontSize: 9, fontWeight: '800' },
   saveAction: { marginLeft: 'auto' },
   commentsHeading: { marginTop: 24, marginBottom: 14, paddingTop: 18, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(128,128,128,0.25)' },
   commentTitle: { fontSize: 19, fontWeight: '700' },

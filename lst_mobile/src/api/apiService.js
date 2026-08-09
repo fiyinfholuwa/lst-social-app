@@ -11,6 +11,10 @@ const apiService = {
     password_confirmation: passwordConfirmation,
   }, { auth: false }),
   logout: () => httpClient.post('/logout'),
+  sendForgotPasswordOtp: email => httpClient.post('/forgot-password/otp', { email }, { auth: false }),
+  resetForgottenPassword: (email, code, password, passwordConfirmation) => httpClient.post('/forgot-password/reset', { email, code, password, password_confirmation: passwordConfirmation }, { auth: false }),
+  sendChangePasswordOtp: currentPassword => httpClient.post('/user/password/otp', { current_password: currentPassword }),
+  changePassword: (currentPassword, code, password, passwordConfirmation) => httpClient.patch('/user/password', { current_password: currentPassword, code, password, password_confirmation: passwordConfirmation }),
   getUserProfile: async () => (await httpClient.get('/user')).user,
   updateUserProfile: updates => httpClient.patch('/user', updates),
   updateUserProfileForm: (updates, avatar) => {

@@ -85,7 +85,7 @@ export default function LoginScreen({ navigation }) {
             onSubmitEditing={handleLogin}
           />
 
-          <TouchableOpacity style={styles.forgot} onPress={() => Alert.alert('Password reset', 'Password recovery will be available soon.')}>
+          <TouchableOpacity style={styles.forgot} onPress={() => navigation.navigate('ForgotPassword')}>
             <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot password?</Text>
           </TouchableOpacity>
 

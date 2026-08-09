@@ -24,6 +24,7 @@ import EditProfileScreen from '../screens/main/EditProfileScreen';
 import HelpCenterScreen from '../screens/main/HelpCenterScreen';
 import FeedbackScreen from '../screens/main/FeedbackScreen';
 import LegalScreen from '../screens/main/LegalScreen';
+import PasswordFlowScreen from '../screens/auth/PasswordFlowScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -55,6 +56,7 @@ import LegalScreen from '../screens/main/LegalScreen';
                   <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: true, title: 'Create Post' }} />
                   <Stack.Screen name="EditPost" component={EditPostScreen} options={{ headerShown: true, title: 'Edit Post' }} />
                   <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Edit Profile' }} />
+                  <Stack.Screen name="ChangePassword" component={PasswordFlowScreen} options={{ headerShown: true, title: 'Change Password' }} />
                   <Stack.Screen name="HelpCenter" component={HelpCenterScreen} options={{ headerShown: true, title: 'Help Center' }} />
                   <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ headerShown: true, title: 'Contact Us' }} />
                   <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal' }} />

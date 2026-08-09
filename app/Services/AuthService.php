@@ -28,7 +28,7 @@ class AuthService
 
         return [
             'user' => $user,
-            'token' => $user->createToken('mobile')->plainTextToken,
+            'token' => $user->createToken('mobile', ['*'], expiresAt: null)->plainTextToken,
         ];
     }
 
@@ -42,7 +42,7 @@ class AuthService
 
         return [
             'user' => $user,
-            'token' => $user->createToken('mobile')->plainTextToken,
+            'token' => $user->createToken('mobile', ['*'], expiresAt: null)->plainTextToken,
         ];
     }
 

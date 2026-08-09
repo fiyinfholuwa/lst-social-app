@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use App\Services\AuthService;
 use App\Services\EmailService;
 use Illuminate\Http\JsonResponse;
@@ -98,6 +99,69 @@ class AuthController extends Controller
         $this->emailService->forgetVerificationCode($request->user());
 
         return response()->json(['message' => 'Your email has been verified.']);
+    }
+
+    public function sendForgotPasswordOtp(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email', 'max:255']]);
+        $user = User::whereRaw('LOWER(email) = ?', [strtolower(trim($data['email']))])->first();
+        if ($user) $this->emailService->sendPasswordCode($user, 'forgot');
+
+        return response()->json(['message' => 'If an account uses that email, a six-digit code has been sent.']);
+    }
+
+    public function resetForgottenPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'code' => ['required', 'digits:6'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+        $user = User::whereRaw('LOWER(email) = ?', [strtolower(trim($data['email']))])->first();
+        if (! $user || ! $this->emailService->passwordCodeIsValid($user, 'forgot', $data['code'])) {
+            return response()->json(['message' => 'The password reset code is invalid or has expired.'], 422);
+        }
+        $user->forceFill(['password' => $data['password']])->save();
+        $user->tokens()->delete();
+        $this->emailService->forgetPasswordCode($user, 'forgot');
+
+        return response()->json(['message' => 'Your password has been reset. Sign in with your new password.']);
+    }
+
+    public function sendChangePasswordOtp(Request $request): JsonResponse
+    {
+        $data = $request->validate(['current_password' => ['required', 'string']]);
+        if (! Hash::check($data['current_password'], $request->user()->password)) {
+            throw ValidationException::withMessages(['current_password' => 'The current password is incorrect.']);
+        }
+        $this->emailService->sendPasswordCode($request->user(), 'change');
+
+        return response()->json(['message' => 'A six-digit code has been sent to your email.']);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'code' => ['required', 'digits:6'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+        $user = $request->user();
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages(['current_password' => 'The current password is incorrect.']);
+        }
+        if (! $this->emailService->passwordCodeIsValid($user, 'change', $data['code'])) {
+            return response()->json(['message' => 'The password change code is invalid or has expired.'], 422);
+        }
+        $user->forceFill(['password' => $data['password']])->save();
+        $accessToken = $user->currentAccessToken();
+        $currentTokenId = $accessToken && method_exists($accessToken, 'getKey') ? $accessToken->getKey() : null;
+        if ($currentTokenId) {
+            $user->tokens()->whereKeyNot($currentTokenId)->delete();
+        }
+        $this->emailService->forgetPasswordCode($user, 'change');
+
+        return response()->json(['message' => 'Your password has been changed.']);
     }
 
     public function destroy(Request $request): JsonResponse

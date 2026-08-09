@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Notifications\VerifyEmailOtp;
+use App\Notifications\PasswordOtp;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
@@ -36,8 +37,31 @@ class EmailService
         Cache::forget($this->verificationCacheKey($user));
     }
 
+    public function sendPasswordCode(User $user, string $purpose): void
+    {
+        $code = (string) random_int(100000, 999999);
+        Cache::put($this->passwordCacheKey($user, $purpose), Hash::make($code), now()->addMinutes(10));
+        $user->notify(new PasswordOtp($code));
+    }
+
+    public function passwordCodeIsValid(User $user, string $purpose, string $code): bool
+    {
+        $storedCode = Cache::get($this->passwordCacheKey($user, $purpose));
+        return $storedCode && Hash::check($code, $storedCode);
+    }
+
+    public function forgetPasswordCode(User $user, string $purpose): void
+    {
+        Cache::forget($this->passwordCacheKey($user, $purpose));
+    }
+
     private function verificationCacheKey(User $user): string
     {
         return "email-verification-otp:{$user->id}";
+    }
+
+    private function passwordCacheKey(User $user, string $purpose): string
+    {
+        return "password-otp:{$purpose}:{$user->id}";
     }
 }

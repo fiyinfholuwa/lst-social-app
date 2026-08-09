@@ -10,6 +10,8 @@ Route::middleware('throttle:6,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/register/check-email', [AuthController::class, 'checkEmail']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot-password/otp', [AuthController::class, 'sendForgotPasswordOtp']);
+    Route::post('/forgot-password/reset', [AuthController::class, 'resetForgottenPassword']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -18,6 +20,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/verification-notification', [AuthController::class, 'sendVerification'])->middleware('throttle:3,1');
     Route::post('/email/verify-otp', [AuthController::class, 'verifyEmailOtp'])->middleware('throttle:6,1');
     Route::delete('/user', [AuthController::class, 'destroy'])->middleware('throttle:3,1');
+    Route::post('/user/password/otp', [AuthController::class, 'sendChangePasswordOtp'])->middleware('throttle:3,1');
+    Route::patch('/user/password', [AuthController::class, 'changePassword'])->middleware('throttle:6,1');
     Route::patch('/user', [SocialController::class, 'updateProfile']);
     Route::get('/users/search', [ConnectionController::class, 'searchUsers']);
     Route::get('/users/{user}', [SocialController::class, 'user']);

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class SocialController extends Controller
 {
@@ -311,7 +312,7 @@ class SocialController extends Controller
     public function apply(Request $r, Community $community)
     {
         abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before applying to join a community.');
-        $d = $r->validate(['answers' => 'required']);
+        $d = $r->validate(['answers' => 'required|array|min:1']);
 
         $application = $this->repo->apply($r->user(), $community, $d['answers']);
         $this->cache->invalidate("applications:{$r->user()->id}");
@@ -325,6 +326,57 @@ class SocialController extends Controller
         $this->cache->invalidate("applications:{$r->user()->id}");
 
         return response()->json(['success' => true]);
+    }
+
+    public function moderationQueue(Request $r, Community $community)
+    {
+        $this->authorizeCommunityModerator($r, $community);
+        $applications = $community->applications()->where('status', 'pending')->with('user:id,name,email,avatar')->oldest()->get();
+        $posts = $community->posts()->where('status', 'pending')->with(['user', 'likes' => fn ($query) => $query->whereKey($r->user()->id)])->withCount(['likes', 'comments'])->oldest()->get();
+
+        return response()->json([
+            'applications' => $applications->map(fn (CommunityApplication $application) => [
+                'id' => (string) $application->id,
+                'submittedAt' => $application->created_at->diffForHumans(),
+                'answers' => $this->cleanApplicationAnswers($application->answers),
+                'user' => [
+                    'id' => (string) $application->user->id,
+                    'name' => $application->user->name,
+                    'email' => $application->user->email,
+                    'avatar' => $this->service->mediaUrl($application->user->avatar),
+                ],
+            ])->values(),
+            'posts' => $posts->map(fn (Post $post) => $this->service->postData($post))->values(),
+        ]);
+    }
+
+    public function reviewCommunityApplication(Request $r, Community $community, CommunityApplication $application)
+    {
+        $this->authorizeCommunityModerator($r, $community);
+        abort_unless((int) $application->community_id === (int) $community->id, 404);
+        $data = $r->validate(['action' => ['required', Rule::in(['approve', 'reject'])]]);
+        $status = $data['action'] === 'approve' ? 'approved' : 'rejected';
+        $application->update(['status' => $status]);
+        if ($status === 'approved') {
+            $community->members()->syncWithoutDetaching([$application->user_id]);
+        } else {
+            $community->members()->detach($application->user_id);
+        }
+        $this->cache->invalidate('communities', "community:{$community->id}", "applications:{$application->user_id}", "user:{$application->user_id}");
+
+        return response()->json(['message' => "Application {$status}.", 'status' => $status]);
+    }
+
+    public function reviewCommunityPost(Request $r, Community $community, Post $post)
+    {
+        $this->authorizeCommunityModerator($r, $community);
+        abort_unless((int) $post->community_id === (int) $community->id, 404);
+        $data = $r->validate(['action' => ['required', Rule::in(['approve', 'reject'])]]);
+        $status = $data['action'] === 'approve' ? 'approved' : 'rejected';
+        $post->update(['status' => $status]);
+        $this->cache->invalidate('posts', "post:{$post->id}", "user:{$post->user_id}", "community:{$community->id}");
+
+        return response()->json(['message' => "Post {$status}.", 'status' => $status]);
     }
 
     public function user(Request $request, User $user)
@@ -430,6 +482,22 @@ class SocialController extends Controller
         } elseif ($path && Str::contains($path, '/storage/posts/')) {
             Storage::disk('public')->delete(Str::after($path, '/storage/'));
         }
+    }
+
+    private function authorizeCommunityModerator(Request $request, Community $community): void
+    {
+        abort_unless(
+            (int) $community->admin_id === (int) $request->user()->id || $request->user()->role === 'super_admin',
+            403,
+            'Only this community’s administrator can review requests.'
+        );
+    }
+
+    private function cleanApplicationAnswers(?array $answers): array
+    {
+        return collect($answers ?? [])->reject(fn ($value) =>
+            $value === null || $value === '' || (is_array($value) && $value === [])
+        )->all();
     }
 
     private function commentPageData($page): array

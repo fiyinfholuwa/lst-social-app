@@ -25,6 +25,7 @@ import HelpCenterScreen from '../screens/main/HelpCenterScreen';
 import FeedbackScreen from '../screens/main/FeedbackScreen';
 import LegalScreen from '../screens/main/LegalScreen';
 import PasswordFlowScreen from '../screens/auth/PasswordFlowScreen';
+import CommunityModerationScreen from '../screens/main/CommunityModerationScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -66,6 +67,7 @@ import PasswordFlowScreen from '../screens/auth/PasswordFlowScreen';
                   <Stack.Screen name="BlockedAccounts" component={BlockedAccountsScreen} options={{ headerShown: true, title: 'Blocked Accounts' }} />
                   <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends' }} />
                   <Stack.Screen name="CommunityApplication" component={CommunityApplicationScreen} options={{ headerShown: true, title: 'Membership Application' }} />
+                  <Stack.Screen name="CommunityModeration" component={CommunityModerationScreen} options={{ headerShown: true, title: 'Review Requests' }} />
                   <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
                 </>
               )}

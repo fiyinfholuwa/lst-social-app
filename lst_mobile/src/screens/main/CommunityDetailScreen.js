@@ -164,6 +164,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </Text>
         </TouchableOpacity>
 
+        {community.canModerate ? <TouchableOpacity style={[styles.moderationButton, { backgroundColor: theme.card, borderColor: theme.primary }]} onPress={() => navigation.navigate('CommunityModeration', { communityId, communityName: community.name })}><View style={[styles.moderationIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="shield-checkmark-outline" size={17} color={theme.primary} /></View><View style={styles.moderationCopy}><Text style={[styles.moderationTitle, { color: theme.text }]}>Review pending requests</Text><Text style={[styles.moderationText, { color: theme.secondaryText }]}>Membership applications and community posts</Text></View><AppIcon name="chevron-right" size={15} color={theme.primary} /></TouchableOpacity> : null}
+
         {joined ? (
           <View style={styles.memberActions}>
             <TouchableOpacity style={[styles.postButton, { backgroundColor: theme.primary }]} onPress={() => navigation.navigate('CreatePost', { communityId, communityName: community.name })}>
@@ -291,6 +293,9 @@ const styles = StyleSheet.create({
   overviewLabel: { fontSize: 11, marginTop: 3 },
   joinButton: { height: 50, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 },
   joinText: { fontSize: 14, fontWeight: '700' },
+  moderationButton: { minHeight: 66, borderWidth: 1, borderRadius: 16, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  moderationIcon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  moderationCopy: { flex: 1 }, moderationTitle: { fontSize: 12.5, fontWeight: '800' }, moderationText: { fontSize: 10.5, marginTop: 3 },
   memberActions: { flexDirection: 'row', gap: 9, marginTop: 10 },
   postButton: { flex: 1, minHeight: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   postButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },

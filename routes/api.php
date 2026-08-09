@@ -48,6 +48,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/community-applications', [SocialController::class, 'applications']);
     Route::post('/communities/{community}/applications', [SocialController::class, 'apply']);
     Route::delete('/communities/{community}/applications', [SocialController::class, 'withdraw']);
+    Route::get('/communities/{community}/moderation', [SocialController::class, 'moderationQueue']);
+    Route::post('/communities/{community}/moderation/applications/{application}', [SocialController::class, 'reviewCommunityApplication']);
+    Route::post('/communities/{community}/moderation/posts/{post}', [SocialController::class, 'reviewCommunityPost']);
     Route::get('/friendships', [ConnectionController::class, 'friendships']);
     Route::post('/users/{user}/friend-request', [ConnectionController::class, 'request']);
     Route::post('/users/{user}/relationship', [ConnectionController::class, 'act']);

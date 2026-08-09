@@ -73,6 +73,7 @@ class SocialService
 
     public function communityData(Community $c): array
     {
+        $viewer = request()->user();
         $requirementKeys = [
             'Virgins & Sexual Puritans' => 'comm1',
             'Addiction Recovery' => 'comm2',
@@ -83,7 +84,7 @@ class SocialService
             'All-Round Wholeness for Singles' => 'comm7',
         ];
 
-        return ['id' => (string) $c->id, 'requirementKey' => $requirementKeys[$c->name] ?? null, 'name' => $c->name, 'description' => $c->description, 'rules' => $c->rules, 'image' => $this->mediaUrl($c->image), 'admin' => $c->admin?->name, 'memberCount' => $c->members_count ?? $c->members()->count(), 'postCount' => $c->posts_count ?? $c->posts()->where('status', 'approved')->count(), 'memberIds' => $c->relationLoaded('members') ? $c->members->pluck('id')->map(fn ($id) => (string) $id) : []];
+        return ['id' => (string) $c->id, 'requirementKey' => $requirementKeys[$c->name] ?? null, 'name' => $c->name, 'description' => $c->description, 'rules' => $c->rules, 'image' => $this->mediaUrl($c->image), 'admin' => $c->admin?->name, 'canModerate' => $viewer && ((int) $c->admin_id === (int) $viewer->id || $viewer->role === 'super_admin'), 'memberCount' => $c->members_count ?? $c->members()->count(), 'postCount' => $c->posts_count ?? $c->posts()->where('status', 'approved')->count(), 'memberIds' => $c->relationLoaded('members') ? $c->members->pluck('id')->map(fn ($id) => (string) $id) : []];
     }
 
     public function mediaUrl(?string $url): ?string

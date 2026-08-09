@@ -10,6 +10,7 @@ import { FriendshipsProvider } from './src/context/FriendshipsContext';
 import { CommunityApplicationsProvider } from './src/context/CommunityApplicationsContext';
 import { NotificationsProvider } from './src/context/NotificationsContext';
 import { AppAlertProvider } from './src/context/AppAlertContext';
+import { ChatUnreadProvider } from './src/context/ChatUnreadContext';
 
         export default function App() {
           return (
@@ -20,12 +21,14 @@ import { AppAlertProvider } from './src/context/AppAlertContext';
             <FriendshipsProvider>
               <CommunityApplicationsProvider>
                 <NotificationsProvider>
+                  <ChatUnreadProvider>
                   <AppAlertProvider>
                     <NavigationContainer>
                       <AppNavigator />
                       <StatusBar style="auto" />
                     </NavigationContainer>
                   </AppAlertProvider>
+                  </ChatUnreadProvider>
                 </NotificationsProvider>
               </CommunityApplicationsProvider>
             </FriendshipsProvider>

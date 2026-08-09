@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, FlatList, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {
   AudioModule,
   RecordingPresets,
@@ -13,9 +13,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import EmojiText from '../../components/EmojiText';
+import EmojiPicker from '../../components/EmojiPicker';
 import Avatar from '../../components/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useChatUnread } from '../../context/ChatUnreadContext';
 
 const formatDuration = milliseconds => {
   const totalSeconds = Math.max(0, Math.floor((milliseconds || 0) / 1000));
@@ -70,6 +72,10 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [chat, setChat] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [sending, setSending] = useState(false);
+  const inputRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder, 250);
   const recording = recorderState.isRecording;
@@ -77,22 +83,50 @@ export default function ChatDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { refreshUnreadChats } = useChatUnread();
 
   useEffect(() => {
     loadMessages();
-    apiService.getChat(chatId).then(setChat);
+    apiService.getChat(chatId)
+      .then(setChat)
+      .catch(error => Alert.alert('Couldn’t load chat', error.message || 'Please try again.'));
+    const refreshTimer = setInterval(loadMessages, 5000);
+    return () => clearInterval(refreshTimer);
   }, [chatId]);
 
   const loadMessages = async () => {
-    const data = await apiService.getMessages(chatId);
-    setMessages([...data].reverse());
+    try {
+      const data = await apiService.getMessages(chatId);
+      setMessages([...data].reverse());
+      refreshUnreadChats();
+    } catch (error) {
+      console.error('Unable to load messages:', error);
+    }
   };
 
   const sendMessage = async () => {
-    if (!inputText.trim()) return;
-    await apiService.sendMessage(chatId, inputText.trim());
-    setInputText('');
-    loadMessages();
+    if (!inputText.trim() || sending) return;
+    setSending(true);
+    try {
+      await apiService.sendMessage(chatId, inputText.trim());
+      setInputText('');
+      setSelection({ start: 0, end: 0 });
+      await loadMessages();
+    } catch (error) {
+      Alert.alert('Message not sent', error.message || 'Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const insertEmoji = emoji => {
+    const start = selection.start ?? inputText.length;
+    const end = selection.end ?? start;
+    setInputText(`${inputText.slice(0, start)}${emoji}${inputText.slice(end)}`);
+    const cursor = start + emoji.length;
+    setSelection({ start: cursor, end: cursor });
+    setShowEmojiPicker(false);
+    setTimeout(() => inputRef.current?.focus(), 250);
   };
 
   const startRecording = async () => {
@@ -151,6 +185,8 @@ export default function ChatDetailScreen({ route, navigation }) {
         keyExtractor={item => item.id}
         inverted
         contentContainerStyle={styles.messages}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={<View style={styles.emptyConversation}><View style={[styles.emptyConversationIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="chatbubbles-outline" size={24} color={theme.primary} /></View><Text style={[styles.emptyConversationTitle, { color: theme.text }]}>Start the conversation</Text><Text style={[styles.emptyConversationText, { color: theme.secondaryText }]}>Send a kind message, an emoji, or a voice note.</Text></View>}
         renderItem={({ item }) => {
           const mine = item.senderId === user.id;
           return (
@@ -161,9 +197,10 @@ export default function ChatDetailScreen({ route, navigation }) {
                 ) : (
                   <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>
                 )}
-                <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>
-                  {item.timestamp}
-                </Text>
+                <View style={styles.messageMeta}>
+                  <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{item.timestamp}</Text>
+                  {mine ? <AppIcon name={item.read ? 'checkmark-done' : 'check'} size={14} color={item.read ? '#22A06B' : 'rgba(255,255,255,0.72)'} /> : null}
+                </View>
               </View>
             </View>
           );
@@ -188,13 +225,22 @@ export default function ChatDetailScreen({ route, navigation }) {
         <View style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10) }]}>
           <View style={styles.inputRow}>
             <TextInput
+              ref={inputRef}
               style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
               placeholder="Type a message..."
               placeholderTextColor={theme.secondaryText}
               value={inputText}
               onChangeText={setInputText}
+              onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
               multiline
             />
+            <TouchableOpacity
+              style={[styles.emojiButton, { backgroundColor: theme.primarySoft }]}
+              onPress={() => { Keyboard.dismiss(); setShowEmojiPicker(true); }}
+              accessibilityLabel="Add emoji"
+            >
+              <AppIcon name="happy" size={18} color={theme.primary} />
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.voiceButton, { backgroundColor: theme.card, borderColor: theme.border }]}
               onPress={startRecording}
@@ -205,7 +251,7 @@ export default function ChatDetailScreen({ route, navigation }) {
             <TouchableOpacity
               style={[styles.sendButton, { backgroundColor: inputText.trim() ? theme.primary : theme.border }]}
               onPress={sendMessage}
-              disabled={!inputText.trim()}
+              disabled={!inputText.trim() || sending}
               accessibilityLabel="Send text message"
             >
               <AppIcon name="paper-plane" size={14} color="#FFFFFF" />
@@ -213,6 +259,7 @@ export default function ChatDetailScreen({ route, navigation }) {
           </View>
         </View>
       )}
+      {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
     </View>
   );
 }
@@ -224,19 +271,25 @@ const styles = StyleSheet.create({
   profileCopy: { flex: 1 },
   profileName: { fontSize: 14, fontWeight: '700' },
   profileHint: { fontSize: 11, marginTop: 2 },
-  messages: { paddingVertical: 10 },
+  messages: { flexGrow: 1, paddingVertical: 14 },
   messageRow: { marginVertical: 4, flexDirection: 'row' },
   myMessage: { justifyContent: 'flex-end' },
   otherMessage: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '78%', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 15 },
+  bubble: { maxWidth: '82%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 17 },
   voiceBubble: { width: 225 },
   messageText: { fontSize: 13, lineHeight: 19 },
-  messageTime: { fontSize: 10, marginTop: 5, alignSelf: 'flex-end' },
-  composerArea: { borderTopWidth: 1, marginHorizontal: -12, paddingHorizontal: 12, paddingTop: 10 },
+  messageMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 5 },
+  messageTime: { fontSize: 10 },
+  composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -12, paddingHorizontal: 12, paddingTop: 9 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 7 },
   input: { flex: 1, minHeight: 43, maxHeight: 100, borderWidth: 1, borderRadius: 16, paddingHorizontal: 13, paddingTop: 11, paddingBottom: 10, fontSize: 13 },
   sendButton: { width: 43, height: 43, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   voiceButton: { width: 43, height: 43, borderRadius: 15, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  emojiButton: { width: 43, height: 43, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  emptyConversation: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+  emptyConversationIcon: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  emptyConversationTitle: { fontSize: 16, fontWeight: '800', marginTop: 12 },
+  emptyConversationText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 5 },
   recordingBar: { height: 54, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 17, paddingHorizontal: 8, gap: 9 },
   recordingAction: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   recordingDot: { width: 8, height: 8, borderRadius: 4 },

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
+use App\Models\Message;
 use App\Models\User;
 use App\Http\Resources\UserResource;
 use App\Repositories\ConnectionRepository;
@@ -61,7 +62,14 @@ class ConnectionController extends Controller
 
     public function chats(Request $r)
     {
-        return response()->json($this->service->chats($r->user()));
+        $data = $r->validate(['q' => 'nullable|string|max:100']);
+
+        return response()->json($this->service->chatsPage($r->user(), trim($data['q'] ?? '')));
+    }
+
+    public function unreadChatCount(Request $r)
+    {
+        return response()->json(['count' => $this->service->unreadChatCount($r->user())]);
     }
 
     public function chat(Request $r, Chat $chat)
@@ -79,7 +87,10 @@ class ConnectionController extends Controller
 
     public function messages(Request $r, Chat $chat)
     {
-        return response()->json($this->repo->messages($r->user(), $chat)->map(fn ($m) => ['id' => (string) $m->id, 'senderId' => (string) $m->sender_id, 'text' => $m->text, 'type' => $m->type, 'audioUri' => $m->audio_uri, 'duration' => $m->duration, 'timestamp' => $m->created_at->diffForHumans()]));
+        $messages = $this->repo->messages($r->user(), $chat);
+        $this->service->invalidateChat($chat);
+
+        return response()->json($messages->map(fn (Message $message) => $this->messageData($message)));
     }
 
     public function send(Request $r, Chat $chat)
@@ -88,6 +99,20 @@ class ConnectionController extends Controller
         $m = $this->repo->send($r->user(), $chat, ['text' => $d['text'] ?? null, 'type' => $d['type'] ?? 'text', 'audio_uri' => $d['audioUri'] ?? null, 'duration' => $d['duration'] ?? null]);
         $this->service->invalidateChat($chat);
 
-        return response()->json(['id' => (string) $m->id, 'senderId' => (string) $m->sender_id, 'text' => $m->text, 'type' => $m->type, 'audioUri' => $m->audio_uri, 'duration' => $m->duration, 'timestamp' => $m->created_at->diffForHumans()], 201);
+        return response()->json($this->messageData($m), 201);
+    }
+
+    private function messageData(Message $message): array
+    {
+        return [
+            'id' => (string) $message->id,
+            'senderId' => (string) $message->sender_id,
+            'text' => $message->text,
+            'type' => $message->type,
+            'audioUri' => $message->audio_uri,
+            'duration' => $message->duration,
+            'read' => $message->read_at !== null,
+            'timestamp' => $message->created_at->diffForHumans(),
+        ];
     }
 }

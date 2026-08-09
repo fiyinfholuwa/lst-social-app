@@ -26,13 +26,25 @@ class ConnectionService
         $other = $chat->users->firstWhere('id', '!=', $me->id);
         $last = $chat->messages->first() ?? $chat->messages()->latest()->first();
 
-        return ['id' => (string) $chat->id, 'withUser' => ['id' => (string) $other->id, 'name' => $other->name, 'avatar' => $other->avatar], 'lastMessage' => $last?->text ?? ($last ? 'Voice message' : 'Start a conversation'), 'timestamp' => $last?->created_at?->diffForHumans() ?? 'New'];
+        return ['id' => (string) $chat->id, 'withUser' => ['id' => (string) $other->id, 'name' => $other->name, 'avatar' => $other->avatar], 'lastMessage' => $last?->text ?? ($last ? 'Voice message' : 'Start a conversation'), 'lastMessageMine' => $last && (int) $last->sender_id === (int) $me->id, 'lastMessageRead' => $last?->read_at !== null, 'timestamp' => $last?->created_at?->diffForHumans() ?? 'New', 'unreadCount' => $chat->messages()->where('sender_id', '!=', $me->id)->whereNull('read_at')->count()];
     }
 
-    public function chats(User $u)
+    public function chatsPage(User $user, string $term = ''): array
     {
-        return $this->cache->remember("chats:{$u->id}", 'list', CacheService::SHORT,
-            fn () => $this->repo->chats($u)->map(fn ($c) => $this->chatData($u, $c))->all());
+        $page = $this->repo->chatsPage($user, $term);
+
+        return [
+            'data' => $page->getCollection()->map(fn (Chat $chat) => $this->chatData($user, $chat))->values(),
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
+        ];
+    }
+
+    public function unreadChatCount(User $user): int
+    {
+        return $this->repo->unreadChatCount($user);
     }
 
     public function chat(User $u, Chat $c)

@@ -8,12 +8,14 @@ import React from 'react';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useChatUnread } from '../context/ChatUnreadContext';
 
         const Tab = createBottomTabNavigator();
 
         export default function MainTabNavigator() {
           const { theme } = useTheme();
           const insets = useSafeAreaInsets();
+          const { unreadChatCount } = useChatUnread();
 
           return (
             <Tab.Navigator
@@ -56,7 +58,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
             >
               <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Today' }} />
               <Tab.Screen name="Communities" component={CommunitiesScreen} options={{ title: 'Circles' }} />
-              <Tab.Screen name="Chats" component={ChatsScreen} options={{ title: 'Messages' }} />
+              <Tab.Screen name="Chats" component={ChatsScreen} options={{ title: 'Messages', tabBarBadge: unreadChatCount || undefined, tabBarBadgeStyle: { backgroundColor: theme.accent, color: '#FFFFFF', fontSize: 9 } }} />
               <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'You' }} />
             </Tab.Navigator>
           );

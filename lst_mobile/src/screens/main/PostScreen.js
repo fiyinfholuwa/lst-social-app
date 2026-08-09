@@ -25,6 +25,7 @@ import PostOptionsMenu from '../../components/PostOptionsMenu';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import EmojiPicker from '../../components/EmojiPicker';
 import EmojiText from '../../components/EmojiText';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DETAIL_IMAGE_WIDTH = Dimensions.get('window').width - 36;
 
@@ -111,6 +112,7 @@ export default function PostScreen({ route, navigation }) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     loadPost();
@@ -409,7 +411,7 @@ export default function PostScreen({ route, navigation }) {
       />
 
       {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
-      <View style={[styles.composer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+      <View style={[styles.composer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14) }]}>
         <Avatar uri={user?.avatar} size={34} style={styles.composerAvatar} accessibilityLabel="Your profile avatar" />
         <View style={styles.inputWrap}>
           {replyTo || editingComment ? <View style={[styles.replyingTo, { backgroundColor: theme.primarySoft }]}><Text style={[styles.replyingText, { color: theme.primary }]}>{editingComment ? 'Editing your comment' : `Replying to ${replyTo.userName}`}</Text><TouchableOpacity onPress={() => { setReplyTo(null); setEditingComment(null); setCommentText(''); }} accessibilityLabel={editingComment ? 'Cancel editing' : 'Cancel reply'}><AppIcon name="times" size={13} color={theme.primary} /></TouchableOpacity></View> : null}

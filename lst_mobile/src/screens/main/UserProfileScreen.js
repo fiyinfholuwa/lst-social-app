@@ -130,7 +130,7 @@ export default function UserProfileScreen({ route, navigation }) {
 
   const confirmBlock = () => Alert.alert(
     `Block ${profile.name}?`,
-    'Their posts and chats will be hidden. They will not be able to send you requests or messages.',
+    'Their posts and chats will be hidden from you, and your friendship will be removed. This does not affect their relationship with other members.',
     [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Block account', style: 'destructive', onPress: () => blockUser(userId) },
@@ -187,13 +187,11 @@ export default function UserProfileScreen({ route, navigation }) {
         ) : null}
       </View> : null}
 
-      {!isOwnProfile && relationship !== 'blocked' ? <View style={[styles.accountActions, { borderTopColor: theme.border }]}>
-        {relationship === 'friends' ? (
+      {!isOwnProfile && relationship === 'friends' ? <View style={[styles.accountActions, { borderTopColor: theme.border }]}>
           <TouchableOpacity style={styles.accountAction} onPress={confirmUnfriend}>
             <AppIcon name="user-minus" size={15} color={theme.secondaryText} />
             <Text style={[styles.accountActionText, { color: theme.secondaryText }]}>Unfriend</Text>
           </TouchableOpacity>
-        ) : null}
         <TouchableOpacity style={styles.accountAction} onPress={confirmBlock}>
           <AppIcon name="ban" size={15} color={theme.danger} />
           <Text style={[styles.accountActionText, { color: theme.danger }]}>Block account</Text>

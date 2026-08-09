@@ -75,6 +75,9 @@ class ConnectionRepository
     public function act(User $user, User $other, string $action): void
     {
         $query = Friendship::where(fn ($q) => $q->where(['sender_id' => $user->id, 'receiver_id' => $other->id])->orWhere(fn ($x) => $x->where(['sender_id' => $other->id, 'receiver_id' => $user->id])));
+        if ($action === 'block') {
+            abort_unless((clone $query)->where('status', 'accepted')->exists(), 422, 'You can only block an account that is currently your friend.');
+        }
         if ($action === 'accept') {
             $query->update(['status' => 'accepted']);
         } else {
@@ -88,9 +91,22 @@ class ConnectionRepository
         }
     }
 
-    public function chats(User $user)
+    public function chatsPage(User $user, string $term = '', int $perPage = 20)
     {
-        return $user->belongsToMany(Chat::class)->with(['users', 'messages' => fn ($q) => $q->latest()->limit(1)])->latest('chats.updated_at')->get();
+        return $user->belongsToMany(Chat::class)
+            ->with(['users', 'messages' => fn ($q) => $q->latest()->limit(1)])
+            ->when($term !== '', fn ($query) => $query->where(fn ($search) => $search
+                ->whereHas('users', fn ($users) => $users->whereKeyNot($user->id)->where('name', 'like', "%{$term}%"))
+                ->orWhereHas('messages', fn ($messages) => $messages->where('text', 'like', "%{$term}%"))))
+            ->latest('chats.updated_at')
+            ->paginate($perPage);
+    }
+
+    public function unreadChatCount(User $user): int
+    {
+        return Chat::whereHas('users', fn ($users) => $users->whereKey($user->id))
+            ->whereHas('messages', fn ($messages) => $messages->where('sender_id', '!=', $user->id)->whereNull('read_at'))
+            ->count();
     }
 
     public function chat(User $user, Chat $chat): Chat
@@ -114,6 +130,7 @@ class ConnectionRepository
     public function messages(User $user, Chat $chat)
     {
         $this->chat($user, $chat);
+        $chat->messages()->where('sender_id', '!=', $user->id)->whereNull('read_at')->update(['read_at' => now()]);
 
         return $chat->messages()->oldest()->get();
     }
@@ -125,4 +142,5 @@ class ConnectionRepository
 
         return $chat->messages()->create($data + ['sender_id' => $user->id]);
     }
+
 }

@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/{user}/friend-request', [ConnectionController::class, 'request']);
     Route::post('/users/{user}/relationship', [ConnectionController::class, 'act']);
     Route::get('/chats', [ConnectionController::class, 'chats']);
+    Route::get('/chats-unread-count', [ConnectionController::class, 'unreadChatCount']);
     Route::post('/chats/with/{user}', [ConnectionController::class, 'createChat']);
     Route::get('/chats/{chat}', [ConnectionController::class, 'chat']);
     Route::get('/chats/{chat}/messages', [ConnectionController::class, 'messages']);

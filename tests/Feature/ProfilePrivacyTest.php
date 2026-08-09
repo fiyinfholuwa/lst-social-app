@@ -34,6 +34,11 @@ class ProfilePrivacyTest extends TestCase
             ->assertJsonPath('data.phoneNumber', '+234 801 234 5678')
             ->assertJsonPath('data.isProfilePrivate', true);
 
+        // Warm the owner's profile cache before a different account views it.
+        $this->actingAs($owner)->getJson("/api/users/{$owner->id}")
+            ->assertOk()
+            ->assertJsonPath('phoneNumber', '+234 801 234 5678');
+
         auth()->forgetGuards();
         $this->actingAs($visitor)->getJson("/api/users/{$owner->id}")
             ->assertOk()

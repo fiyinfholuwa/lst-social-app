@@ -9,7 +9,7 @@ import EmojiText from './EmojiText';
 const PREVIEW_LIMIT = 180;
 const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
 
-export default function PostCard({ post, onPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false }) {
+export default function PostCard({ post, onPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false, containerStyle }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const isLong = post.content.length > PREVIEW_LIMIT;
@@ -17,7 +17,7 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
   const images = post.images?.length ? post.images : post.image ? [post.image] : [];
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }, containerStyle]}>
       <Pressable onPress={onPress}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onUserPress} disabled={!onUserPress}>

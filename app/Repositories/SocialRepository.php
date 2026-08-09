@@ -32,7 +32,10 @@ class SocialRepository
     private function postsQuery(User $viewer)
     {
         return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
-            ->where('status', 'approved')->withCount(['likes', 'comments'])->latest();
+            ->whereNull('community_id')
+            ->where('status', 'approved')
+            ->withCount(['likes', 'comments'])
+            ->latest();
     }
 
     public function createPost(User $user, array $data): Post

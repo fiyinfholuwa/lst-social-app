@@ -66,7 +66,9 @@ class SocialApiTest extends TestCase
         auth()->forgetGuards();
         $this->flushHeaders()->withHeaders($headers)->getJson('/api/posts')->assertJsonMissing(['id' => $postId]);
         $this->post("/admin/posts/{$postId}/review", ['action' => 'approve'])->assertRedirect();
-        $this->withHeaders($headers)->getJson('/api/posts')->assertJsonFragment(['id' => $postId]);
+        $this->withHeaders($headers)->getJson('/api/posts')->assertJsonMissing(['id' => $postId]);
+        $this->withHeaders($headers)->getJson("/api/communities/{$community->id}/posts")
+            ->assertJsonFragment(['id' => $postId, 'status' => 'approved']);
 
         $this->withHeaders($headers)->deleteJson("/api/communities/{$community->id}/leave")->assertOk();
         $this->assertDatabaseMissing('community_user', ['community_id' => $community->id, 'user_id' => $user->id]);

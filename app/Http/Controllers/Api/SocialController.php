@@ -310,7 +310,9 @@ class SocialController extends Controller
 
     public function user(Request $request, User $user)
     {
-        return response()->json($this->cache->remember("user:{$user->id}", 'profile', CacheService::LONG,
+        $profileView = (int) $request->user()->id === (int) $user->id ? 'owner' : 'visitor';
+
+        return response()->json($this->cache->remember("user:{$user->id}", "profile:{$profileView}", CacheService::LONG,
             fn () => (new UserResource($user->load('communities')))->resolve($request)));
     }
 

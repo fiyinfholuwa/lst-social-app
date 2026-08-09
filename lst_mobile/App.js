@@ -11,6 +11,7 @@ import { FriendshipsProvider } from './src/context/FriendshipsContext';
 import { CommunityApplicationsProvider } from './src/context/CommunityApplicationsContext';
 import { NotificationsProvider } from './src/context/NotificationsContext';
 import { FONT_FAMILY } from './src/styles/typography';
+import { AppAlertProvider } from './src/context/AppAlertContext';
 
 Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.style = [{ fontFamily: FONT_FAMILY }, Text.defaultProps.style];
@@ -26,10 +27,12 @@ TextInput.defaultProps.style = [{ fontFamily: FONT_FAMILY }, TextInput.defaultPr
             <FriendshipsProvider>
               <CommunityApplicationsProvider>
                 <NotificationsProvider>
-                  <NavigationContainer>
-                    <AppNavigator />
-                    <StatusBar style="auto" />
-                  </NavigationContainer>
+                  <AppAlertProvider>
+                    <NavigationContainer>
+                      <AppNavigator />
+                      <StatusBar style="auto" />
+                    </NavigationContainer>
+                  </AppAlertProvider>
                 </NotificationsProvider>
               </CommunityApplicationsProvider>
             </FriendshipsProvider>

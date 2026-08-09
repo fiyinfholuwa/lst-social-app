@@ -47,6 +47,7 @@ class SocialRepository
     {
         return $post->comments()->whereNull('parent_id')
             ->with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->withExists(['replies as replied_by_current_user' => fn ($query) => $query->where('user_id', $viewer->id)])
             ->withCount(['likes', 'replies'])->oldest()->paginate($perPage);
     }
 
@@ -56,6 +57,7 @@ class SocialRepository
 
         return $comment->replies()
             ->with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+            ->withExists(['replies as replied_by_current_user' => fn ($query) => $query->where('user_id', $viewer->id)])
             ->withCount(['likes', 'replies'])->oldest()->paginate($perPage);
     }
 

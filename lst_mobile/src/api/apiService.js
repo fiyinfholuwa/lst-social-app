@@ -56,6 +56,8 @@ const apiService = {
   getComments: (postId, page = 1) => httpClient.get(`/posts/${postId}/comments?page=${page}`),
   getCommentReplies: (postId, commentId, page = 1) => httpClient.get(`/posts/${postId}/comments/${commentId}/replies?page=${page}`),
   likeComment: commentId => httpClient.post(`/comments/${commentId}/like`),
+  updateComment: (commentId, text) => httpClient.patch(`/comments/${commentId}`, { text }),
+  deleteComment: commentId => httpClient.delete(`/comments/${commentId}`),
   getSavedPostIds: async () => (await httpClient.get('/saved-posts')).savedPostIds,
   toggleSavedPost: postId => httpClient.post(`/posts/${postId}/save`),
   getCommunities: () => httpClient.get('/communities'),

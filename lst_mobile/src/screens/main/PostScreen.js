@@ -104,6 +104,7 @@ export default function PostScreen({ route, navigation }) {
   const [commentText, setCommentText] = useState('');
   const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
+  const [editingComment, setEditingComment] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const inputRef = useRef(null);
@@ -175,24 +176,61 @@ export default function PostScreen({ route, navigation }) {
     if (!commentText.trim() || sending) return;
     setSending(true);
     try {
-      await apiService.addComment(postId, commentText.trim(), replyTo?.id || null);
+      if (editingComment) await apiService.updateComment(editingComment.id, commentText.trim());
+      else await apiService.addComment(postId, commentText.trim(), replyTo?.id || null);
       const parent = replyTo;
       setCommentText('');
       setReplyTo(null);
+      setEditingComment(null);
       if (parent) await loadReplies(parent, 1);
       await loadPost();
+    } catch (error) {
+      Alert.alert(editingComment ? 'Couldn’t update comment' : 'Couldn’t add comment', error.message);
     } finally {
       setSending(false);
     }
   };
 
   const startReply = comment => {
+    setEditingComment(null);
     setReplyTo(comment);
     setTimeout(() => {
       inputRef.current?.focus();
       listRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
+
+  const startEditComment = comment => {
+    setReplyTo(null);
+    setEditingComment(comment);
+    setCommentText(comment.text);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const deleteComment = comment => Alert.alert(
+    'Delete comment?',
+    comment.parentId ? 'This reply will be permanently removed.' : 'This comment and its replies will be permanently removed.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await apiService.deleteComment(comment.id);
+            if (String(editingComment?.id) === String(comment.id)) {
+              setEditingComment(null);
+              setCommentText('');
+            }
+            setRepliesByParent({});
+            await loadPost();
+          } catch (error) {
+            Alert.alert('Couldn’t delete comment', error.message);
+          }
+        },
+      },
+    ],
+  );
 
   const insertEmoji = emoji => {
     const start = selection.start ?? commentText.length;
@@ -323,17 +361,23 @@ export default function PostScreen({ route, navigation }) {
         renderItem={({ item }) => {
           const replyState = repliesByParent[String(item.id)];
           const CommentRow = ({ comment, reply = false }) => <View style={[styles.commentRow, reply && styles.replyRow]}>
-            <View style={[styles.commentAvatar, { backgroundColor: theme.primarySoft }]}>
-              <Text style={[styles.initial, { color: theme.primary }]}>{comment.userName.charAt(0).toUpperCase()}</Text>
-            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: comment.userId })} accessibilityRole="button">
+              <Avatar uri={comment.userAvatar} size={reply ? 30 : 36} style={styles.commentAvatar} accessibilityLabel={`${comment.userName}'s profile avatar`} />
+            </TouchableOpacity>
             <View style={[styles.commentBubble, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <View style={styles.commentMeta}>
-                <Text style={[styles.commentUser, { color: theme.text }]}>{comment.userName}</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: comment.userId })} style={styles.commentAuthor}>
+                  <Text numberOfLines={1} style={[styles.commentUser, { color: theme.text }]}>{comment.userName}</Text>
+                </TouchableOpacity>
                 <Text style={[styles.commentTime, { color: theme.secondaryText }]}>{comment.timestamp}</Text>
               </View>
               <CommentText text={comment.text} style={[styles.commentText, { color: theme.text }]} theme={theme} />
               <View style={styles.commentActions}>
-                <TouchableOpacity onPress={() => startReply(item)} accessibilityLabel={`Reply to ${comment.userName}`}><Text style={[styles.replyText, { color: theme.primary }]}>Reply</Text></TouchableOpacity>
+                {!reply && !comment.repliedByCurrentUser ? <TouchableOpacity onPress={() => startReply(item)} accessibilityLabel={`Reply to ${comment.userName}`}><Text style={[styles.replyText, { color: theme.primary }]}>Reply</Text></TouchableOpacity> : null}
+                {String(comment.userId) === String(user?.id) ? <>
+                  <TouchableOpacity onPress={() => startEditComment(comment)} accessibilityLabel={`Edit your comment`}><Text style={[styles.ownerActionText, { color: theme.secondaryText }]}>Edit</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteComment(comment)} accessibilityLabel={`Delete your comment`}><Text style={[styles.ownerActionText, { color: theme.danger }]}>Delete</Text></TouchableOpacity>
+                </> : null}
                 <TouchableOpacity style={styles.commentLike} onPress={() => handleCommentLike(comment)} accessibilityLabel={`Like ${comment.userName}'s comment`}>
                   <AppIcon name="heart" solid={comment.likedByCurrentUser} size={13} color={comment.likedByCurrentUser ? theme.accent : theme.secondaryText} />
                   {comment.likes ? <Text style={[styles.commentLikeCount, { color: theme.secondaryText }]}>{comment.likes}</Text> : null}
@@ -356,11 +400,11 @@ export default function PostScreen({ route, navigation }) {
       <View style={[styles.composer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <Avatar uri={user?.avatar} size={34} style={styles.composerAvatar} accessibilityLabel="Your profile avatar" />
         <View style={styles.inputWrap}>
-          {replyTo ? <View style={[styles.replyingTo, { backgroundColor: theme.primarySoft }]}><Text style={[styles.replyingText, { color: theme.primary }]}>Replying to {replyTo.userName}</Text><TouchableOpacity onPress={() => setReplyTo(null)} accessibilityLabel="Cancel reply"><AppIcon name="times" size={13} color={theme.primary} /></TouchableOpacity></View> : null}
+          {replyTo || editingComment ? <View style={[styles.replyingTo, { backgroundColor: theme.primarySoft }]}><Text style={[styles.replyingText, { color: theme.primary }]}>{editingComment ? 'Editing your comment' : `Replying to ${replyTo.userName}`}</Text><TouchableOpacity onPress={() => { setReplyTo(null); setEditingComment(null); setCommentText(''); }} accessibilityLabel={editingComment ? 'Cancel editing' : 'Cancel reply'}><AppIcon name="times" size={13} color={theme.primary} /></TouchableOpacity></View> : null}
           <TextInput
             ref={inputRef}
             style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
-            placeholder={replyTo ? `Reply to ${replyTo.userName}...` : 'Write an encouraging comment...'}
+            placeholder={editingComment ? 'Update your comment...' : replyTo ? `Reply to ${replyTo.userName}...` : 'Write an encouraging comment...'}
             placeholderTextColor={theme.secondaryText}
             value={commentText}
             onChangeText={setCommentText}
@@ -429,27 +473,28 @@ const styles = StyleSheet.create({
   commentsHeading: { marginTop: 24, marginBottom: 14, paddingTop: 18, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(128,128,128,0.25)' },
   commentTitle: { fontSize: 19, fontWeight: '700' },
   commentSubtitle: { fontSize: 11, marginTop: 3 },
-  commentRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  replyRow: { marginLeft: 26 },
-  commentAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 9 },
-  initial: { fontWeight: '700', fontSize: 13 },
-  commentBubble: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 12 },
+  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
+  replyRow: { marginLeft: 32, marginBottom: 10 },
+  commentAvatar: { flexShrink: 0 },
+  commentBubble: { flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, paddingHorizontal: 12, paddingVertical: 10 },
   commentMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  commentAuthor: { flex: 1, marginRight: 10 },
   commentUser: { fontWeight: '700', fontSize: 13 },
   commentText: { fontSize: 13, lineHeight: 20, marginTop: 6 },
   readMoreComment: { alignSelf: 'flex-start', fontSize: 11, fontWeight: '700', marginTop: 5 },
   commentTime: { fontSize: 11 },
-  commentActions: { flexDirection: 'row', gap: 16, alignItems: 'center', marginTop: 9 },
+  commentActions: { flexDirection: 'row', gap: 18, alignItems: 'center', marginTop: 8 },
   commentLike: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   commentLikeCount: { fontSize: 11, fontWeight: '600' },
   replyText: { fontSize: 11, fontWeight: '700' },
-  repliesButton: { marginLeft: 71, marginTop: -4, marginBottom: 12, alignSelf: 'flex-start' },
+  ownerActionText: { fontSize: 11, fontWeight: '700' },
+  repliesButton: { marginLeft: 46, marginTop: -3, marginBottom: 13, paddingVertical: 3, alignSelf: 'flex-start' },
   repliesText: { fontSize: 11, fontWeight: '800' },
   commentsLoader: { paddingVertical: 18 },
   empty: { alignItems: 'center', paddingVertical: 34, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 10 },
   emptyText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 5 },
-  composer: { flexDirection: 'row', alignItems: 'flex-end', borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, gap: 8 },
+  composer: { flexDirection: 'row', alignItems: 'flex-end', borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingTop: 9, paddingBottom: 10, gap: 7 },
   composerAvatar: { width: 34, height: 34, borderRadius: 17, marginBottom: 3 },
   inputWrap: { flex: 1 },
   replyingTo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 9, paddingHorizontal: 9, paddingVertical: 5, marginBottom: 5 },

@@ -25,7 +25,7 @@ class SocialService
 
     public function commentData($comment): array
     {
-        return ['id' => (string) $comment->id, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'text' => $comment->text, 'parentId' => $comment->parent_id ? (string) $comment->parent_id : null, 'likes' => $comment->likes_count ?? $comment->likes()->count(), 'repliesCount' => $comment->replies_count ?? $comment->replies()->count(), 'likedByCurrentUser' => $comment->relationLoaded('likes') && $comment->likes->isNotEmpty(), 'timestamp' => $comment->created_at->diffForHumans()];
+        return ['id' => (string) $comment->id, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'userAvatar' => $this->mediaUrl($comment->user->avatar), 'text' => $comment->text, 'parentId' => $comment->parent_id ? (string) $comment->parent_id : null, 'likes' => $comment->likes_count ?? $comment->likes()->count(), 'repliesCount' => $comment->replies_count ?? $comment->replies()->count(), 'repliedByCurrentUser' => (bool) ($comment->replied_by_current_user ?? false), 'likedByCurrentUser' => $comment->relationLoaded('likes') && $comment->likes->isNotEmpty(), 'timestamp' => $comment->created_at->diffForHumans()];
     }
 
     public function posts(User $viewer)

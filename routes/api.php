@@ -35,6 +35,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/posts/{post}/comments', [SocialController::class, 'comments']);
     Route::get('/posts/{post}/comments/{comment}/replies', [SocialController::class, 'replies']);
     Route::post('/comments/{comment}/like', [SocialController::class, 'likeComment']);
+    Route::patch('/comments/{comment}', [SocialController::class, 'updateComment']);
+    Route::delete('/comments/{comment}', [SocialController::class, 'deleteComment']);
     Route::get('/saved-posts', [SocialController::class, 'saved']);
     Route::post('/posts/{post}/save', [SocialController::class, 'toggleSaved']);
     Route::get('/communities', [SocialController::class, 'communities']);

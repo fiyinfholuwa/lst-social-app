@@ -132,7 +132,12 @@ class SocialController extends Controller
     {
         $d = $r->validate(['text' => 'required|string|max:2000', 'parent_id' => 'nullable|integer']);
         if (!empty($d['parent_id'])) {
-            abort_unless($post->comments()->whereKey($d['parent_id'])->exists(), 422, 'The reply target does not belong to this post.');
+            abort_unless($post->comments()->whereNull('parent_id')->whereKey($d['parent_id'])->exists(), 422, 'Replies can only be added to a main comment.');
+            abort_if(
+                $post->comments()->where('parent_id', $d['parent_id'])->where('user_id', $r->user()->id)->exists(),
+                422,
+                'You have already replied to this comment.'
+            );
         }
         $c = $this->repo->addComment($r->user(), $post, $d['text'], $d['parent_id'] ?? null)->load(['user', 'likes']);
         $this->service->invalidatePost($post);
@@ -160,6 +165,26 @@ class SocialController extends Controller
         $this->service->invalidatePost($comment->post);
 
         return response()->json(['liked' => $comment->likes()->whereKey($r->user()->id)->exists(), 'likes' => $comment->likes()->count()]);
+    }
+
+    public function updateComment(Request $r, Comment $comment)
+    {
+        abort_unless((int) $comment->user_id === (int) $r->user()->id, 403, 'You can only edit your own comment.');
+        $data = $r->validate(['text' => 'required|string|max:2000']);
+        $comment->update(['text' => trim($data['text'])]);
+        $this->service->invalidatePost($comment->post);
+
+        return response()->json($this->service->commentData($comment->load(['user', 'likes'])->loadCount(['likes', 'replies'])));
+    }
+
+    public function deleteComment(Request $r, Comment $comment)
+    {
+        abort_unless((int) $comment->user_id === (int) $r->user()->id, 403, 'You can only delete your own comment.');
+        $post = $comment->post;
+        $comment->delete();
+        $this->service->invalidatePost($post);
+
+        return response()->json(['message' => 'Comment deleted.']);
     }
 
     public function saved(Request $r)

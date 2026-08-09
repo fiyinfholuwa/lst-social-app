@@ -403,9 +403,13 @@ class SocialController extends Controller
             'subject' => 'required|string|max:150',
             'message' => 'required|string|max:5000',
         ]);
-        SupportRequest::create([...$data, 'user_id' => $r->user()->id]);
+        $supportRequest = SupportRequest::create([...$data, 'user_id' => $r->user()->id, 'status' => 'open']);
 
-        return response()->json(['message' => 'Your message has been received.'], 201);
+        return response()->json([
+            'message' => 'Your message has been received.',
+            'reference' => 'LST-'.str_pad((string) $supportRequest->id, 6, '0', STR_PAD_LEFT),
+            'status' => $supportRequest->status,
+        ], 201);
     }
 
     private function storePostImage($image): string

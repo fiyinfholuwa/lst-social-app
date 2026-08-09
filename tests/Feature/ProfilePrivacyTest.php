@@ -78,7 +78,9 @@ class ProfilePrivacyTest extends TestCase
             'type' => 'issue',
             'subject' => 'Something is not working',
             'message' => 'A clear description of the problem.',
-        ])->assertCreated();
+        ])->assertCreated()
+            ->assertJsonPath('reference', 'LST-000001')
+            ->assertJsonPath('status', 'open');
         $this->assertDatabaseHas('support_requests', ['user_id' => $user->id, 'type' => 'issue', 'status' => 'open']);
     }
 

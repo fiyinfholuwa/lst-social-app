@@ -55,5 +55,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [SocialController::class, 'notifications']);
     Route::post('/notifications/read-all', [SocialController::class, 'readAll']);
     Route::post('/notifications/{notification}/read', [SocialController::class, 'readNotification']);
-    Route::post('/support-requests', [SocialController::class, 'submitSupportRequest']);
+    Route::post('/support-requests', [SocialController::class, 'submitSupportRequest'])->middleware('throttle:10,1');
 });

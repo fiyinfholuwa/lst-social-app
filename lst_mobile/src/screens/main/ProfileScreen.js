@@ -177,8 +177,6 @@ export default function ProfileScreen({ navigation }) {
         <Text style={[styles.sectionTitle, { color: theme.secondaryText }]}>Help and legal</Text>
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <MenuRow icon="help-circle-outline" label="FAQ and support" onPress={() => navigation.navigate('HelpCenter')} theme={theme} />
-          <MenuRow icon="alert-circle-outline" label="Report an issue" onPress={() => navigation.navigate('Feedback', { type: 'issue' })} theme={theme} />
-          <MenuRow icon="chatbubbles-outline" label="Send feedback" onPress={() => navigation.navigate('Feedback', { type: 'feedback' })} theme={theme} />
         </View>
 
         <TouchableOpacity style={[styles.logout, { borderColor: theme.danger }]} onPress={handleLogout}><Icon name="sign-out-alt" size={16} color={theme.danger} /><Text style={[styles.logoutText, { color: theme.danger }]}>Log out</Text></TouchableOpacity>

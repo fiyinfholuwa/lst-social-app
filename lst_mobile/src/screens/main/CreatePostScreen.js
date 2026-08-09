@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInpu
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../api/apiService';

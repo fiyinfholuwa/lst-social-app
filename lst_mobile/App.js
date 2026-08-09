@@ -1,5 +1,4 @@
 import React from 'react';
-import { Text, TextInput } from 'react-native';
         import { NavigationContainer } from '@react-navigation/native';
         import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
@@ -10,13 +9,7 @@ import { SavedPostsProvider } from './src/context/SavedPostsContext';
 import { FriendshipsProvider } from './src/context/FriendshipsContext';
 import { CommunityApplicationsProvider } from './src/context/CommunityApplicationsContext';
 import { NotificationsProvider } from './src/context/NotificationsContext';
-import { FONT_FAMILY } from './src/styles/typography';
 import { AppAlertProvider } from './src/context/AppAlertContext';
-
-Text.defaultProps = Text.defaultProps || {};
-Text.defaultProps.style = [{ fontFamily: FONT_FAMILY }, Text.defaultProps.style];
-TextInput.defaultProps = TextInput.defaultProps || {};
-TextInput.defaultProps.style = [{ fontFamily: FONT_FAMILY }, TextInput.defaultProps.style];
 
         export default function App() {
           return (

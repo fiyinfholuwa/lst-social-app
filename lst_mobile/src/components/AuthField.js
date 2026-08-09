@@ -23,6 +23,7 @@ export default function AuthField({ label, icon, secureTextEntry, theme, style, 
           {...inputProps}
           style={[styles.input, { color: theme.text }]}
           placeholderTextColor={theme.secondaryText}
+          editable={inputProps.editable !== false}
           secureTextEntry={secureTextEntry ? hidden : false}
           onFocus={event => {
             setFocused(true);

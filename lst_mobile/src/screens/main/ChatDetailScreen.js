@@ -1,6 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Audio } from 'expo-av';
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
@@ -17,33 +25,18 @@ const formatDuration = milliseconds => {
 };
 
 function VoiceNote({ message, mine, theme }) {
-  const [sound, setSound] = useState(null);
-  const [playing, setPlaying] = useState(false);
-  const [position, setPosition] = useState(0);
-
-  useEffect(() => () => {
-    if (sound) sound.unloadAsync();
-  }, [sound]);
+  const player = useAudioPlayer(message.audioUri || null, { updateInterval: 250 });
+  const status = useAudioPlayerStatus(player);
+  const playing = Boolean(status.playing);
+  const position = (status.currentTime || 0) * 1000;
 
   const togglePlayback = async () => {
     if (!message.audioUri) return;
-    if (sound) {
-      if (playing) await sound.pauseAsync();
-      else if (position >= (message.duration || 0) - 300) await sound.replayAsync();
-      else await sound.playAsync();
-      return;
+    if (playing) player.pause();
+    else {
+      if (position >= (message.duration || 0) - 300) await player.seekTo(0);
+      player.play();
     }
-
-    const { sound: createdSound } = await Audio.Sound.createAsync(
-      { uri: message.audioUri },
-      { shouldPlay: true },
-      status => {
-        if (!status.isLoaded) return;
-        setPlaying(status.isPlaying);
-        setPosition(status.positionMillis || 0);
-      },
-    );
-    setSound(createdSound);
   };
 
   const progress = Math.min(1, position / Math.max(message.duration || 1, 1));
@@ -77,9 +70,10 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [chat, setChat] = useState(null);
-  const [recording, setRecording] = useState(null);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const recordingTimer = useRef(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder, 250);
+  const recording = recorderState.isRecording;
+  const recordingDuration = recorderState.durationMillis || 0;
   const { theme } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -87,9 +81,6 @@ export default function ChatDetailScreen({ route, navigation }) {
   useEffect(() => {
     loadMessages();
     apiService.getChat(chatId).then(setChat);
-    return () => {
-      if (recordingTimer.current) clearInterval(recordingTimer.current);
-    };
   }, [chatId]);
 
   const loadMessages = async () => {
@@ -106,22 +97,17 @@ export default function ChatDetailScreen({ route, navigation }) {
 
   const startRecording = async () => {
     try {
-      const permission = await Audio.requestPermissionsAsync();
+      const permission = await AudioModule.requestRecordingPermissionsAsync();
       if (!permission.granted) {
         Alert.alert('Microphone permission required', 'Allow microphone access to record and send voice notes.');
         return;
       }
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
-      const result = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      setRecording(result.recording);
-      setRecordingDuration(0);
-      recordingTimer.current = setInterval(async () => {
-        const status = await result.recording.getStatusAsync();
-        setRecordingDuration(status.durationMillis || 0);
-      }, 250);
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
     } catch (error) {
       Alert.alert('Could not record', 'Please check your microphone permission and try again.');
     }
@@ -129,13 +115,10 @@ export default function ChatDetailScreen({ route, navigation }) {
 
   const finishRecording = async shouldSend => {
     if (!recording) return;
-    if (recordingTimer.current) clearInterval(recordingTimer.current);
-    recordingTimer.current = null;
-
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
       if (shouldSend && uri && recordingDuration >= 500) {
         await apiService.sendVoiceMessage(chatId, uri, recordingDuration);
         await loadMessages();
@@ -143,8 +126,6 @@ export default function ChatDetailScreen({ route, navigation }) {
     } catch (error) {
       if (shouldSend) Alert.alert('Voice note failed', 'The recording could not be sent. Please try again.');
     } finally {
-      setRecording(null);
-      setRecordingDuration(0);
     }
   };
 

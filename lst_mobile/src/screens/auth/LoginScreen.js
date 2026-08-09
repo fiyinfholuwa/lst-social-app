@@ -43,11 +43,12 @@ export default function LoginScreen({ navigation }) {
         colors={[theme.background, theme.accentSoft, theme.secondaryAccentSoft]}
         locations={[0.15, 0.62, 1]}
         style={StyleSheet.absoluteFill}
+        pointerEvents="none"
       />
-      <View style={[styles.orb, styles.orbTop, { backgroundColor: theme.warmAccent }]} />
-      <View style={[styles.orb, styles.orbSide, { backgroundColor: theme.secondaryAccent }]} />
+      <View pointerEvents="none" style={[styles.orb, styles.orbTop, { backgroundColor: theme.warmAccent }]} />
+      <View pointerEvents="none" style={[styles.orb, styles.orbSide, { backgroundColor: theme.secondaryAccent }]} />
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
         <View style={styles.brandRow}>
           <BrandLogo width={174} />
         </View>
@@ -66,7 +67,7 @@ export default function LoginScreen({ navigation }) {
             theme={theme}
             style={styles.fieldSpacing}
             placeholder="you@example.com"
-            value={email}
+            defaultValue=""
             onChangeText={setEmail}
             autoCapitalize="none"
             autoComplete="email"
@@ -78,7 +79,7 @@ export default function LoginScreen({ navigation }) {
             theme={theme}
             style={styles.fieldSpacing}
             placeholder="Enter your password"
-            value={password}
+            defaultValue=""
             onChangeText={setPassword}
             secureTextEntry
             autoComplete="password"

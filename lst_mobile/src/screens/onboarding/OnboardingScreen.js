@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../../components/AppIcon';
 import BrandLogo from '../../components/BrandLogo';
@@ -31,6 +31,20 @@ const slides = [
     video: require('../../../assets/onboarding-love.mp4'),
   },
 ];
+
+function BackgroundVideo({ source, active }) {
+  const player = useVideoPlayer(source, instance => {
+    instance.loop = true;
+    instance.muted = true;
+  });
+
+  useEffect(() => {
+    if (active) player.play();
+    else player.pause();
+  }, [active, player]);
+
+  return <VideoView player={player} style={styles.slideVideo} contentFit="cover" nativeControls={false} />;
+}
 
 export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
@@ -75,15 +89,7 @@ export default function OnboardingScreen() {
         onMomentumScrollEnd={event => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
         renderItem={({ item, index: slideIndex }) => (
           <View style={styles.slide}>
-            <Video
-              source={item.video}
-              style={styles.slideVideo}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay={slideIndex === index}
-              isLooping
-              isMuted
-              useNativeControls={false}
-            />
+            <BackgroundVideo source={item.video} active={slideIndex === index} />
             <LinearGradient
               colors={['rgba(84,35,61,0.04)', 'rgba(252,248,250,0.58)', COLORS.offWhite]}
               locations={[0, 0.55, 0.88]}

@@ -5,11 +5,6 @@
     "version": "1.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/brand-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,7 +14,23 @@
         {
           "photosPermission": "LST Social uses your photos when you choose images to share in a post."
         }
-      ]
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand-logo.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "backgroundColor": "#FFFFFF"
+          }
+        }
+      ],
+      "expo-audio",
+      "expo-video",
+      "expo-asset",
+      "expo-font"
     ],
     "ios": {
       "bundleIdentifier": "com.fiyinfholuwa.lstsocial",

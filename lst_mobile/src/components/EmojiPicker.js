@@ -33,7 +33,11 @@ export default function EmojiPicker({ onSelect, onClose, theme }) {
           keyboardShouldPersistTaps="always"
           contentContainerStyle={styles.grid}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.emojiButton} onPress={() => onSelect(item.value)} accessibilityLabel={`Add ${item.keywords} emoji`}>
+            <TouchableOpacity
+              style={styles.emojiButton}
+              onPress={() => onSelect(`:${item.id}:`)}
+              accessibilityLabel={`Add ${item.keywords} emoji`}
+            >
               <Image source={item.image} style={styles.emoji} />
             </TouchableOpacity>
           )}

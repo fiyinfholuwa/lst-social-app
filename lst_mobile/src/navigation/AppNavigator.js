@@ -40,6 +40,7 @@ import CommunityModerationScreen from '../screens/main/CommunityModerationScreen
           return (
             <Stack.Navigator screenOptions={{
               headerShown: false,
+              headerBackTitleVisible: false,
               contentStyle: { backgroundColor: theme.background },
               headerStyle: { backgroundColor: theme.surface },
               headerTintColor: theme.text,
@@ -49,7 +50,7 @@ import CommunityModerationScreen from '../screens/main/CommunityModerationScreen
                 <Stack.Screen name="Auth" component={AuthNavigator} />
               ) : (
                 <>
-                  <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+                  <Stack.Screen name="MainTabs" component={MainTabNavigator} options={{ title: '' }} />
                   <Stack.Screen name="PostDetail" component={PostScreen} options={{ headerShown: true, title: 'Post' }} />
                   <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: 'Community' }} />
                   <Stack.Screen name="CommunityMembers" component={CommunityMembersScreen} options={{ headerShown: true, title: 'Community Members' }} />

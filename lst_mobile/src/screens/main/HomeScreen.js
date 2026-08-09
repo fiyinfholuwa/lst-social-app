@@ -21,7 +21,7 @@ import { useNotifications } from '../../context/NotificationsContext';
           const [nextPage, setNextPage] = useState(1);
           const [hasMorePosts, setHasMorePosts] = useState(true);
           const { theme } = useTheme();
-          const { user } = useAuth();
+          const { user, refreshUser } = useAuth();
           const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
           const friendshipState = useFriendships();
           const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds)
@@ -56,7 +56,10 @@ import { useNotifications } from '../../context/NotificationsContext';
             finally { setLoadingMore(false); }
           };
 
-          useFocusEffect(useCallback(() => { loadPosts(); }, [loadPosts]));
+          useFocusEffect(useCallback(() => {
+            loadPosts();
+            refreshUser().catch(error => console.error('Could not refresh user profile', error));
+          }, [loadPosts, refreshUser]));
 
           const deletePost = async post => {
             try {
@@ -69,7 +72,11 @@ import { useNotifications } from '../../context/NotificationsContext';
             }
           };
 
-          const onRefresh = () => { setRefreshing(true); loadPosts(); };
+          const onRefresh = () => {
+            setRefreshing(true);
+            loadPosts();
+            refreshUser().catch(error => console.error('Could not refresh user profile', error));
+          };
           const emailVerified = Boolean(user?.emailVerified);
           const openComposer = () => {
             if (!emailVerified) {

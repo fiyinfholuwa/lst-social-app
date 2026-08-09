@@ -34,7 +34,7 @@ export default function SharePostScreen({ route, navigation }) {
     setSubmitting(true);
     try {
       await apiService.sharePost(postId, note.trim());
-      Alert.alert('Shared to your timeline', 'The post is now visible as one of your posts.', [
+      Alert.alert('Shared with your friends', 'The post is now visible to your friends as one of your posts.', [
         { text: 'Done', onPress: () => navigation.popToTop() },
       ]);
     } catch (error) {
@@ -52,8 +52,8 @@ export default function SharePostScreen({ route, navigation }) {
       <View style={styles.intro}>
         <View style={[styles.icon, { backgroundColor: theme.primarySoft }]}><AppIcon name="share-alt" size={20} color={theme.primary} /></View>
         <View style={styles.introCopy}>
-          <Text style={[styles.title, { color: theme.text }]}>Share with your community</Text>
-          <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Add a note, or share the post as it is.</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Share with your friends</Text>
+          <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Add a note, or share the post with your friends as it is.</Text>
         </View>
       </View>
 

@@ -54,7 +54,9 @@ class SocialController extends Controller
 
         $images = collect($r->file('images', []))->map(fn ($image) => $this->storePostImage($image))->values()->all();
 
-        return response()->json($this->service->create($r->user(), ['content' => $d['content'], 'images' => $images ?: null, 'image' => $images[0] ?? null, 'community_id' => null, 'type' => 'Post', 'audience' => 'Everyone']), 201);
+        $isAdmin = in_array($r->user()->role, ['admin', 'super_admin'], true);
+
+        return response()->json($this->service->create($r->user(), ['content' => $d['content'], 'images' => $images ?: null, 'image' => $images[0] ?? null, 'community_id' => null, 'type' => 'Post', 'audience' => $isAdmin ? 'Everyone' : 'Friends', 'status' => 'approved']), 201);
     }
 
     public function updatePost(Request $r, Post $post)
@@ -131,6 +133,7 @@ class SocialController extends Controller
     public function sharePost(Request $r, Post $post)
     {
         abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before sharing a post.');
+        $post = $this->repo->post($post->id, $r->user());
         abort_unless($post->community_id === null && $post->status === 'approved', 422, 'Only posts from the general feed can be shared.');
         $data = $r->validate(['note' => 'nullable|string|max:5000']);
         $original = $post->originalPost ?: $post;
@@ -140,7 +143,7 @@ class SocialController extends Controller
             'original_post_id' => $original->id,
             'community_id' => null,
             'type' => 'Shared post',
-            'audience' => 'Everyone',
+            'audience' => 'Friends',
             'status' => 'approved',
         ]), 201);
     }
@@ -330,17 +333,18 @@ class SocialController extends Controller
             'images.*' => 'image|max:2048',
         ]);
         $images = collect($r->file('images', []))->map(fn ($image) => $this->storePostImage($image))->values()->all();
+        $canPublishDirectly = (int) $community->admin_id === (int) $r->user()->id || $r->user()->role === 'super_admin';
         $post = $this->repo->createPost($r->user(), [
             'community_id' => $community->id,
             'content' => trim($data['content']),
             'type' => 'Community post',
             'audience' => $community->name,
-            'status' => 'pending',
+            'status' => $canPublishDirectly ? 'approved' : 'pending',
             'images' => $images ?: null,
             'image' => $images[0] ?? null,
         ]);
 
-        return response()->json(['id' => (string) $post->id, 'status' => $post->status, 'message' => 'Your post was submitted for approval.'], 201);
+        return response()->json(['id' => (string) $post->id, 'status' => $post->status, 'message' => $canPublishDirectly ? 'Your post is now live in the community.' : 'Your post was submitted for approval.'], 201);
     }
 
     public function applications(Request $r)

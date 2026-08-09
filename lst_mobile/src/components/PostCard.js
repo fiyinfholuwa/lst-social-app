@@ -95,10 +95,10 @@ export default function PostCard({ post, onPress, onOriginalPress, onUserPress, 
           <Icon name="comment" size={18} color={theme.primary} />
           <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={onShare}>
+        {onShare ? <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={onShare}>
           <Icon name="share-alt" size={18} color={theme.secondaryText} />
           {post.shareCount ? <Text style={[styles.shareCount, { color: theme.secondaryText }]}>{post.shareCount}</Text> : null}
-        </TouchableOpacity>
+        </TouchableOpacity> : null}
         <TouchableOpacity style={[styles.iconAction, styles.bookmarkButton]} accessibilityLabel={isSaved ? 'Remove saved post' : 'Save post'} onPress={onSave}>
           <Icon name="bookmark" size={18} color={isSaved ? theme.accent : theme.secondaryText} />
         </TouchableOpacity>

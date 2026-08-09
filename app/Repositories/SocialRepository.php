@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Comment;
 use App\Models\Community;
 use App\Models\CommunityApplication;
+use App\Models\Friendship;
 use App\Models\Post;
 use App\Models\User;
 
@@ -22,20 +23,47 @@ class SocialRepository
 
     public function post(int $id, User $viewer): Post
     {
-        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
+        $query = Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
             ->where(function ($query) use ($viewer) {
                 $query->where('status', 'approved')->orWhere('user_id', $viewer->id);
             })
-            ->withCount(['likes', 'comments', 'shares'])->findOrFail($id);
+            ->where(function ($scope) use ($viewer) {
+                $scope->whereNull('community_id')
+                    ->orWhereHas('community.members', fn ($members) => $members->whereKey($viewer->id));
+                if ($viewer->role === 'super_admin') {
+                    $scope->orWhereNotNull('community_id');
+                }
+            })
+            ->withCount(['likes', 'comments', 'shares']);
+
+        return $this->visibleTo($query, $viewer)->findOrFail($id);
     }
 
     private function postsQuery(User $viewer)
     {
-        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
+        $query = Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
             ->whereNull('community_id')
             ->where('status', 'approved')
             ->withCount(['likes', 'comments', 'shares'])
             ->latest();
+
+        return $this->visibleTo($query, $viewer);
+    }
+
+    private function visibleTo($query, User $viewer)
+    {
+        $friendIds = Friendship::where('status', 'accepted')
+            ->where(fn ($friendship) => $friendship->where('sender_id', $viewer->id)->orWhere('receiver_id', $viewer->id))
+            ->get(['sender_id', 'receiver_id'])
+            ->toBase()
+            ->map(fn ($friendship) => (int) ($friendship->sender_id === $viewer->id ? $friendship->receiver_id : $friendship->sender_id))
+            ->push((int) $viewer->id)
+            ->unique()
+            ->values();
+
+        return $query->where(fn ($visibility) => $visibility
+            ->where('audience', '!=', 'Friends')
+            ->orWhereIn('user_id', $friendIds));
     }
 
     public function createPost(User $user, array $data): Post

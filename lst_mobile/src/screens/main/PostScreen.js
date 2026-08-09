@@ -331,10 +331,10 @@ export default function PostScreen({ route, navigation }) {
             <AppIcon name="comment" size={19} color={theme.primary} />
             <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={handleShare}>
+          {!post.communityId ? <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={handleShare}>
             <AppIcon name="share-alt" size={18} color={theme.secondaryText} />
             {post.shareCount ? <Text style={[styles.detailShareCount, { color: theme.secondaryText }]}>{post.shareCount}</Text> : null}
-          </TouchableOpacity>
+          </TouchableOpacity> : null}
           <TouchableOpacity
             style={[styles.iconAction, styles.saveAction]}
             accessibilityLabel={isPostSaved(post.id) ? 'Remove saved post' : 'Save post'}

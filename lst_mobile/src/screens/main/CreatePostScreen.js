@@ -127,7 +127,7 @@ export default function CreatePostScreen({ navigation, route }) {
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
       <Text style={[styles.eyebrow, { color: theme.accent }]}>{communityId ? 'COMMUNITY POST' : 'CREATE A POST'}</Text>
       <Text style={[styles.heading, { color: theme.text }]}>Share what’s on your heart.</Text>
-      <Text style={[styles.subheading, { color: theme.secondaryText }]}>{communityId ? `Your post will be sent to ${communityName || 'this community'} for approval before it appears.` : 'Your post will be shared with the entire LST community.'}</Text>
+      <Text style={[styles.subheading, { color: theme.secondaryText }]}>{communityId ? `Community posts stay inside ${communityName || 'this community'}. Member posts are reviewed before appearing.` : ['admin', 'super_admin'].includes(user?.role) ? 'Your administrator post will be visible to everyone.' : 'Your post will be visible to your friends.'}</Text>
 
       <View style={[styles.composer, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.authorRow}>

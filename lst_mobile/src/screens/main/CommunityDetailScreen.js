@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
@@ -77,11 +77,6 @@ export default function CommunityDetailScreen({ route, navigation }) {
       Alert.alert('Couldn’t delete post', error.message);
     }
   };
-
-  const sharePost = post => Share.share({
-    title: `${post.userName} on LST Social`,
-    message: `${post.userName} shared on LST Social:\n\n${post.content}`,
-  });
 
   const openApplication = async () => {
     if (checkingApplicationAccess) return;
@@ -251,7 +246,6 @@ export default function CommunityDetailScreen({ route, navigation }) {
           onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
           onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
           onLike={() => apiService.likePost(item.id).then(loadCommunity)}
-          onShare={() => sharePost(item)}
           onSave={() => toggleSavedPost(item.id)}
           onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}
           onDelete={String(item.userId) === String(user?.id) ? () => deletePost(item) : undefined}

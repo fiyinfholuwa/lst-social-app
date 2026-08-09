@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ActivityIndicator, Alert, View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text, Share } from 'react-native';
+import { ActivityIndicator, Alert, View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
         import { useTheme } from '../../context/ThemeContext';
         import { useAuth } from '../../context/AuthContext';
@@ -28,11 +28,6 @@ import { useNotifications } from '../../context/NotificationsContext';
             ? friendshipState.blockedUserIds
             : [];
           const { unreadCount } = useNotifications();
-
-          const sharePost = post => Share.share({
-            title: `${post.userName} on LST Social`,
-            message: `${post.userName} shared on LST Social:\n\n${post.content}`,
-          });
 
           const loadPosts = useCallback(async () => {
             try {
@@ -108,9 +103,10 @@ import { useNotifications } from '../../context/NotificationsContext';
                   <PostCard
                     post={item}
                     onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
+                    onOriginalPress={item.originalPost ? () => navigation.navigate('PostDetail', { postId: item.originalPost.id }) : undefined}
                     onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
                     onLike={() => apiService.likePost(item.id).then(loadPosts)}
-                    onShare={() => sharePost(item)}
+                    onShare={() => navigation.navigate('SharePost', { postId: item.id })}
                     onSave={() => toggleSavedPost(item.id)}
                     onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}
                     onDelete={String(item.userId) === String(user?.id) ? () => deletePost(item) : undefined}

@@ -10,7 +10,6 @@ import {
   Keyboard,
   Platform,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -163,10 +162,7 @@ export default function PostScreen({ route, navigation }) {
     loadPost();
   };
 
-  const handleShare = () => Share.share({
-    title: `${post.userName} on LST Social`,
-    message: `${post.userName} shared on LST Social:\n\n${post.content}`,
-  });
+  const handleShare = () => navigation.navigate('SharePost', { postId: post.id });
 
   const handleComment = async () => {
     if (!user) {
@@ -300,6 +296,21 @@ export default function PostScreen({ route, navigation }) {
         </View>
 
         <EmojiText style={[styles.content, { color: theme.text }]}>{post.content}</EmojiText>
+        {post.originalPost ? <TouchableOpacity
+          style={[styles.sharedOriginal, { backgroundColor: theme.card, borderColor: theme.border }]}
+          onPress={() => navigation.replace('PostDetail', { postId: post.originalPost.id })}
+          activeOpacity={0.86}
+        >
+          <View style={styles.sharedOriginalHeader}>
+            <Avatar uri={post.originalPost.userAvatar} size={34} accessibilityLabel={`${post.originalPost.userName}'s profile avatar`} />
+            <View style={styles.sharedOriginalCopy}>
+              <Text style={[styles.sharedOriginalAuthor, { color: theme.text }]}>{post.originalPost.userName}</Text>
+              <Text style={[styles.sharedOriginalMeta, { color: theme.secondaryText }]}>Original post</Text>
+            </View>
+          </View>
+          <EmojiText style={[styles.sharedOriginalText, { color: theme.text }]}>{post.originalPost.content}</EmojiText>
+          {(post.originalPost.images?.[0] || post.originalPost.image) ? <Image source={{ uri: post.originalPost.images?.[0] || post.originalPost.image }} style={styles.sharedOriginalImage} /> : null}
+        </TouchableOpacity> : null}
         {(post.images?.length ? post.images : post.image ? [post.image] : []).length ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
             {(post.images?.length ? post.images : [post.image]).map((image, index, allImages) => (
@@ -322,6 +333,7 @@ export default function PostScreen({ route, navigation }) {
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={handleShare}>
             <AppIcon name="share-alt" size={18} color={theme.secondaryText} />
+            {post.shareCount ? <Text style={[styles.detailShareCount, { color: theme.secondaryText }]}>{post.shareCount}</Text> : null}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconAction, styles.saveAction]}
@@ -460,6 +472,13 @@ const styles = StyleSheet.create({
   contextRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 10, zIndex: 0 },
   contextText: { fontSize: 11, fontWeight: '600' },
   content: { fontSize: 17, lineHeight: 28, zIndex: 0 },
+  sharedOriginal: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 15 },
+  sharedOriginalHeader: { flexDirection: 'row', alignItems: 'center' },
+  sharedOriginalCopy: { flex: 1, marginLeft: 9 },
+  sharedOriginalAuthor: { fontSize: 13, fontWeight: '800' },
+  sharedOriginalMeta: { fontSize: 10, marginTop: 2 },
+  sharedOriginalText: { fontSize: 14, lineHeight: 21, marginTop: 11 },
+  sharedOriginalImage: { width: '100%', height: 220, borderRadius: 12, resizeMode: 'cover', marginTop: 11 },
   gallery: { marginTop: 16, borderRadius: 14 },
   imageWrap: { width: DETAIL_IMAGE_WIDTH, height: 280, marginRight: 8 },
   image: { width: '100%', height: '100%', borderRadius: 14, resizeMode: 'cover' },
@@ -469,6 +488,7 @@ const styles = StyleSheet.create({
   action: { minWidth: 48, height: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   actionCount: { fontSize: 11, fontWeight: '600' },
   iconAction: { width: 42, height: 38, alignItems: 'center', justifyContent: 'center' },
+  detailShareCount: { position: 'absolute', right: 0, top: 0, fontSize: 9, fontWeight: '800' },
   saveAction: { marginLeft: 'auto' },
   commentsHeading: { marginTop: 24, marginBottom: 14, paddingTop: 18, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(128,128,128,0.25)' },
   commentTitle: { fontSize: 19, fontWeight: '700' },

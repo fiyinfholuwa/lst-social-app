@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
@@ -26,10 +26,7 @@ export default function SavedPostsScreen({ navigation }) {
 
   useEffect(() => { loadSavedPosts(); }, [loadSavedPosts]);
 
-  const sharePost = post => Share.share({
-    title: `${post.userName} on LST Social`,
-    message: `${post.userName} shared on LST Social:\n\n${post.content}`,
-  });
+  const sharePost = post => navigation.navigate('SharePost', { postId: post.id });
 
   const deletePost = async post => {
     try {
@@ -54,6 +51,7 @@ export default function SavedPostsScreen({ navigation }) {
           <PostCard
             post={item}
             onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
+            onOriginalPress={item.originalPost ? () => navigation.navigate('PostDetail', { postId: item.originalPost.id }) : undefined}
             onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
             onLike={() => apiService.likePost(item.id).then(loadSavedPosts)}
             onShare={() => sharePost(item)}

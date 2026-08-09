@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Post extends Model
 {
-    protected $fillable = ['user_id', 'community_id', 'content', 'image', 'images', 'type', 'audience', 'status'];
+    protected $fillable = ['user_id', 'community_id', 'original_post_id', 'content', 'image', 'images', 'type', 'audience', 'status'];
 
     protected function casts(): array
     {
@@ -21,6 +21,16 @@ class Post extends Model
     public function community()
     {
         return $this->belongsTo(Community::class);
+    }
+
+    public function originalPost()
+    {
+        return $this->belongsTo(self::class, 'original_post_id');
+    }
+
+    public function shares()
+    {
+        return $this->hasMany(self::class, 'original_post_id');
     }
 
     public function comments()

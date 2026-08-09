@@ -9,12 +9,13 @@ import EmojiText from './EmojiText';
 const PREVIEW_LIMIT = 180;
 const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
 
-export default function PostCard({ post, onPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false, containerStyle }) {
+export default function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false, containerStyle }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const isLong = post.content.length > PREVIEW_LIMIT;
   const postType = post.type || (post.communityId ? 'Community' : 'Encouragement');
   const images = post.images?.length ? post.images : post.image ? [post.image] : [];
+  const original = post.originalPost;
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }, containerStyle]}>
@@ -46,12 +47,12 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
           <Text style={[styles.contextText, { color: theme.secondaryText }]}>{postType}</Text>
         </View>
 
-        <EmojiText
+        {post.content ? <EmojiText
           style={[styles.content, { color: theme.text }]}
           numberOfLines={expanded ? undefined : 4}
         >
           {post.content}
-        </EmojiText>
+        </EmojiText> : null}
       </Pressable>
 
       {isLong ? (
@@ -73,6 +74,18 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
         </ScrollView>
       ) : null}
 
+      {original ? <TouchableOpacity style={[styles.originalPost, { backgroundColor: theme.background, borderColor: theme.border }]} onPress={onOriginalPress || onPress} activeOpacity={0.86}>
+        <View style={styles.originalAuthorRow}>
+          <Avatar uri={original.userAvatar} size={32} accessibilityLabel={`${original.userName}'s profile avatar`} />
+          <View style={styles.originalAuthorCopy}>
+            <Text style={[styles.originalAuthor, { color: theme.text }]}>{original.userName}</Text>
+            <Text style={[styles.originalMeta, { color: theme.secondaryText }]}>Original post</Text>
+          </View>
+        </View>
+        <EmojiText style={[styles.originalText, { color: theme.text }]} numberOfLines={4}>{original.content}</EmojiText>
+        {(original.images?.[0] || original.image) ? <Image source={{ uri: original.images?.[0] || original.image }} style={styles.originalImage} /> : null}
+      </TouchableOpacity> : null}
+
       <View style={[styles.actions, { borderTopColor: theme.border }]}>
         <TouchableOpacity onPress={onLike} style={styles.countAction} accessibilityLabel={`${post.likes} encouragements`}>
           <Icon name="heart" solid={post.likedByCurrentUser} size={18} color={theme.accent} />
@@ -84,6 +97,7 @@ export default function PostCard({ post, onPress, onUserPress, onLike, onShare, 
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconAction} accessibilityLabel="Share post" onPress={onShare}>
           <Icon name="share-alt" size={18} color={theme.secondaryText} />
+          {post.shareCount ? <Text style={[styles.shareCount, { color: theme.secondaryText }]}>{post.shareCount}</Text> : null}
         </TouchableOpacity>
         <TouchableOpacity style={[styles.iconAction, styles.bookmarkButton]} accessibilityLabel={isSaved ? 'Remove saved post' : 'Save post'} onPress={onSave}>
           <Icon name="bookmark" size={18} color={isSaved ? theme.accent : theme.secondaryText} />
@@ -117,5 +131,13 @@ const styles = StyleSheet.create({
   countAction: { minWidth: 47, height: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 3 },
   actionCount: { fontSize: 12, fontWeight: '700' },
   iconAction: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  shareCount: { position: 'absolute', right: -2, top: 1, fontSize: 9, fontWeight: '800' },
+  originalPost: { borderWidth: 1, borderRadius: 15, padding: 12, marginTop: 11 },
+  originalAuthorRow: { flexDirection: 'row', alignItems: 'center' },
+  originalAuthorCopy: { flex: 1, marginLeft: 9 },
+  originalAuthor: { fontSize: 12, fontWeight: '800' },
+  originalMeta: { fontSize: 9, marginTop: 2 },
+  originalText: { fontSize: 13, lineHeight: 19, marginTop: 10 },
+  originalImage: { width: '100%', height: 180, borderRadius: 11, resizeMode: 'cover', marginTop: 10 },
   bookmarkButton: { marginLeft: 'auto' },
 });

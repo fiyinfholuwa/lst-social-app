@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
@@ -61,10 +61,7 @@ export default function UserProfileScreen({ route, navigation }) {
     setPosts(userPosts);
   };
 
-  const sharePost = post => Share.share({
-    title: `${post.userName} on LST Social`,
-    message: `${post.userName} shared on LST Social:\n\n${post.content}`,
-  });
+  const sharePost = post => navigation.navigate('SharePost', { postId: post.id });
 
   const deletePost = async post => {
     try {
@@ -219,6 +216,7 @@ export default function UserProfileScreen({ route, navigation }) {
             key={post.id}
             post={post}
             onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+            onOriginalPress={post.originalPost ? () => navigation.navigate('PostDetail', { postId: post.originalPost.id }) : undefined}
             onUserPress={() => {}}
             onLike={() => apiService.likePost(post.id).then(refreshPosts)}
             onShare={() => sharePost(post)}

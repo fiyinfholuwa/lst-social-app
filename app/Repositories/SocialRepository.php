@@ -22,19 +22,19 @@ class SocialRepository
 
     public function post(int $id, User $viewer): Post
     {
-        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
             ->where(function ($query) use ($viewer) {
                 $query->where('status', 'approved')->orWhere('user_id', $viewer->id);
             })
-            ->withCount(['likes', 'comments'])->findOrFail($id);
+            ->withCount(['likes', 'comments', 'shares'])->findOrFail($id);
     }
 
     private function postsQuery(User $viewer)
     {
-        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id)])
+        return Post::with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
             ->whereNull('community_id')
             ->where('status', 'approved')
-            ->withCount(['likes', 'comments'])
+            ->withCount(['likes', 'comments', 'shares'])
             ->latest();
     }
 

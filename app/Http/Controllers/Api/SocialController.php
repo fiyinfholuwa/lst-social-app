@@ -128,6 +128,23 @@ class SocialController extends Controller
         return response()->json($this->service->post($post->id, $r->user()));
     }
 
+    public function sharePost(Request $r, Post $post)
+    {
+        abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before sharing a post.');
+        abort_unless($post->community_id === null && $post->status === 'approved', 422, 'Only posts from the general feed can be shared.');
+        $data = $r->validate(['note' => 'nullable|string|max:5000']);
+        $original = $post->originalPost ?: $post;
+
+        return response()->json($this->service->create($r->user(), [
+            'content' => trim($data['note'] ?? ''),
+            'original_post_id' => $original->id,
+            'community_id' => null,
+            'type' => 'Shared post',
+            'audience' => 'Everyone',
+            'status' => 'approved',
+        ]), 201);
+    }
+
     public function comment(Request $r, Post $post)
     {
         $d = $r->validate(['text' => 'required|string|max:2000', 'parent_id' => 'nullable|integer']);

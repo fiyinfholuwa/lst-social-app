@@ -12,15 +12,16 @@ class SocialService
 {
     public function __construct(private SocialRepository $repo, private CacheService $cache) {}
 
-    public function postData(Post $post): array
+    public function postData(Post $post, bool $includeOriginal = true): array
     {
         $images = collect($post->images ?: ($post->image ? [$post->image] : []))
             ->map(fn ($image) => $this->mediaUrl($image))
             ->filter()
             ->values()
             ->all();
+        $shareSource = $post->originalPost ?: $post;
 
-        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $this->mediaUrl($post->user->avatar), 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'likedByCurrentUser' => $post->likes->isNotEmpty(), 'comments' => [], 'commentsCount' => $post->comments_count ?? $post->comments()->count(), 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'status' => $post->status, 'verified' => $post->user->role === 'Community leader'];
+        return ['id' => (string) $post->id, 'userId' => (string) $post->user_id, 'userName' => $post->user->name, 'userAvatar' => $this->mediaUrl($post->user->avatar), 'content' => $post->content, 'images' => $images, 'image' => $images[0] ?? null, 'likes' => $post->likes_count ?? $post->likes()->count(), 'likedByCurrentUser' => $post->likes->isNotEmpty(), 'comments' => [], 'commentsCount' => $post->comments_count ?? $post->comments()->count(), 'shareCount' => $shareSource->shares_count ?? $shareSource->shares()->count(), 'originalPost' => $includeOriginal && $post->relationLoaded('originalPost') && $post->originalPost ? $this->postData($post->originalPost, false) : null, 'timestamp' => $post->created_at->diffForHumans(), 'communityId' => $post->community_id ? (string) $post->community_id : null, 'type' => $post->type, 'audience' => $post->audience, 'status' => $post->status, 'verified' => $post->user->role === 'Community leader'];
     }
 
     public function commentData($comment): array
@@ -54,6 +55,9 @@ class SocialService
     {
         $post = $this->repo->createPost($user, $data);
         $scopes = ['posts', "user:{$user->id}"];
+        if ($post->original_post_id) {
+            $scopes[] = "post:{$post->original_post_id}";
+        }
         if ($post->community_id) {
             $scopes[] = "community:{$post->community_id}";
         }

@@ -109,6 +109,8 @@ const apiService = {
   getNotifications: (page = 1) => httpClient.get(`/notifications?page=${page}`),
   markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
   markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),
+  registerPushToken: payload => httpClient.post('/push-tokens', payload),
+  removePushToken: token => httpClient.delete('/push-tokens', { body: { token } }),
   sendEmailVerification: () => httpClient.post('/email/verification-notification'),
   verifyEmailOtp: code => httpClient.post('/email/verify-otp', { code }),
   deleteAccount: password => httpClient.delete('/user', { body: { password } }),

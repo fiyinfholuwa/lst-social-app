@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
         import AsyncStorage from '@react-native-async-storage/async-storage';
         import apiService from '../api/apiService';
         import { setUnauthorizedHandler } from '../api/httpClient';
+        import { unregisterCurrentPushToken } from '../services/pushNotifications';
 
         const AuthContext = createContext();
 
@@ -49,6 +50,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 
           const logout = async () => {
             try {
+              await unregisterCurrentPushToken();
               await apiService.logout();
             } catch (e) {
               // token may already be invalid/expired server-side; proceed with local logout regardless

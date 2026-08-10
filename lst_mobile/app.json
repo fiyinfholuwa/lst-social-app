@@ -30,7 +30,15 @@
       "expo-audio",
       "expo-video",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/brand-logo.png",
+          "color": "#D62839",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "ios": {
       "bundleIdentifier": "com.fiyinfholuwa.lstsocial",
@@ -41,7 +49,8 @@
     },
     "android": {
       "permissions": [
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#F7F8FB"

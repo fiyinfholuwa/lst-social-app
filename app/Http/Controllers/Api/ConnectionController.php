@@ -8,13 +8,14 @@ use App\Models\Message;
 use App\Models\User;
 use App\Http\Resources\UserResource;
 use App\Repositories\ConnectionRepository;
+use App\Repositories\NotificationRepository;
 use App\Services\ConnectionService;
 use App\Services\UploadService;
 use Illuminate\Http\Request;
 
 class ConnectionController extends Controller
 {
-    public function __construct(private ConnectionRepository $repo, private ConnectionService $service, private UploadService $uploads) {}
+    public function __construct(private ConnectionRepository $repo, private ConnectionService $service, private UploadService $uploads, private NotificationRepository $notifications) {}
 
     public function friendships(Request $r)
     {
@@ -59,6 +60,11 @@ class ConnectionController extends Controller
         abort_if($r->user()->is($user), 422, 'You cannot send a friend request to yourself.');
         $this->repo->request($r->user(), $user);
         $this->service->invalidateFriendships($r->user(), $user);
+        $this->notifications->createFor($user, [
+            'icon' => 'person-add', 'title' => 'New friend request',
+            'message' => $r->user()->name.' sent you a friend request.',
+            'screen' => 'UserProfile', 'route_params' => ['userId' => (string) $r->user()->id],
+        ]);
 
         return response()->json($this->service->friendshipState($r->user()));
     }
@@ -68,6 +74,13 @@ class ConnectionController extends Controller
         $d = $r->validate(['action' => 'required|in:accept,decline,cancel,remove,block,unblock']);
         $this->repo->act($r->user(), $user, $d['action']);
         $this->service->invalidateFriendships($r->user(), $user);
+        if ($d['action'] === 'accept') {
+            $this->notifications->createFor($user, [
+                'icon' => 'people', 'title' => 'Friend request accepted',
+                'message' => $r->user()->name.' accepted your friend request.',
+                'screen' => 'UserProfile', 'route_params' => ['userId' => (string) $r->user()->id],
+            ]);
+        }
 
         return response()->json($this->service->friendshipState($r->user()));
     }
@@ -138,6 +151,15 @@ class ConnectionController extends Controller
             'duration' => $d['duration'] ?? null,
         ]);
         $this->service->invalidateChat($chat);
+        $recipient = $chat->users->first(fn (User $participant) => ! $participant->is($r->user()));
+        if ($recipient) {
+            $preview = ($d['type'] ?? 'text') === 'voice' ? 'sent you a voice message.' : ': '.str($d['text'])->limit(100);
+            $this->notifications->createFor($recipient, [
+                'icon' => 'chatbubble', 'title' => $r->user()->name,
+                'message' => ($d['type'] ?? 'text') === 'voice' ? $r->user()->name.' '.$preview : $r->user()->name.$preview,
+                'screen' => 'ChatDetail', 'route_params' => ['chatId' => (string) $chat->id, 'userName' => $r->user()->name],
+            ]);
+        }
 
         return response()->json($this->messageData($m), 201);
     }

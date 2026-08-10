@@ -12,6 +12,8 @@ import { NotificationsProvider } from './src/context/NotificationsContext';
 import { AppAlertProvider } from './src/context/AppAlertContext';
 import { ChatUnreadProvider } from './src/context/ChatUnreadContext';
 import { ConnectivityProvider } from './src/context/ConnectivityContext';
+import PushNotificationManager from './src/components/PushNotificationManager';
+import { flushPendingPush, navigationRef } from './src/navigation/navigationRef';
 
         export default function App() {
           return (
@@ -25,7 +27,8 @@ import { ConnectivityProvider } from './src/context/ConnectivityContext';
                   <ChatUnreadProvider>
                   <ConnectivityProvider>
                   <AppAlertProvider>
-                    <NavigationContainer>
+                    <PushNotificationManager />
+                    <NavigationContainer ref={navigationRef} onReady={flushPendingPush}>
                       <AppNavigator />
                       <StatusBar style="auto" />
                     </NavigationContainer>

@@ -13,6 +13,7 @@ use App\Models\LearningArticle;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Repositories\SocialRepository;
+use App\Repositories\NotificationRepository;
 use App\Services\CacheService;
 use App\Services\SocialService;
 use App\Services\UploadService;
@@ -23,7 +24,7 @@ use Illuminate\Validation\Rule;
 
 class SocialController extends Controller
 {
-    public function __construct(private SocialRepository $repo, private SocialService $service, private CacheService $cache, private UploadService $uploads) {}
+    public function __construct(private SocialRepository $repo, private SocialService $service, private CacheService $cache, private UploadService $uploads, private NotificationRepository $notifications) {}
 
     public function posts(Request $r)
     {
@@ -140,6 +141,13 @@ class SocialController extends Controller
     {
         $this->repo->toggleLike($r->user(), $post);
         $this->service->invalidatePost($post);
+        if (! $post->user->is($r->user()) && $post->likes()->whereKey($r->user()->id)->exists()) {
+            $this->notifications->createFor($post->user, [
+                'icon' => 'heart', 'title' => 'New reaction',
+                'message' => $r->user()->name.' liked your post.',
+                'screen' => 'PostDetail', 'route_params' => ['postId' => (string) $post->id],
+            ]);
+        }
 
         return response()->json($this->service->post($post->id, $r->user()));
     }
@@ -175,6 +183,13 @@ class SocialController extends Controller
         }
         $c = $this->repo->addComment($r->user(), $post, $d['text'], $d['parent_id'] ?? null)->load(['user', 'likes']);
         $this->service->invalidatePost($post);
+        if (! $post->user->is($r->user())) {
+            $this->notifications->createFor($post->user, [
+                'icon' => 'chatbubble', 'title' => 'New comment',
+                'message' => $r->user()->name.' commented on your post.',
+                'screen' => 'PostDetail', 'route_params' => ['postId' => (string) $post->id],
+            ]);
+        }
 
         return response()->json($this->service->commentData($c), 201);
     }

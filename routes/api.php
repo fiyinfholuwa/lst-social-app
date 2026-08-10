@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConnectionController;
 use App\Http\Controllers\Api\SocialController;
+use App\Http\Controllers\Api\PushTokenController;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Route;
 
@@ -71,5 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [SocialController::class, 'notifications']);
     Route::post('/notifications/read-all', [SocialController::class, 'readAll']);
     Route::post('/notifications/{notification}/read', [SocialController::class, 'readNotification']);
+    Route::post('/push-tokens', [PushTokenController::class, 'store'])->middleware('throttle:10,1');
+    Route::delete('/push-tokens', [PushTokenController::class, 'destroy'])->middleware('throttle:10,1');
     Route::post('/support-requests', [SocialController::class, 'submitSupportRequest'])->middleware('throttle:10,1');
 });

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class ConnectionRepository
 {
-    public function searchUsers(User $user, string $term)
+    public function searchUsers(User $user, string $term, int $perPage = 20)
     {
         $term = trim($term);
 
@@ -33,8 +33,32 @@ class ConnectionRepository
                             ->where('user_blocks.blocked_user_id', $user->id));
                 }))
             ->orderBy('name')
-            ->limit(20)
-            ->get();
+            ->paginate($perPage);
+    }
+
+    public function friendRequestsPage(User $user, string $direction = 'incoming', int $perPage = 20)
+    {
+        $incoming = $direction === 'incoming';
+        $userColumn = $incoming ? 'receiver_id' : 'sender_id';
+        $otherColumn = $incoming ? 'sender_id' : 'receiver_id';
+
+        return User::query()
+            ->whereExists(fn ($query) => $query->selectRaw('1')->from('friendships')
+                ->where('status', 'pending')
+                ->where("friendships.{$userColumn}", $user->id)
+                ->whereColumn("friendships.{$otherColumn}", 'users.id'))
+            ->orderBy('name')
+            ->paginate($perPage);
+    }
+
+    public function blockedUsersPage(User $user, int $perPage = 20)
+    {
+        return User::query()
+            ->whereExists(fn ($query) => $query->selectRaw('1')->from('user_blocks')
+                ->where('user_blocks.user_id', $user->id)
+                ->whereColumn('user_blocks.blocked_user_id', 'users.id'))
+            ->orderBy('name')
+            ->paginate($perPage);
     }
 
     public function friendshipState(User $user): array

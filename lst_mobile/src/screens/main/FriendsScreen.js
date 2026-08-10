@@ -18,9 +18,14 @@ export default function FriendsScreen({ navigation }) {
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [loadingMoreFriends, setLoadingMoreFriends] = useState(false);
   const [sentRequests, setSentRequests] = useState([]);
+  const [requestPage, setRequestPage] = useState(1);
+  const [hasMoreRequests, setHasMoreRequests] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [searchPage, setSearchPage] = useState(1);
+  const [hasMoreSearch, setHasMoreSearch] = useState(false);
+  const [loadingMoreSearch, setLoadingMoreSearch] = useState(false);
   const [sendingId, setSendingId] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
   const searchInput = useRef(null);
@@ -37,13 +42,15 @@ export default function FriendsScreen({ navigation }) {
     setLoadingFriends(true);
     Promise.all([
       apiService.getFriendsPage(1),
-      Promise.allSettled(outgoingRequestIds.map(id => apiService.getUser(id))),
-    ]).then(([friendResponse, requestResults]) => {
+      apiService.getFriendRequestsPage('outgoing', 1),
+    ]).then(([friendResponse, requestResponse]) => {
       if (!active) return;
       setFriends(friendResponse.data || []);
       setFriendPage(friendResponse.currentPage || 1);
       setHasMoreFriends(Boolean(friendResponse.hasMorePages));
-      setSentRequests(requestResults.filter(result => result.status === 'fulfilled').map(result => result.value).filter(Boolean));
+      setSentRequests(requestResponse.data || []);
+      setRequestPage(requestResponse.currentPage || 1);
+      setHasMoreRequests(Boolean(requestResponse.hasMorePages));
     }).catch(error => {
       if (active) {
         setFriends([]);
@@ -83,8 +90,8 @@ export default function FriendsScreen({ navigation }) {
     let active = true;
     setSearching(true);
     const timer = setTimeout(() => {
-      apiService.searchUsers(term)
-        .then(people => { if (active) setResults(people); })
+      apiService.searchUsers(term, 1)
+        .then(response => { if (active) { setResults(response.data || []); setSearchPage(response.currentPage || 1); setHasMoreSearch(Boolean(response.hasMorePages)); } })
         .catch(() => { if (active) setResults([]); })
         .finally(() => { if (active) setSearching(false); });
     }, 300);
@@ -94,6 +101,39 @@ export default function FriendsScreen({ navigation }) {
       clearTimeout(timer);
     };
   }, [query]);
+
+  const loadMoreSearch = async () => {
+    if (!hasMoreSearch || loadingMoreSearch) return;
+    setLoadingMoreSearch(true);
+    try {
+      const response = await apiService.searchUsers(query.trim(), searchPage + 1);
+      setResults(current => [...current, ...(response.data || [])]);
+      setSearchPage(response.currentPage);
+      setHasMoreSearch(Boolean(response.hasMorePages));
+    } catch (error) {
+      console.error('Unable to load more search results:', error);
+    } finally {
+      setLoadingMoreSearch(false);
+    }
+  };
+
+  const loadMorePeople = async () => {
+    if (hasMoreRequests && !loadingMoreFriends) {
+      setLoadingMoreFriends(true);
+      try {
+        const response = await apiService.getFriendRequestsPage('outgoing', requestPage + 1);
+        setSentRequests(current => [...current, ...(response.data || [])]);
+        setRequestPage(response.currentPage);
+        setHasMoreRequests(Boolean(response.hasMorePages));
+      } catch (error) {
+        console.error('Unable to load more sent requests:', error);
+      } finally {
+        setLoadingMoreFriends(false);
+      }
+      return;
+    }
+    loadMoreFriends();
+  };
 
   const addFriend = async (person, relationship) => {
     const personId = String(person.id);
@@ -225,9 +265,9 @@ export default function FriendsScreen({ navigation }) {
         keyExtractor={item => String(item.id)}
         contentContainerStyle={[styles.content, displayedPeople.length === 0 && styles.emptyContent]}
         renderItem={renderPerson}
-        onEndReached={loadMoreFriends}
+        onEndReached={isSearching ? loadMoreSearch : loadMorePeople}
         onEndReachedThreshold={0.4}
-        ListFooterComponent={loadingMoreFriends ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
+        ListFooterComponent={loadingMoreFriends || loadingMoreSearch ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
         ListEmptyComponent={
           <View style={styles.empty}>
             <AppIcon name={isSearching ? 'search' : 'users'} size={31} color={theme.secondaryText} />

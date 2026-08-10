@@ -20,6 +20,7 @@ import { useNotifications } from '../../context/NotificationsContext';
           const [loadingMore, setLoadingMore] = useState(false);
           const [nextPage, setNextPage] = useState(1);
           const [hasMorePosts, setHasMorePosts] = useState(true);
+          const [loadError, setLoadError] = useState('');
           const { theme } = useTheme();
           const { user, refreshUser } = useAuth();
           const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
@@ -31,11 +32,12 @@ import { useNotifications } from '../../context/NotificationsContext';
 
           const loadPosts = useCallback(async () => {
             try {
+              setLoadError('');
               const data = await apiService.getPostsPage(1);
               setPosts(data.data);
               setNextPage(2);
               setHasMorePosts(data.hasMorePages);
-            } catch (e) { console.error(e); }
+            } catch (e) { setLoadError(e.message || 'Unable to load the timeline.'); }
             finally { setLoading(false); setRefreshing(false); }
           }, []);
 
@@ -123,6 +125,7 @@ import { useNotifications } from '../../context/NotificationsContext';
                 onEndReached={loadMorePosts}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={loadingMore ? <View style={styles.loadingFooter}><ActivityIndicator color={theme.tint} /></View> : null}
+                ListEmptyComponent={<View style={styles.empty}><Text style={[styles.emptyTitle, { color: theme.text }]}>{loadError ? 'Couldn’t load posts' : 'No posts yet'}</Text><Text style={[styles.emptyText, { color: theme.secondaryText }]}>{loadError || 'New posts will appear here.'}</Text>{loadError ? <TouchableOpacity style={[styles.retry, { backgroundColor: theme.primary }]} onPress={loadPosts}><Text style={styles.retryText}>Try again</Text></TouchableOpacity> : null}</View>}
                 ListHeaderComponent={
                   <>
                     <LinearGradient
@@ -171,5 +174,10 @@ import { useNotifications } from '../../context/NotificationsContext';
           verificationCopy: { flex: 1 },
           verificationTitle: { fontSize: 12, fontWeight: '800' },
           verificationText: { fontSize: 10, marginTop: 2 },
+          empty: { alignItems: 'center', padding: 28 },
+          emptyTitle: { fontSize: 17, fontWeight: '700' },
+          emptyText: { marginTop: 6, textAlign: 'center' },
+          retry: { marginTop: 15, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 },
+          retryText: { color: '#FFFFFF', fontWeight: '700' },
         });
       

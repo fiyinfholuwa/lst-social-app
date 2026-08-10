@@ -123,12 +123,21 @@ export default function ChatDetailScreen({ route, navigation }) {
   const { refreshUnreadChats } = useChatUnread();
 
   useEffect(() => {
-    loadMessages();
+    let active = true;
+    let timer;
+    let failureCount = 0;
+    const poll = async () => {
+      const succeeded = await loadMessages();
+      if (!active) return;
+      failureCount = succeeded ? 0 : failureCount + 1;
+      const delay = succeeded ? 5000 : Math.min(60000, 5000 * (2 ** failureCount));
+      timer = setTimeout(poll, delay);
+    };
+    poll();
     apiService.getChat(chatId)
       .then(setChat)
       .catch(error => Alert.alert('Couldn’t load chat', error.message || 'Please try again.'));
-    const refreshTimer = setInterval(loadMessages, 5000);
-    return () => clearInterval(refreshTimer);
+    return () => { active = false; clearTimeout(timer); };
   }, [chatId]);
 
   const loadMessages = async (requestedPage = 1) => {
@@ -143,8 +152,10 @@ export default function ChatDetailScreen({ route, navigation }) {
       setMessagesPage(response.currentPage);
       setHasMoreMessages(Boolean(response.hasMorePages));
       refreshUnreadChats();
+      return true;
     } catch (error) {
       console.error('Unable to load messages:', error);
+      return false;
     } finally {
       if (requestedPage > 1) setLoadingMoreMessages(false);
     }

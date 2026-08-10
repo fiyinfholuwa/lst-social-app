@@ -9,4 +9,14 @@ const DEV_HOST = Platform.select({
   default: 'localhost',
 });
 
-export const API_BASE_URL = `http://${DEV_HOST}:8000/api`;
+const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/$/, '');
+
+if (!__DEV__ && !configuredUrl) {
+  throw new Error('EXPO_PUBLIC_API_URL must be set to the production HTTPS API URL.');
+}
+
+if (!__DEV__ && !configuredUrl?.startsWith('https://')) {
+  throw new Error('EXPO_PUBLIC_API_URL must use HTTPS in production.');
+}
+
+export const API_BASE_URL = configuredUrl || `http://${DEV_HOST}:8000/api`;

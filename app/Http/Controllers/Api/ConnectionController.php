@@ -36,11 +36,22 @@ class ConnectionController extends Controller
 
     public function searchUsers(Request $r)
     {
-        $data = $r->validate(['q' => 'required|string|min:2|max:100']);
+        $data = $r->validate(['q' => 'required|string|min:2|max:100', 'page' => 'nullable|integer|min:1']);
+        $page = $this->repo->searchUsers($r->user(), $data['q']);
 
-        return response()->json([
-            'data' => $this->repo->searchUsers($r->user(), $data['q'])->map(fn (User $user) => (new UserResource($user))->resolve($r)),
-        ]);
+        return response()->json($this->userPageData($page, $r));
+    }
+
+    public function friendRequests(Request $r)
+    {
+        $data = $r->validate(['direction' => 'nullable|in:incoming,outgoing', 'page' => 'nullable|integer|min:1']);
+
+        return response()->json($this->userPageData($this->repo->friendRequestsPage($r->user(), $data['direction'] ?? 'incoming'), $r));
+    }
+
+    public function blockedUsers(Request $r)
+    {
+        return response()->json($this->userPageData($this->repo->blockedUsersPage($r->user()), $r));
     }
 
     public function request(Request $r, User $user)
@@ -144,6 +155,17 @@ class ConnectionController extends Controller
             'duration' => $message->duration,
             'read' => $message->read_at !== null,
             'timestamp' => $message->created_at->diffForHumans(),
+        ];
+    }
+
+    private function userPageData($page, Request $request): array
+    {
+        return [
+            'data' => $page->getCollection()->map(fn (User $user) => (new UserResource($user))->resolve($request))->values(),
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
         ];
     }
 }

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_admin_sections_render_as_full_pages(): void
     {
         foreach (['admin', 'admin/members', 'admin/communities', 'admin/posts', 'admin/quizzes', 'admin/moderation', 'admin/analytics', 'admin/settings'] as $path) {
@@ -17,7 +20,7 @@ class AdminDashboardTest extends TestCase
     {
         $this->get('admin/quizzes', ['X-Requested-With' => 'XMLHttpRequest'])
             ->assertOk()
-            ->assertSee('Quizzes management')
+            ->assertSee('Control questions and pass requirements.')
             ->assertDontSee('<aside', false)
             ->assertDontSee('<header', false);
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AppIcon from '../../components/AppIcon';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationsContext';
@@ -8,9 +8,34 @@ export default function NotificationsScreen({ navigation }) {
   const { theme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllRead, loadMore, loading } = useNotifications();
 
-  const openNotification = notification => {
-    markAsRead(notification.id);
-    if (notification.screen) navigation.navigate(notification.screen);
+  const openNotification = async notification => {
+    try {
+      await markAsRead(notification.id);
+    } catch (error) {
+      // Opening the destination should not be blocked by a transient read-state failure.
+      console.error('Unable to mark notification as read:', error);
+    }
+
+    const parameterRequirements = {
+      PostDetail: 'postId', UserProfile: 'userId', ChatDetail: 'chatId',
+      CommunityDetail: 'communityId', CommunityMembers: 'communityId',
+      CommunityApplication: 'communityId', CommunityModeration: 'communityId',
+    };
+    const routesWithoutParams = new Set(['MainTabs', 'SavedPosts', 'Friends', 'FriendRequests', 'BlockedAccounts', 'Notifications', 'HelpCenter', 'Feedback']);
+    const requiredParam = parameterRequirements[notification.screen];
+    if (requiredParam && notification.routeParams?.[requiredParam] != null) {
+      navigation.navigate(notification.screen, notification.routeParams);
+    } else if (routesWithoutParams.has(notification.screen)) {
+      navigation.navigate(notification.screen);
+    }
+  };
+
+  const markEverythingRead = async () => {
+    try {
+      await markAllRead();
+    } catch (error) {
+      Alert.alert('Couldn’t update notifications', error.message || 'Please try again.');
+    }
   };
 
   return (
@@ -20,7 +45,7 @@ export default function NotificationsScreen({ navigation }) {
           {unreadCount ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : 'You’re all caught up'}
         </Text>
         {unreadCount ? (
-          <TouchableOpacity onPress={markAllRead}>
+          <TouchableOpacity onPress={markEverythingRead}>
             <Text style={[styles.markAll, { color: theme.primary }]}>Mark all as read</Text>
           </TouchableOpacity>
         ) : null}

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
         import AsyncStorage from '@react-native-async-storage/async-storage';
         import apiService from '../api/apiService';
+        import { setUnauthorizedHandler } from '../api/httpClient';
 
         const AuthContext = createContext();
 
@@ -29,6 +30,8 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
             };
             loadUser();
           }, [refreshUser]);
+
+          useEffect(() => setUnauthorizedHandler(() => setUser(null)), []);
 
           const login = async (email, password) => {
             const data = await apiService.login(email, password);

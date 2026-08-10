@@ -24,12 +24,17 @@ class MobileCommunityModerationTest extends TestCase
 
         $this->actingAs($admin)->getJson("/api/communities/{$community->id}/moderation")
             ->assertOk()
-            ->assertJsonPath('applications.0.id', (string) $application->id)
-            ->assertJsonPath('applications.0.answers.motivation', 'I want to grow')
-            ->assertJsonPath('applications.0.answers.applicantPath', 'puritan')
-            ->assertJsonPath('applications.0.answers.abstinenceBand', '3–5 years')
-            ->assertJsonMissingPath('applications.0.answers.notApplicable')
-            ->assertJsonPath('posts.0.id', (string) $post->id);
+            ->assertJsonPath('type', 'applications')
+            ->assertJsonPath('data.0.id', (string) $application->id)
+            ->assertJsonPath('data.0.answers.motivation', 'I want to grow')
+            ->assertJsonPath('data.0.answers.applicantPath', 'puritan')
+            ->assertJsonPath('data.0.answers.abstinenceBand', '3–5 years')
+            ->assertJsonMissingPath('data.0.answers.notApplicable')
+            ->assertJsonPath('counts.posts', 1);
+
+        $this->actingAs($admin)->getJson("/api/communities/{$community->id}/moderation?type=posts")
+            ->assertOk()
+            ->assertJsonPath('data.0.id', (string) $post->id);
 
         $this->actingAs($admin)->postJson("/api/communities/{$community->id}/moderation/applications/{$application->id}", ['action' => 'approve'])
             ->assertOk()->assertJsonPath('status', 'approved');

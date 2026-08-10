@@ -24,6 +24,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/user/password', [AuthController::class, 'changePassword'])->middleware('throttle:6,1');
     Route::patch('/user', [SocialController::class, 'updateProfile']);
     Route::get('/users/search', [ConnectionController::class, 'searchUsers']);
+    Route::get('/friend-requests', [ConnectionController::class, 'friendRequests']);
+    Route::get('/blocked-users', [ConnectionController::class, 'blockedUsers']);
     Route::get('/users/{user}', [SocialController::class, 'user']);
     Route::get('/users/{user}/posts', [SocialController::class, 'userPosts']);
     Route::get('/posts', [SocialController::class, 'posts']);

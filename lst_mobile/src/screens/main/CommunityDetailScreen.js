@@ -86,7 +86,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       if (!latestUser?.emailVerified) {
         Alert.alert('Verify your email', 'You need to verify your email before viewing or filling a community application.', [
           { text: 'Not now', style: 'cancel' },
-          { text: 'Verify email', onPress: () => navigation.navigate('Profile') },
+          { text: 'Verify email', onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }) },
         ]);
         return;
       }
@@ -94,7 +94,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
     } catch (error) {
       Alert.alert('Verify your email', 'Verify your email before applying to join a community.', [
         { text: 'Not now', style: 'cancel' },
-        { text: 'Verify email', onPress: () => navigation.navigate('Profile') },
+        { text: 'Verify email', onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }) },
       ]);
     } finally {
       setCheckingApplicationAccess(false);

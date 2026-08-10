@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class AdminManagementTest extends TestCase
@@ -33,7 +34,9 @@ class AdminManagementTest extends TestCase
         ])->assertRedirect();
         $community->refresh();
         $this->assertDatabaseHas('communities', ['id' => $community->id, 'name' => 'Updated Managed Circle', 'admin_id' => $administrator->id]);
-        Storage::disk('public')->assertExists(str_replace('/storage/', '', parse_url($community->image, PHP_URL_PATH)));
+        $uploadedPath = public_path(trim(config('uploads.directory'), '/').'/'.ltrim(str_replace(config('uploads.url_prefix'), '', parse_url($community->image, PHP_URL_PATH)), '/'));
+        $this->assertFileExists($uploadedPath);
+        File::delete($uploadedPath);
         $this->get('/admin/communities')->assertOk()->assertDontSee('New community')->assertDontSee('Delete community');
         $this->post('/admin/communities', ['name' => 'Forbidden Circle'])->assertMethodNotAllowed();
         $this->delete("/admin/communities/{$community->id}")->assertMethodNotAllowed();

@@ -532,7 +532,7 @@ class SocialController extends Controller
 
     private function notificationData(Notification $notification): array
     {
-        return ['id' => (string) $notification->id, 'icon' => $notification->icon, 'title' => $notification->title, 'message' => $notification->message, 'time' => $notification->created_at->diffForHumans(), 'unread' => $notification->read_at === null, 'screen' => $notification->screen];
+        return ['id' => (string) $notification->id, 'icon' => $notification->icon, 'title' => $notification->title, 'message' => $notification->message, 'time' => $notification->created_at->diffForHumans(), 'unread' => $notification->read_at === null, 'screen' => $notification->screen, 'routeParams' => $notification->route_params ?: null];
     }
 
     private function postPageData($page): array

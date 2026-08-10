@@ -2,6 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './config';
 
 const AUTH_TOKEN_KEY = '@auth_token';
+let unauthorizedHandler = null;
+
+export const setUnauthorizedHandler = handler => {
+  unauthorizedHandler = handler;
+  return () => { if (unauthorizedHandler === handler) unauthorizedHandler = null; };
+};
 
 async function request(path, { method = 'GET', body, auth = true, formData = false } = {}) {
   const headers = {
@@ -23,6 +29,10 @@ async function request(path, { method = 'GET', body, auth = true, formData = fal
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401 && auth) {
+      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+      unauthorizedHandler?.();
+    }
     const fallbackMessage = response.status === 413
       ? 'The selected photos are too large. Try fewer photos or smaller files.'
       : response.status === 401

@@ -71,7 +71,11 @@ export default function UserProfileScreen({ route, navigation }) {
     setLoadingMorePosts(true);
     try {
       const response = await apiService.getUserPosts(userId, postsPage + 1);
-      setPosts(current => [...current, ...response.data]);
+      setPosts(current => {
+        const postsById = new Map(current.map(post => [String(post.id), post]));
+        response.data.forEach(post => postsById.set(String(post.id), post));
+        return Array.from(postsById.values());
+      });
       setPostsPage(response.currentPage);
       setHasMorePosts(Boolean(response.hasMorePages));
     } catch (error) {

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Community;
+use App\Models\LearningArticle;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -37,8 +38,33 @@ class CommunityQuizSeeder extends Seeder
 
             DB::table('quizzes')->whereIn('title', $seededTitles)->delete();
             Post::whereIn('id', $oldPostIds)->where('type', 'Required reading')->delete();
+            LearningArticle::where('community_id', $community->id)->whereIn('title', array_column($articles, 'title'))->delete();
 
             foreach ($articles as $articleIndex => $article) {
+                $learningArticle = LearningArticle::create([
+                    'community_id' => $community->id,
+                    'title' => $article['title'],
+                    'content' => $article['content'],
+                    'position' => $articleIndex + 1,
+                    'duration_minutes' => 5,
+                    'passing_score' => 70,
+                    'status' => 'published',
+                ]);
+
+                foreach ($article['questions'] as $questionIndex => $questionData) {
+                    $learningQuestion = $learningArticle->questions()->create([
+                        'question' => $questionData['question'],
+                        'position' => $questionIndex + 1,
+                    ]);
+                    foreach ($questionData['options'] as $answerIndex => $answer) {
+                        $learningQuestion->answers()->create([
+                            'answer' => $answer,
+                            'is_correct' => $answerIndex === $questionData['correctIndex'],
+                            'position' => $answerIndex + 1,
+                        ]);
+                    }
+                }
+
                 $post = Post::create([
                     'user_id' => $leader->id,
                     'community_id' => $community->id,

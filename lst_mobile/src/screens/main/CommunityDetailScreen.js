@@ -60,7 +60,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
     setLoadingMorePosts(true);
     try {
       const response = await apiService.getCommunityPosts(communityId, postPage + 1);
-      setPosts(current => [...current, ...response.data]);
+      setPosts(current => {
+        const postsById = new Map(current.map(post => [String(post.id), post]));
+        response.data.forEach(post => postsById.set(String(post.id), post));
+        return Array.from(postsById.values());
+      });
       setPostPage(response.currentPage);
       setHasMorePosts(response.hasMorePages);
     } finally {
@@ -233,7 +237,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
     <FlatList
       style={{ backgroundColor: theme.background }}
       data={posts}
-      keyExtractor={item => item.id}
+      keyExtractor={item => String(item.id)}
       ListHeaderComponent={<Header />}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}

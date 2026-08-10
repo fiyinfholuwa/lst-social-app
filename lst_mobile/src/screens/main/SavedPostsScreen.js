@@ -25,7 +25,12 @@ export default function SavedPostsScreen({ navigation }) {
     if (requestedPage === 1) setLoading(true); else setLoadingMore(true);
     try {
       const response = await apiService.getSavedPostsPage(requestedPage);
-      setPosts(current => requestedPage === 1 ? response.data : [...current, ...response.data]);
+      setPosts(current => {
+        if (requestedPage === 1) return response.data;
+        const postsById = new Map(current.map(post => [String(post.id), post]));
+        response.data.forEach(post => postsById.set(String(post.id), post));
+        return Array.from(postsById.values());
+      });
       setPage(response.currentPage);
       setHasMore(Boolean(response.hasMorePages));
     } catch (error) {
@@ -57,7 +62,7 @@ export default function SavedPostsScreen({ navigation }) {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={posts.filter(post => !blockedUserIds.includes(post.userId))}
-        keyExtractor={item => item.id}
+        keyExtractor={item => String(item.id)}
         contentContainerStyle={[styles.content, posts.length === 0 && styles.emptyContent]}
         renderItem={({ item }) => (
           <PostCard

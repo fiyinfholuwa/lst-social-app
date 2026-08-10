@@ -45,7 +45,8 @@ class SocialRepository
             ->whereNull('community_id')
             ->where('status', 'approved')
             ->withCount(['likes', 'comments', 'shares'])
-            ->latest();
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
 
         return $this->visibleTo($query, $viewer);
     }

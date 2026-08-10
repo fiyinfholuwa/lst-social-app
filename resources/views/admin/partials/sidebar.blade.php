@@ -1,7 +1,7 @@
 @php
     $workspace = ['overview', 'members', 'communities', 'posts', 'articles'];
     $labels = ['articles' => 'Learning'];
-    $manage = ['moderation', 'analytics', 'settings'];
+    $manage = ['analytics', 'settings'];
 @endphp
 <aside class="sidebar" id="sidebar">
     <a class="brand" href="{{ url('/admin') }}"><img src="{{ asset('images/brand-logo.png') }}" alt="{{ config('branding.name') }}"></a>

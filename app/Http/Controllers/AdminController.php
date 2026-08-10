@@ -165,10 +165,34 @@ class AdminController extends Controller
         }
 
         if ($section === 'analytics') {
+            $memberCount = User::count();
+            $verifiedCount = User::whereNotNull('email_verified_at')->count();
+            $postCount = Post::count();
+            $dates = collect(range(6, 0))->map(fn ($days) => now()->subDays($days));
+            $recentUsers = User::where('created_at', '>=', now()->subDays(6)->startOfDay())->get(['created_at'])->groupBy(fn ($user) => $user->created_at->format('Y-m-d'));
+            $recentPosts = Post::where('created_at', '>=', now()->subDays(6)->startOfDay())->get(['created_at'])->groupBy(fn ($post) => $post->created_at->format('Y-m-d'));
             $data['analyticsMetrics'] = [
-                'Members' => User::count(), 'Verified members' => User::whereNotNull('email_verified_at')->count(),
-                'Timeline posts' => Post::whereNull('community_id')->count(), 'Community posts' => Post::whereNotNull('community_id')->count(),
-                'Open support requests' => SupportRequest::where('status', 'open')->count(), 'Published quizzes' => Quiz::where('status', 'published')->count(),
+                'Total members' => $memberCount,
+                'Verified members' => $verifiedCount,
+                'Total posts' => $postCount,
+                'Communities' => Community::count(),
+            ];
+            $data['analyticsRates'] = [
+                'Verification rate' => $memberCount ? round(($verifiedCount / $memberCount) * 100) : 0,
+                'Community content' => $postCount ? round((Post::whereNotNull('community_id')->count() / $postCount) * 100) : 0,
+                'Approved community posts' => max(0, Post::whereNotNull('community_id')->where('status', 'approved')->count()),
+                'Open support requests' => SupportRequest::where('status', 'open')->count(),
+            ];
+            $data['weeklyActivity'] = $dates->map(fn ($date) => [
+                'label' => $date->format('D'), 'date' => $date->format('Y-m-d'),
+                'members' => ($recentUsers[$date->format('Y-m-d')] ?? collect())->count(),
+                'posts' => ($recentPosts[$date->format('Y-m-d')] ?? collect())->count(),
+            ]);
+            $data['engagementTotals'] = [
+                'Likes' => DB::table('post_likes')->count(),
+                'Comments' => DB::table('comments')->count(),
+                'Published quizzes' => Quiz::where('status', 'published')->count(),
+                'Published articles' => LearningArticle::where('status', 'published')->count(),
             ];
             $data['communityAnalytics'] = Community::withCount(['members', 'posts', 'applications'])->orderByDesc('members_count')->get();
         }

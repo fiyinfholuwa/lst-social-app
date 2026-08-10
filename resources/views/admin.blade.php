@@ -38,10 +38,21 @@
         @media(max-width:1050px){.quiz-community-list{grid-template-columns:repeat(2,1fr)}.quiz-editor-layout{grid-template-columns:1fr}.quiz-editor-help{position:static}}
         @media(max-width:800px){.posts-toolbar{align-items:stretch;flex-direction:column}.post-filter{flex-wrap:wrap}.post-filter select{flex:1}}
         @media(max-width:600px){.quiz-community-list{grid-template-columns:1fr}.quiz-community-panel,.quiz-library{padding:17px}}
-        .learning-tabs{display:inline-flex;align-items:center;gap:4px;padding:4px;margin-bottom:24px;border:1px solid var(--line);border-radius:12px;background:#fff}.learning-tabs a{padding:9px 13px;border-radius:9px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:800}.learning-tabs a:hover{color:var(--navy);background:#f7f8fa}.learning-tabs a.active{background:var(--navy);color:#fff}.learning-editor-section{display:grid;gap:14px;padding:6px 0 28px;margin-bottom:24px;border-bottom:1px solid var(--line)}.learning-editor-section:last-child{border:0;margin:0;padding-bottom:4px}.learning-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:4px}.learning-step>b{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--navy);color:#fff;font-size:12px}.learning-step h2{margin:0 0 3px;font:800 17px Manrope;color:var(--navy)}.learning-step p{margin:0;color:var(--muted);font-size:11px}.article-content-editor{min-height:340px!important;line-height:1.65}.publishing-section{background:#fafbfc;border:1px solid var(--line)!important;border-radius:14px;padding:18px!important}.publishing-section .btn{justify-self:start}
+        .learning-tabs{display:inline-flex;align-items:center;gap:4px;padding:4px;margin-bottom:24px;border:1px solid var(--line);border-radius:12px;background:#fff}.learning-tabs a{padding:9px 13px;border-radius:9px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:800}.learning-tabs a:hover{color:var(--navy);background:#f7f8fa}.learning-tabs a.active{background:var(--navy);color:#fff}.learning-editor-section{display:grid;gap:14px;padding:6px 0 28px;margin-bottom:24px;border-bottom:1px solid var(--line)}.learning-editor-section:last-child{border:0;margin:0;padding-bottom:4px}.learning-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:4px}.learning-step>b{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--navy);color:#fff;font-size:12px}.learning-step h2{margin:0 0 3px;font:800 17px Manrope;color:var(--navy)}.learning-step p{margin:0;color:var(--muted);font-size:11px}.article-content-editor{min-height:340px!important;line-height:1.65}.publishing-section{background:#fafbfc;border:1px solid var(--line)!important;border-radius:14px;padding:18px!important}.publishing-section .btn{justify-self:start}.compact-question{padding:0!important;overflow:hidden;background:#fff}.compact-question summary{display:flex!important;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;list-style:none}.compact-question summary::-webkit-details-marker{display:none}.compact-question summary:before{content:"›";font-size:20px;color:var(--muted);transition:transform .15s}.compact-question[open] summary:before{transform:rotate(90deg)}.compact-question summary span{font-weight:800;color:var(--navy)}.compact-question summary small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.compact-question[open] summary{border-bottom:1px solid var(--line);background:#f8f9fb}.question-fields{display:grid;gap:12px;padding:16px}.learning-editor-section [data-question-list]{display:grid;gap:8px}
         @media(max-width:560px){.post-media.multiple{grid-template-columns:1fr}.post-media.multiple img{height:auto}.post-review-actions{grid-template-columns:1fr}.post-engagement{gap:14px;justify-content:space-between}}
         .toast-stack{position:fixed;inset:24px 24px auto auto;margin:0;border:0;padding:0;background:transparent;display:grid;gap:10px;width:min(390px,calc(100% - 32px));pointer-events:none;overflow:visible}.toast-stack::backdrop{display:none}.toast{display:flex;align-items:flex-start;gap:11px;padding:14px 16px;border-radius:13px;background:#fff;color:var(--ink);border:1px solid #dce3eb;box-shadow:0 18px 48px rgba(20,33,61,.28);transform:translateX(115%);opacity:0;transition:transform .25s ease,opacity .25s ease;pointer-events:auto}.toast.show{transform:translateX(0);opacity:1}.toast-icon{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:var(--green-soft);color:var(--green);font-weight:900;flex:0 0 auto}.toast.error .toast-icon{background:var(--red-soft);color:var(--red)}.toast-copy{min-width:0;flex:1}.toast-copy strong{display:block;font-size:13px;color:var(--navy);margin-bottom:2px}.toast-copy span{font-size:12px;color:var(--muted);line-height:1.4}.toast-close{border:0;background:none;color:#98a2b3;font-size:18px;line-height:1;cursor:pointer;padding:1px}
         @media(max-width:620px){.floating-form{position:fixed;left:14px;right:14px;top:90px;width:auto}.member-filter{display:grid;grid-template-columns:1fr 1fr}.member-search{grid-column:1/-1}.member-filter .mini-btn{height:42px}.member-summary{grid-template-columns:repeat(3,1fr)}.detail-grid,.member-management{grid-template-columns:1fr}.member-detail-body{padding:20px}.member-detail-head{padding:20px}.admin-table{min-width:760px}.toast-stack{top:14px;right:16px}}
+        .question-guide{display:grid;gap:4px;padding:13px 15px;border-radius:12px;background:#eef4fb;border:1px solid #d9e4f2;color:var(--navy)}.question-guide strong{font-size:12px}.question-guide span{font-size:11px;line-height:1.55;color:var(--muted)}.add-question-button{justify-self:start;border-style:dashed;background:#fafbfc}.analytics-updated{font-size:11px;color:var(--muted);padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}.analytics-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.55fr);gap:22px;margin-bottom:22px}.chart-legend{display:flex;gap:13px;color:var(--muted);font-size:10px}.chart-legend span{display:flex;align-items:center;gap:5px}.chart-legend i{width:8px;height:8px;border-radius:3px}.chart-legend .members,.chart-bar.members{background:var(--navy)}.chart-legend .posts,.chart-bar.posts{background:var(--red)}.activity-chart{height:240px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;padding:16px 4px 0;border-bottom:1px solid var(--line)}.chart-day{display:grid;grid-template-rows:1fr auto auto;text-align:center;gap:4px;min-width:0}.chart-values{height:180px;display:flex;align-items:flex-end;justify-content:center;gap:4px}.chart-bar{width:min(18px,42%);border-radius:5px 5px 2px 2px;min-height:5px;transition:.2s}.chart-bar:hover{filter:brightness(1.25)}.chart-day strong{font-size:10px;color:var(--muted)}.chart-day small{font-size:9px;color:#98a2b3}.health-list{display:grid}.health-list>div{display:grid;grid-template-columns:1fr auto;gap:7px;padding:14px 0;border-bottom:1px solid var(--line)}.health-list>div:last-child{border:0}.health-list span{font-size:11px;color:var(--muted)}.health-list strong{font:800 15px Manrope;color:var(--navy)}.health-list i{grid-column:1/-1;height:5px;background:#edf0f4;border-radius:9px;overflow:hidden}.health-list i b{display:block;height:100%;background:linear-gradient(90deg,var(--navy-2),var(--red));border-radius:9px}.analytics-lower{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.5fr);gap:22px}.engagement-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.engagement-list div{padding:15px;border:1px solid var(--line);border-radius:12px;background:#fafbfc}.engagement-list span{display:block;font-size:10px;color:var(--muted);margin-bottom:6px}.engagement-list strong{font:800 21px Manrope;color:var(--navy)}@media(max-width:1000px){.analytics-grid,.analytics-lower{grid-template-columns:1fr}}@media(max-width:600px){.activity-chart{gap:5px}.chart-values{height:160px}.analytics-updated{display:none}.engagement-list{grid-template-columns:1fr 1fr}}
+        .settings-saved{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #cdebd7;border-radius:99px;background:var(--green-soft);color:var(--green);font-size:10px;font-weight:800}.settings-saved i{width:7px;height:7px;border-radius:50%;background:var(--green)}.settings-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;align-items:start}.settings-nav{position:sticky;top:98px;padding:12px;display:grid;gap:5px}.settings-nav>strong{padding:7px 9px 10px;font:800 12px Manrope;color:var(--navy)}.settings-nav a{display:flex;gap:11px;align-items:center;padding:11px;border-radius:11px;text-decoration:none;color:var(--ink);transition:.15s}.settings-nav a:hover{background:#f5f7fa}.settings-nav a>span{width:29px;height:29px;border-radius:9px;background:#edf2f8;color:var(--navy-2);display:grid;place-items:center;font-size:9px;font-weight:800}.settings-nav a:first-of-type>span{background:var(--red-soft);color:var(--red)}.settings-nav a div{font-size:11px;font-weight:800}.settings-nav a small{display:block;margin-top:2px;color:var(--muted);font-size:9px;font-weight:500}.settings-content{display:grid;gap:20px}.settings-section{padding:0;overflow:hidden;scroll-margin-top:98px}.settings-section-head{display:flex;align-items:center;gap:13px;padding:20px 22px;border-bottom:1px solid var(--line);background:#fafbfc}.settings-section-head h2{margin:0;font:800 16px Manrope;color:var(--navy)}.settings-section-head p{margin:4px 0 0;color:var(--muted);font-size:11px}.settings-icon{width:39px;height:39px;border-radius:11px;background:#edf2f8;color:var(--navy-2);display:grid;place-items:center;flex:0 0 auto}.settings-icon.security{background:var(--red-soft);color:var(--red)}.settings-public{margin-left:auto;padding:5px 9px;border-radius:99px;background:var(--green-soft);color:var(--green);font-size:9px;font-weight:800}.settings-form{padding:22px}.settings-form input{height:43px;padding:0 12px}.settings-form label small{color:#98a2b3;font-size:9px}.settings-divider{display:flex;align-items:center;gap:11px;color:var(--navy);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-top:5px}.settings-divider:after{content:"";height:1px;background:var(--line);flex:1}.settings-form-actions{display:flex;align-items:center;justify-content:space-between;gap:15px;padding-top:18px;margin-top:5px;border-top:1px solid var(--line)}.settings-form-actions>span{color:var(--muted);font-size:10px}.settings-account-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}.settings-account-grid .settings-section-head{min-height:81px}.settings-account-grid .settings-form-actions{align-items:flex-end}.settings-account-grid .settings-form-actions .btn{white-space:nowrap}@media(max-width:1050px){.settings-layout{grid-template-columns:1fr}.settings-nav{position:static;grid-template-columns:repeat(3,1fr)}.settings-nav>strong{display:none}}@media(max-width:780px){.settings-account-grid{grid-template-columns:1fr}.settings-nav{display:none}}@media(max-width:560px){.settings-heading{align-items:flex-start}.settings-saved{display:none}.settings-section-head,.settings-form{padding:17px}.settings-section-head p{line-height:1.4}.settings-form .form-grid{grid-template-columns:1fr}.settings-form-actions{align-items:stretch;flex-direction:column}.settings-form-actions .btn{width:100%}}
+        /* Settings navigation sits above the forms on every screen size. */
+        .settings-layout{grid-template-columns:minmax(0,1fr);gap:18px}
+        .settings-nav{position:sticky;top:84px;z-index:10;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:7px;box-shadow:0 8px 24px rgba(16,24,40,.06)}
+        .settings-nav>strong{display:none}
+        .settings-nav a{min-width:0}
+        @media(max-width:780px){.settings-nav{display:flex;overflow-x:auto;position:sticky;scrollbar-width:none}.settings-nav::-webkit-scrollbar{display:none}.settings-nav a{flex:0 0 210px}.settings-account-grid{grid-template-columns:1fr}}
+        @media(max-width:480px){.settings-nav a{flex-basis:185px}.settings-nav a small{display:none}}
+        .settings-layout.tabs-ready .settings-section{display:none}.settings-layout.tabs-ready .settings-section.active{display:block}.settings-layout.tabs-ready .settings-nav a.active{background:var(--navy);color:#fff}.settings-layout.tabs-ready .settings-nav a.active>span{background:var(--red);color:#fff}.settings-layout.tabs-ready .settings-nav a.active small{color:#cbd5e1}.settings-layout.tabs-ready .settings-account-grid{display:block}
+        .menu-btn{display:grid}.sidebar{transition:transform .24s ease}.app{transition:grid-template-columns .24s ease}.app.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}.app.sidebar-collapsed .sidebar{transform:translateX(-105%)}
     </style>
 </head>
 <body>
@@ -104,9 +115,33 @@
     </main>
 </div>
 <script>
-    const sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay');
-    document.getElementById('menuBtn').addEventListener('click',()=>{sidebar.classList.add('open');overlay.classList.add('show')});
-    overlay.addEventListener('click',()=>{sidebar.classList.remove('open');overlay.classList.remove('show')});
+    const sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay'),adminApp=document.querySelector('.app'),menuButton=document.getElementById('menuBtn');
+    menuButton.addEventListener('click',()=>{
+        if (window.matchMedia('(max-width:760px)').matches) {
+            const opening = !sidebar.classList.contains('open');
+            sidebar.classList.toggle('open', opening); overlay.classList.toggle('show', opening);
+            menuButton.setAttribute('aria-expanded', opening ? 'true' : 'false');
+            return;
+        }
+        adminApp.classList.toggle('sidebar-collapsed');
+        menuButton.setAttribute('aria-expanded', adminApp.classList.contains('sidebar-collapsed') ? 'false' : 'true');
+    });
+    overlay.addEventListener('click',()=>{sidebar.classList.remove('open');overlay.classList.remove('show');menuButton.setAttribute('aria-expanded','false')});
+    function initializeSettingsTabs() {
+        const layout = document.querySelector('.settings-layout');
+        if (!layout) return;
+        const available = [...layout.querySelectorAll('.settings-section')].map(panel => panel.id);
+        const requested = window.location.hash.slice(1);
+        const selected = available.includes(requested) ? requested : 'branding';
+        layout.querySelectorAll('.settings-section').forEach(panel => panel.classList.toggle('active', panel.id === selected));
+        layout.querySelectorAll('[data-settings-tab]').forEach(tab => {
+            const active = tab.dataset.settingsTab === selected;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        layout.classList.add('tabs-ready');
+    }
+
     async function loadAdmin(url, push = true) {
         const content = document.getElementById('adminContent');
         content.style.opacity = '.45';
@@ -115,17 +150,26 @@
             if (!response.ok) throw new Error('Request failed');
             content.innerHTML = await response.text();
             if (push) history.pushState({url}, '', url);
+            initializeSettingsTabs();
             document.querySelectorAll('[data-admin-link]').forEach(item => item.classList.toggle('active', item.href === url));
             sidebar.classList.remove('open'); overlay.classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'});
         } catch (error) { window.location.href = url; }
         finally { content.style.opacity = '1'; }
     }
     document.addEventListener('click', event => {
+        const settingsTab = event.target.closest('[data-settings-tab]');
+        if (settingsTab) {
+            event.preventDefault();
+            history.replaceState(history.state, '', settingsTab.href);
+            initializeSettingsTabs();
+            return;
+        }
         const link = event.target.closest('[data-admin-link]');
         if (!link) return;
         event.preventDefault();
         loadAdmin(link.href);
     });
+    initializeSettingsTabs();
     window.addEventListener('popstate', () => loadAdmin(window.location.href, false));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const escapeHtml = value => String(value ?? 'Not provided').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[character]));
@@ -285,10 +329,16 @@
             const form = addQuestion.closest('[data-quiz-form], [data-article-form]');
             const list = form.querySelector('[data-question-list]');
             const index = list.querySelectorAll('.quiz-question').length;
-            const fieldset = document.createElement('fieldset');
-            fieldset.className = 'quiz-question';
-            fieldset.innerHTML = `<legend>Question <span data-question-number>${index + 1}</span></legend><label>Question<input name="questions[${index}][question]" required></label><div class="form-grid">${[0,1,2,3].map(answer => `<label>Answer ${answer + 1}<input name="questions[${index}][answers][${answer}]" required></label>`).join('')}</div><label>Correct answer<select name="questions[${index}][correct]">${[0,1,2,3].map(answer => `<option value="${answer}">Answer ${answer + 1}</option>`).join('')}</select></label><button class="mini-btn danger" type="button" data-remove-question>Remove question</button>`;
-            list.appendChild(fieldset);
+            const isArticle = form.matches('[data-article-form]');
+            const answerIndexes = [0,1,2,3];
+            const question = document.createElement(isArticle ? 'details' : 'fieldset');
+            question.className = `quiz-question${isArticle ? ' compact-question' : ''}`;
+            if (isArticle) question.open = true;
+            const fields = `<label>${isArticle ? 'Question text' : 'Question'}<input name="questions[${index}][question]" ${isArticle ? 'placeholder="What should the reader understand from this article?"' : ''} required></label><div class="form-grid">${answerIndexes.map(answer => `<label>${isArticle ? 'Option' : 'Answer'} ${answer + 1}<input name="questions[${index}][answers][${answer}]" ${isArticle ? `placeholder="Enter answer option ${answer + 1}"` : ''} required></label>`).join('')}</div><label>Correct answer<select name="questions[${index}][correct]">${answerIndexes.map(answer => `<option value="${answer}">${isArticle ? 'Option' : 'Answer'} ${answer + 1}</option>`).join('')}</select></label><button class="mini-btn danger" type="button" data-remove-question>Remove question</button>`;
+            question.innerHTML = isArticle ? `<summary><span>Question ${index + 1}</span><small>New question</small></summary><div class="question-fields">${fields}</div>` : `<legend>Question <span data-question-number>${index + 1}</span></legend>${fields}`;
+            list.querySelectorAll('.compact-question').forEach(item => { item.open = false; });
+            list.appendChild(question);
+            question.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         const removeQuestion = event.target.closest('[data-remove-question]');
         if (removeQuestion) {
@@ -296,6 +346,7 @@
             if (list.querySelectorAll('.quiz-question').length > 1) removeQuestion.closest('.quiz-question').remove();
         }
     });
+    document.addEventListener('invalid', event => event.target.closest('details')?.setAttribute('open', ''), true);
 </script>
 </body>
 </html>

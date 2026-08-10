@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Alert, View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
         import { useTheme } from '../../context/ThemeContext';
@@ -13,6 +13,12 @@ import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useNotifications } from '../../context/NotificationsContext';
 
+const mergeUniquePosts = (current, incoming) => {
+  const postsById = new Map(current.map(post => [String(post.id), post]));
+  incoming.forEach(post => postsById.set(String(post.id), post));
+  return Array.from(postsById.values());
+};
+
         export default function HomeScreen({ navigation }) {
           const [posts, setPosts] = useState([]);
           const [loading, setLoading] = useState(true);
@@ -21,6 +27,7 @@ import { useNotifications } from '../../context/NotificationsContext';
           const [nextPage, setNextPage] = useState(1);
           const [hasMorePosts, setHasMorePosts] = useState(true);
           const [loadError, setLoadError] = useState('');
+          const loadingMoreRef = useRef(false);
           const { theme } = useTheme();
           const { user, refreshUser } = useAuth();
           const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
@@ -46,15 +53,16 @@ import { useNotifications } from '../../context/NotificationsContext';
           }, []);
 
           const loadMorePosts = async () => {
-            if (loadingMore || !hasMorePosts) return;
+            if (loadingMoreRef.current || !hasMorePosts) return;
+            loadingMoreRef.current = true;
             setLoadingMore(true);
             try {
               const data = await apiService.getPostsPage(nextPage);
-              setPosts(current => [...current, ...data.data]);
+              setPosts(current => mergeUniquePosts(current, data.data));
               setNextPage(current => current + 1);
               setHasMorePosts(data.hasMorePages);
             } catch (e) { console.error(e); }
-            finally { setLoadingMore(false); }
+            finally { loadingMoreRef.current = false; setLoadingMore(false); }
           };
 
           useFocusEffect(useCallback(() => {
@@ -103,7 +111,7 @@ import { useNotifications } from '../../context/NotificationsContext';
               />
               <FlatList
                 data={visiblePosts}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => String(item.id)}
                 contentContainerStyle={styles.feedContent}
                 renderItem={({ item }) => (
                   <PostCard
@@ -111,7 +119,9 @@ import { useNotifications } from '../../context/NotificationsContext';
                     onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
                     onOriginalPress={item.originalPost ? () => navigation.navigate('PostDetail', { postId: item.originalPost.id }) : undefined}
                     onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
-                    onLike={() => apiService.likePost(item.id).then(loadPosts).catch(error => {
+                    onLike={() => apiService.likePost(item.id).then(updatedPost => {
+                      setPosts(current => current.map(post => String(post.id) === String(item.id) ? updatedPost : post));
+                    }).catch(error => {
                       if (error.message?.includes('No query results for model')) {
                         setPosts(current => current.filter(post => String(post.id) !== String(item.id)));
                       } else {

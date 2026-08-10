@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin overview · LST Social</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,16 +24,35 @@
         :root{--navy:#14213d;--navy-2:#243b64;--red:#d62839;--bg:#f4f6f9;--line:#e4e8ef;--shadow:0 16px 40px rgba(20,33,61,.08)}
         body{background:var(--bg);font-size:14px}.app{grid-template-columns:276px minmax(0,1fr)}.sidebar{width:276px;background:#fff;color:var(--ink);padding:22px 18px;border-right:1px solid var(--line);box-shadow:4px 0 24px rgba(20,33,61,.025)}.brand{height:68px;padding:0 10px 18px;text-decoration:none;border-bottom:1px solid #edf0f4;margin-bottom:22px}.brand img{display:block;width:180px;height:54px;object-fit:contain;object-position:left center}.nav-label{color:#98a2b3;padding:0 13px;margin-bottom:8px;font-size:10px}.nav-label-spaced{margin-top:27px}.nav{gap:5px}.nav a{min-height:45px;padding:0 13px;color:#536174;border-radius:12px;font-weight:600;position:relative}.nav a .icon{width:20px;height:20px;color:#7a8798;flex:0 0 auto}.nav a:hover{background:#f7f8fb;color:var(--navy)}.nav a.active{background:#fff0f3;color:var(--red);box-shadow:none}.nav a.active:before{content:"";position:absolute;left:0;width:3px;height:22px;background:var(--red);border-radius:0 4px 4px 0}.nav a.active .icon{color:var(--red)}.nav .badge{background:var(--red-soft);color:var(--red);font-weight:800}.admin-card{border-top:1px solid #edf0f4;padding:20px 8px 0;color:var(--ink)}.admin-card small{color:#98a2b3;text-transform:capitalize}.admin-identity{min-width:0}.admin-identity strong,.admin-identity small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:175px}.avatar{background:linear-gradient(135deg,#e8edf5,#d7e1ef);border:1px solid #d8e0eb}.main{background:var(--bg)}.topbar{height:82px;padding:0 38px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line)}.topbar-title{display:grid;min-width:155px}.topbar-title strong{font:800 14px Manrope;color:var(--navy)}.topbar-title span{font-size:11px;color:var(--muted);margin-top:2px}.search{margin-left:12px}.search input{background:#f7f8fa;border-color:#e7eaf0}.icon-btn{border-color:#e4e8ef;box-shadow:0 1px 2px rgba(16,24,40,.03)}.content{padding:38px 42px 60px;max-width:1500px}.page-heading{margin-bottom:30px;align-items:center}.page-heading h1{font-size:31px;letter-spacing:-.035em;color:var(--navy)}.page-heading p{font-size:14px;line-height:1.6}.eyebrow{margin-bottom:8px}.card{border-color:#e5e9f0;border-radius:18px;box-shadow:0 5px 18px rgba(20,33,61,.04)}.stats{gap:18px;margin-bottom:24px}.stat{padding:23px}.stat-icon{width:44px;height:44px;border-radius:13px}.stat-value{font-size:30px;margin-top:19px;color:var(--navy)}.panel{padding:25px}.panel-head{margin-bottom:21px}.panel h2{color:var(--navy);font-size:18px}.grid,.lower{gap:22px}.admin-table th{background:#f8f9fb;padding:13px 14px;border-top:1px solid var(--line)}.admin-table th:first-child{border-radius:10px 0 0 10px}.admin-table th:last-child{border-radius:0 10px 10px 0}.admin-table td{padding:16px 14px}.admin-table tbody tr:hover{background:#fafbfc}.btn,.mini-btn{transition:transform .15s,box-shadow .15s,background .15s}.btn:hover,.mini-btn:hover{transform:translateY(-1px)}.btn-primary{background:var(--navy);box-shadow:0 7px 18px rgba(20,33,61,.17)}.btn-primary:hover{background:var(--navy-2)}.community-admin-card{border-radius:16px;padding:19px;background:#fff;transition:border-color .2s,box-shadow .2s}.community-admin-card:hover{border-color:#ccd4e0;box-shadow:0 10px 25px rgba(20,33,61,.06)}.admin-form input,.admin-form textarea,.admin-form select,.row-actions select,.application-search input,.application-search select{min-height:44px;border-radius:11px;background:#fff;outline:none}.admin-form input:focus,.admin-form textarea:focus,.admin-form select:focus,.application-search input:focus,.application-search select:focus{border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(36,59,100,.09)}
         @media(max-width:760px){.app{display:block}.sidebar{width:276px}.topbar{padding:0 16px}.topbar-title{display:none}.content{padding:25px 17px 42px}.page-heading h1{font-size:26px}.page-heading{align-items:flex-start}.card{border-radius:15px}}
+
+        .dashboard-welcome{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:28px}.dashboard-welcome h1{font:800 clamp(27px,3vw,36px)/1.15 Manrope;margin:0 0 8px;color:var(--navy);letter-spacing:-.04em}.dashboard-welcome p{margin:0;color:var(--muted);font-size:15px}.dashboard-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}.dashboard-actions a{text-decoration:none}.attention-banner{display:flex;align-items:center;gap:13px;padding:15px 18px;margin-bottom:20px;border:1px solid #f6ccd3;border-radius:15px;background:linear-gradient(90deg,#fff5f6,#fff);color:var(--ink);text-decoration:none}.attention-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--red);color:#fff;font-weight:900}.attention-banner span:nth-child(2){display:grid;gap:2px}.attention-banner small{color:var(--muted)}.attention-banner b{margin-left:auto;color:var(--red);font-size:12px}.dashboard-stats{margin-bottom:24px}.dashboard-stat{position:relative;overflow:hidden}.dashboard-stat:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;right:-48px;bottom:-50px;background:#f3f6fa}.dashboard-stat .stat-value{margin-top:17px}.metric-live{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#667085;background:#f5f7fa;padding:5px 8px;border-radius:99px}.metric-live i{width:6px;height:6px;border-radius:50%;background:#22a06b}.dashboard-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:22px}.dashboard-panel{padding:0;overflow:hidden}.dashboard-panel .panel-head{padding:23px 24px 18px;margin:0;border-bottom:1px solid var(--line)}.panel-link{font-size:12px;font-weight:800;color:var(--navy-2);text-decoration:none}.dashboard-list{display:grid}.dashboard-row{min-height:72px;padding:13px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #edf0f4}.dashboard-row:last-child{border-bottom:0}.dashboard-row:hover{background:#fafbfc}.dashboard-row-copy{min-width:0;display:grid;gap:3px;flex:1}.dashboard-row-copy strong{color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dashboard-row-copy span{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dashboard-row time{font-size:10px;color:#98a2b3;white-space:nowrap}.dashboard-empty{min-height:230px;display:grid;place-content:center;text-align:center;color:var(--muted)}.dashboard-empty>span{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px;background:#f1f4f8;color:var(--navy);font-size:20px}.dashboard-empty strong{color:var(--navy);margin-bottom:4px}.dashboard-empty small{font-size:11px}
+        @media(max-width:1050px){.dashboard-grid{grid-template-columns:1fr}.dashboard-welcome{align-items:flex-start}}
+        @media(max-width:650px){.dashboard-welcome{display:block}.dashboard-actions{margin-top:18px}.dashboard-actions .btn,.dashboard-actions .mini-btn{flex:1}.attention-banner b{display:none}.dashboard-row{padding-inline:17px}.dashboard-panel .panel-head{padding-inline:17px}}
+
+        .create-member{position:relative}.create-member>summary{list-style:none}.create-member>summary::-webkit-details-marker{display:none}.floating-form{position:absolute;right:0;top:52px;width:420px;z-index:10;box-shadow:0 20px 55px rgba(20,33,61,.18);border:1px solid var(--line)}.check-label{display:flex!important;grid-template-columns:none!important;align-items:center;gap:8px}.check-label input{width:auto!important;min-height:0!important}.members-panel{overflow:visible}.members-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:24px;border-bottom:1px solid var(--line)}.members-toolbar h2{font:800 18px Manrope;color:var(--navy);margin:0 0 4px}.members-toolbar>div>span{font-size:12px;color:var(--muted)}.member-filter{display:flex;align-items:center;gap:8px}.member-search{position:relative}.member-search .icon{position:absolute;left:12px;top:12px;color:#98a2b3}.member-search input{width:240px;height:42px;padding:0 12px 0 40px;border:1px solid var(--line);border-radius:11px;font:inherit;outline:none}.member-filter select{height:42px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:0 32px 0 11px;color:#475467;font:inherit}.member-search input:focus,.member-filter select:focus{border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(36,59,100,.08)}.clear-filter{font-size:11px;font-weight:800;color:var(--red);text-decoration:none}.account-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:750;color:#166534}.account-status i{width:7px;height:7px;background:#22a06b;border-radius:50%}.account-status.suspended{color:#b42318}.account-status.suspended i{background:#d92d20}.member-view-btn{border:0;background:none;color:var(--navy-2);font-weight:800;font-size:12px;white-space:nowrap;cursor:pointer;padding:8px}.member-view-btn span{display:inline-block;margin-left:5px;transition:transform .15s}.member-view-btn:hover span{transform:translateX(3px)}.member-dialog{width:min(760px,calc(100% - 28px));padding:0;overflow:hidden;max-height:calc(100vh - 35px)}.member-dialog::backdrop{background:rgba(11,31,58,.58);backdrop-filter:blur(3px)}.member-detail-loading{padding:60px;text-align:center;color:var(--muted)}.member-detail-head{padding:25px 27px;background:linear-gradient(135deg,#14213d,#243b64);color:#fff;display:flex;align-items:center;gap:15px}.member-detail-head .avatar{width:58px;height:58px;font-size:16px;border:3px solid rgba(255,255,255,.28)}.member-detail-title{min-width:0;flex:1}.member-detail-title h2{margin:0 0 4px;font:800 21px Manrope}.member-detail-title p{margin:0;color:#cbd5e1;font-size:12px}.dialog-close{width:36px;height:36px;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:22px;cursor:pointer}.member-detail-body{padding:24px 27px;overflow:auto;max-height:calc(100vh - 150px)}.member-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}.member-summary div{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fafbfc}.member-summary strong{display:block;font:800 20px Manrope;color:var(--navy)}.member-summary span{font-size:10px;color:var(--muted)}.detail-section{border-top:1px solid var(--line);padding:20px 0}.detail-section h3{margin:0 0 14px;font:800 14px Manrope;color:var(--navy)}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 25px}.detail-field span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#98a2b3;font-weight:800;margin-bottom:4px}.detail-field strong{font-size:13px;font-weight:650;overflow-wrap:anywhere}.community-tags{display:flex;flex-wrap:wrap;gap:7px}.community-tags span{padding:6px 9px;background:#f0f3f7;border-radius:8px;font-size:11px;color:var(--navy-2)}.member-management{display:grid;grid-template-columns:1fr 1fr;gap:13px}.management-card{border:1px solid var(--line);border-radius:14px;padding:16px}.management-card h4{margin:0 0 5px;color:var(--navy)}.management-card p{font-size:11px;color:var(--muted);line-height:1.5;margin:0 0 13px}.management-card input,.management-card select{width:100%;height:40px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;margin-bottom:8px}.management-card .mini-btn{width:100%}.management-card.danger-zone{border-color:#f4c7cd;background:#fffafb}.ajax-message{display:none;margin-bottom:13px;padding:10px 12px;border-radius:9px;font-size:12px}.ajax-message.show{display:block;background:var(--green-soft);color:var(--green)}.ajax-message.error{background:var(--red-soft);color:var(--red)}
+        .member-dialog-toast{position:absolute;z-index:20;top:18px;left:50%;width:max-content;max-width:calc(100% - 150px);transform:translate(-50%,-16px);display:flex;align-items:center;gap:9px;padding:11px 15px;border-radius:11px;background:#ecfdf3;color:#067647;border:1px solid #abefc6;box-shadow:0 12px 32px rgba(6,118,71,.22);font-size:12px;font-weight:800;opacity:0;visibility:hidden;transition:.2s}.member-dialog-toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}.member-dialog-toast.error{background:#fff1f3;color:#c01048;border-color:#fecdd6}.member-dialog-toast i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#12b76a;color:#fff;font-style:normal}.member-dialog-toast.error i{background:#e11d48}.detail-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:15px}.detail-section-heading h3{margin-bottom:4px}.detail-section-heading p{margin:0;color:var(--muted);font-size:11px}.detail-section-heading>span{font-size:10px;font-weight:800;color:var(--green);background:var(--green-soft);border-radius:99px;padding:6px 9px;white-space:nowrap}.member-profile-form{display:grid;gap:13px}.member-profile-form label{display:grid;gap:6px;color:#667085;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.member-profile-form input,.member-profile-form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;color:var(--ink);font:500 13px 'DM Sans';text-transform:none;letter-spacing:normal;outline:none}.member-profile-form input{height:42px}.member-profile-form input:focus,.member-profile-form textarea:focus{border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(36,59,100,.08)}.profile-bio{margin-top:2px}.member-profile-form .btn{justify-self:start}.member-view-btn{text-decoration:none}.member-page-hero{display:flex;align-items:center;gap:17px;padding:23px 25px;margin-bottom:22px}.member-page-hero>.avatar{width:64px;height:64px;font-size:18px}.member-page-hero h2{margin:0 0 3px;font:800 20px Manrope;color:var(--navy)}.member-page-hero p{margin:0 0 8px;color:var(--muted)}.member-page-hero .member-summary{margin:0 0 0 auto;min-width:330px}.member-page-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.7fr);gap:22px;align-items:start}.member-page-side{display:grid;gap:16px}.member-page-side .panel{padding:20px}.member-page-side h2{margin-bottom:14px}.member-page-side .admin-form{margin-top:12px}.danger-panel{border-color:#f3c8ce;background:#fffafb}.danger-panel p{font-size:12px;line-height:1.55;color:var(--muted)}
+        .post-preview-link{color:var(--ink);text-decoration:none;line-height:1.55}.post-preview-link:hover{color:var(--navy-2);text-decoration:underline}.post-detail-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(290px,.65fr);gap:22px;align-items:start}.post-detail-card{overflow:hidden}.post-author{display:flex;align-items:center;gap:12px;padding:22px 25px;border-bottom:1px solid var(--line)}.post-author>div:nth-child(2){display:grid;gap:3px;min-width:0;flex:1}.post-author>div:nth-child(2) span{font-size:11px;color:var(--muted)}.post-context{display:flex;flex-wrap:wrap;gap:7px;padding:16px 25px 0}.post-context span{padding:5px 8px;border-radius:7px;background:#f1f4f8;color:var(--navy-2);font-size:10px;font-weight:800}.post-full-content{padding:22px 25px;font-size:16px;line-height:1.75;white-space:normal;color:#263446}.post-media{padding:0 25px 24px;display:grid;gap:8px}.post-media.multiple{grid-template-columns:repeat(2,1fr)}.post-media img{display:block;width:100%;max-height:560px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}.post-media.multiple img{height:260px}.original-post{margin:0 25px 24px;padding:16px;border:1px solid var(--line);border-radius:13px;background:#fafbfc}.original-post span{font-size:10px;color:var(--muted);font-weight:800}.original-post p{margin:8px 0 0;line-height:1.6}.post-engagement{display:flex;gap:28px;padding:16px 25px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--muted);font-size:11px}.post-engagement strong{color:var(--navy);font-size:14px;margin-right:3px}.post-comments{padding:23px 25px}.post-comments article{display:flex;gap:11px;padding:15px 0;border-bottom:1px solid #edf0f4}.post-comments article>div:nth-child(2){flex:1}.post-comments article strong{font-size:12px}.post-comments time{font-size:10px;color:#98a2b3;margin-left:7px}.post-comments p{margin:7px 0;font-size:13px;line-height:1.6}.post-comments small{color:var(--muted)}.post-detail-side{display:grid;gap:16px}.post-detail-side .panel{padding:20px}.post-status-block{display:flex;align-items:center;justify-content:space-between;padding:13px 0}.post-status-block>span{color:var(--muted);font-size:11px}.post-review-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.post-review-actions form,.post-review-actions button{width:100%}.post-review-actions .approve{background:var(--green);color:#fff}.post-review-actions .danger-bg{color:#fff}.post-metadata{display:grid;gap:13px;margin-top:15px}.post-metadata>div{display:grid;gap:3px;padding-bottom:11px;border-bottom:1px solid #edf0f4}.post-metadata span{font-size:10px;color:#98a2b3;text-transform:uppercase;letter-spacing:.05em;font-weight:800}.post-metadata strong{font-size:12px;overflow-wrap:anywhere}.post-metadata>a{margin-top:3px;text-align:center}
+        @media(max-width:950px){.members-toolbar{align-items:stretch;flex-direction:column}.member-filter{flex-wrap:wrap}.member-search{flex:1}.member-search input{width:100%}.member-page-grid,.post-detail-layout{grid-template-columns:1fr}.member-page-hero{align-items:flex-start;flex-wrap:wrap}.member-page-hero .member-summary{width:100%;margin:5px 0 0}}
+        .post-context span{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700}.post-context b{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#98a2b3}.post-stats .stat{padding:21px}.posts-panel{overflow:hidden}.posts-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:23px 24px;border-bottom:1px solid var(--line)}.posts-toolbar h2{font:800 18px Manrope;color:var(--navy);margin:0 0 4px}.posts-toolbar>div>span{font-size:12px;color:var(--muted)}.post-filter{display:flex;align-items:center;gap:8px}.post-filter select{height:42px;min-width:150px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:0 34px 0 11px;color:#475467;font:inherit;outline:none}.post-filter select:focus{border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(36,59,100,.08)}.posts-panel .admin-table td{height:76px}.posts-panel .admin-table th:last-child,.posts-panel .admin-table td:last-child{text-align:right}.posts-empty{min-height:240px;display:grid;place-content:center;text-align:center;color:var(--muted)}.posts-empty>span{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px;background:#f1f4f8;color:var(--navy);font-size:20px}.posts-empty strong{color:var(--navy);margin-bottom:4px}.posts-empty small{max-width:320px;line-height:1.5}.posts-panel .admin-pagination{padding:18px 24px;margin:0}.admin-pagination.loading{opacity:.45;pointer-events:none}
+        @media(max-width:800px){.posts-toolbar{align-items:stretch;flex-direction:column}.post-filter{flex-wrap:wrap}.post-filter select{flex:1}}
+        @media(max-width:560px){.post-media.multiple{grid-template-columns:1fr}.post-media.multiple img{height:auto}.post-review-actions{grid-template-columns:1fr}.post-engagement{gap:14px;justify-content:space-between}}
+        .toast-stack{position:fixed;inset:24px 24px auto auto;margin:0;border:0;padding:0;background:transparent;display:grid;gap:10px;width:min(390px,calc(100% - 32px));pointer-events:none;overflow:visible}.toast-stack::backdrop{display:none}.toast{display:flex;align-items:flex-start;gap:11px;padding:14px 16px;border-radius:13px;background:#fff;color:var(--ink);border:1px solid #dce3eb;box-shadow:0 18px 48px rgba(20,33,61,.28);transform:translateX(115%);opacity:0;transition:transform .25s ease,opacity .25s ease;pointer-events:auto}.toast.show{transform:translateX(0);opacity:1}.toast-icon{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:var(--green-soft);color:var(--green);font-weight:900;flex:0 0 auto}.toast.error .toast-icon{background:var(--red-soft);color:var(--red)}.toast-copy{min-width:0;flex:1}.toast-copy strong{display:block;font-size:13px;color:var(--navy);margin-bottom:2px}.toast-copy span{font-size:12px;color:var(--muted);line-height:1.4}.toast-close{border:0;background:none;color:#98a2b3;font-size:18px;line-height:1;cursor:pointer;padding:1px}
+        @media(max-width:620px){.floating-form{position:fixed;left:14px;right:14px;top:90px;width:auto}.member-filter{display:grid;grid-template-columns:1fr 1fr}.member-search{grid-column:1/-1}.member-filter .mini-btn{height:42px}.member-summary{grid-template-columns:repeat(3,1fr)}.detail-grid,.member-management{grid-template-columns:1fr}.member-detail-body{padding:20px}.member-detail-head{padding:20px}.admin-table{min-width:760px}.toast-stack{top:14px;right:16px}}
     </style>
 </head>
 <body>
+<div id="toast-stack" class="toast-stack" popover="manual" aria-live="polite" aria-atomic="true"></div>
 <div class="app">
     @include('admin.partials.sidebar', ['section' => $section ?? 'overview'])
     <div class="mobile-overlay" id="overlay"></div>
     <main class="main">
         @include('admin.partials.header')
         <div class="content" id="adminContent" aria-live="polite">
-            @if($applicationsPage ?? false)
+            @if($postPage ?? false)
+                @include('admin.sections.post-details')
+            @elseif($memberPage ?? false)
+                @include('admin.sections.member-details')
+            @elseif($applicationsPage ?? false)
                 @include('admin.sections.community-applications')
             @elseif(in_array(($section ?? 'overview'), ['overview','members','communities','posts','quizzes','moderation','analytics','settings'], true))
                 @include('admin.sections.index', ['section' => $section])
@@ -99,6 +119,143 @@
         loadAdmin(link.href);
     });
     window.addEventListener('popstate', () => loadAdmin(window.location.href, false));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const escapeHtml = value => String(value ?? 'Not provided').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[character]));
+    function showToast(text, type = 'success') {
+        const stack = document.getElementById('toast-stack');
+        if (typeof stack.showPopover === 'function' && !stack.matches(':popover-open')) {
+            try { stack.showPopover(); } catch (error) { stack.style.display = 'grid'; }
+        } else if (typeof stack.showPopover !== 'function') {
+            stack.style.display = 'grid';
+        }
+        const toast = document.createElement('div');
+        toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+        toast.innerHTML = `<span class="toast-icon">${type === 'error' ? '!' : '✓'}</span><div class="toast-copy"><strong>${type === 'error' ? 'Update failed' : 'Changes saved'}</strong><span>${escapeHtml(text)}</span></div><button class="toast-close" type="button" aria-label="Dismiss">×</button>`;
+        stack.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        const dismiss = () => { toast.classList.remove('show'); setTimeout(() => { toast.remove(); if (!stack.children.length && typeof stack.hidePopover === 'function' && stack.matches(':popover-open')) stack.hidePopover(); }, 250); };
+        toast.querySelector('.toast-close').addEventListener('click', dismiss);
+        setTimeout(dismiss, 4500);
+    }
+    @if(session('status'))
+        showToast({{ Illuminate\Support\Js::from(session('status')) }});
+    @endif
+    @if($errors->any())
+        showToast({{ Illuminate\Support\Js::from($errors->first()) }}, 'error');
+    @endif
+
+    let memberSearchTimer;
+    document.addEventListener('input', event => {
+        if (!event.target.matches('#member-filter input[name="search"]')) return;
+        clearTimeout(memberSearchTimer);
+        memberSearchTimer = setTimeout(() => {
+            const form = event.target.form;
+            loadAdmin(`${form.action}?${new URLSearchParams(new FormData(form))}`);
+        }, 350);
+    });
+    document.addEventListener('change', event => {
+        if (!event.target.matches('#member-filter select')) return;
+        const form = event.target.form;
+        loadAdmin(`${form.action}?${new URLSearchParams(new FormData(form))}`);
+    });
+    document.addEventListener('submit', event => {
+        if (!event.target.matches('#member-filter')) return;
+        event.preventDefault();
+        loadAdmin(`${event.target.action}?${new URLSearchParams(new FormData(event.target))}`);
+    });
+    document.addEventListener('click', event => {
+        const paginationLink = event.target.closest('#adminContent .ajax-pagination a');
+        const clearPostFilter = event.target.closest('#adminContent .posts-toolbar .clear-filter');
+        const target = paginationLink || clearPostFilter;
+        if (!target) return;
+        event.preventDefault();
+        target.closest('.admin-pagination')?.classList.add('loading');
+        loadAdmin(target.href);
+    });
+    document.addEventListener('submit', event => {
+        if (!event.target.matches('[data-post-filter]')) return;
+        event.preventDefault();
+        loadAdmin(`${event.target.action}?${new URLSearchParams(new FormData(event.target))}`);
+    });
+    document.addEventListener('change', event => {
+        if (!event.target.matches('[data-post-filter] select')) return;
+        const form = event.target.form;
+        loadAdmin(`${form.action}?${new URLSearchParams(new FormData(form))}`);
+    });
+
+    function memberDetailMarkup(payload) {
+        const member = payload.member;
+        const initials = member.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+        const communities = member.communities.length ? member.communities.map(name => `<span>${escapeHtml(name)}</span>`).join('') : '<span>No communities joined</span>';
+        const roles = ['member','moderator','admin','super_admin'].map(role => `<option value="${role}" ${member.role === role ? 'selected' : ''}>${role.replace('_',' ').replace(/\b\w/g, letter => letter.toUpperCase())}</option>`).join('');
+        return `<div id="member-dialog-toast" class="member-dialog-toast" role="status"><i>✓</i><span></span></div><div class="member-detail-head"><div class="avatar">${escapeHtml(initials)}</div><div class="member-detail-title"><h2>${escapeHtml(member.name)}</h2><p>${escapeHtml(member.email)} · ${member.suspended ? 'Suspended account' : 'Active account'}</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button></div>
+        <div class="member-detail-body"><div id="member-ajax-message" class="ajax-message" role="status"></div>
+        <div class="member-summary"><div><strong>${member.posts_count}</strong><span>Posts</span></div><div><strong>${member.comments_count}</strong><span>Comments</span></div><div><strong>${member.communities_count}</strong><span>Communities</span></div></div>
+        <section class="detail-section"><div class="detail-section-heading"><div><h3>Edit member details</h3><p>Update the member's personal and profile information.</p></div><span>${member.email_verified ? '✓ Email verified' : 'Email not verified'}</span></div><form class="member-profile-form member-ajax-form" action="${escapeHtml(payload.actions.details)}"><input type="hidden" name="_method" value="PATCH"><div class="detail-grid"><label>Full name<input name="name" value="${escapeHtml(member.name)}" required></label><label>Email address<input type="email" name="email" value="${escapeHtml(member.email)}" required></label><label>Phone number<input name="phone_number" value="${escapeHtml(member.phone_number ?? '')}"></label><label>Date of birth<input type="date" name="date_of_birth" value="${escapeHtml(member.date_of_birth ?? '')}"></label><label>Marital status<input name="marital_status" value="${escapeHtml(member.marital_status ?? '')}"></label><label>Occupation<input name="occupation" value="${escapeHtml(member.occupation ?? '')}"></label><label>Workplace<input name="workplace" value="${escapeHtml(member.workplace ?? '')}"></label><label>Hobbies<input name="hobbies" value="${escapeHtml(member.hobbies ?? '')}"></label></div><label class="profile-bio">Bio<textarea name="bio" rows="3">${escapeHtml(member.bio ?? '')}</textarea></label><button class="btn btn-primary" type="submit">Save member details</button></form></section>
+        <section class="detail-section"><h3>Communities</h3><div class="community-tags">${communities}</div></section>
+        <section class="detail-section"><h3>Account management</h3><div class="member-management"><form class="management-card member-ajax-form" action="${escapeHtml(payload.actions.role)}"><h4>Access role</h4><p>Change the permissions assigned to this account.</p><input type="hidden" name="_method" value="PATCH"><select name="role">${roles}</select><button class="mini-btn" type="submit">Update role</button></form>
+        <form class="management-card member-ajax-form" action="${escapeHtml(payload.actions.password)}"><h4>Change password</h4><p>Sets a new password and signs the member out everywhere.</p><input type="hidden" name="_method" value="PATCH"><input type="password" name="password" minlength="8" placeholder="New password" required><input type="password" name="password_confirmation" minlength="8" placeholder="Confirm password" required><button class="mini-btn" type="submit">Change password</button></form>
+        <form class="management-card danger-zone member-ajax-form" action="${escapeHtml(payload.actions.suspension)}"><h4>${member.suspended ? 'Reactivate account' : 'Suspend account'}</h4><p>${member.suspended ? 'Restore access to LST Social.' : 'Immediately revoke tokens, sessions and account access.'}</p><input type="hidden" name="_method" value="PATCH"><input type="hidden" name="suspended" value="${member.suspended ? 0 : 1}"><button class="mini-btn ${member.suspended ? 'approve' : 'danger'}" type="submit">${member.suspended ? 'Reactivate member' : 'Suspend member'}</button></form></div></section></div>`;
+    }
+
+    document.addEventListener('click', async event => {
+        const button = event.target.closest('[data-member-url]');
+        if (!button) return;
+        const dialog = document.getElementById('member-detail-dialog');
+        const content = document.getElementById('member-detail-content');
+        dialog.dataset.memberUrl = button.dataset.memberUrl;
+        dialog.showModal();
+        content.className = 'member-detail-loading';
+        content.textContent = 'Loading member details…';
+        try {
+            const response = await fetch(button.dataset.memberUrl, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+            if (!response.ok) throw new Error('Unable to load this member.');
+            content.className = '';
+            content.innerHTML = memberDetailMarkup(await response.json());
+        } catch (error) { content.textContent = error.message; }
+    });
+
+    function showMemberToast(text, type = 'success') {
+        const toast = document.getElementById('member-dialog-toast');
+        if (!toast) return;
+        toast.querySelector('i').textContent = type === 'error' ? '!' : '✓';
+        toast.querySelector('span').textContent = text;
+        toast.className = `member-dialog-toast ${type === 'error' ? 'error ' : ''}show`;
+        clearTimeout(window.memberToastTimer);
+        window.memberToastTimer = setTimeout(() => toast.classList.remove('show'), 4500);
+    }
+
+    document.addEventListener('submit', async event => {
+        if (!event.target.matches('.member-ajax-form')) return;
+        event.preventDefault();
+        const form = event.target;
+        const button = form.querySelector('button[type="submit"]');
+        const message = document.getElementById('member-ajax-message');
+        button.disabled = true;
+        try {
+            const response = await fetch(form.action, {method:'POST',body:new FormData(form),headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':csrfToken}});
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat()[0] || 'The update failed.');
+            message.textContent = data.message; message.className = 'ajax-message show';
+            showToast(data.message);
+            showMemberToast(data.message);
+            if (form.querySelector('[name="password"]')) {
+                form.querySelectorAll('input[type="password"]').forEach(input => input.value = '');
+            } else {
+                const dialog = document.getElementById('member-detail-dialog');
+                await new Promise(resolve => setTimeout(resolve, 700));
+                const refreshed = await fetch(dialog.dataset.memberUrl, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+                if (refreshed.ok) {
+                    document.getElementById('member-detail-content').innerHTML = memberDetailMarkup(await refreshed.json());
+                    const refreshedMessage = document.getElementById('member-ajax-message');
+                    refreshedMessage.textContent = data.message;
+                    refreshedMessage.className = 'ajax-message show';
+                    showMemberToast(data.message);
+                }
+            }
+        } catch (error) { message.textContent = error.message; message.className = 'ajax-message error show'; showToast(error.message, 'error'); showMemberToast(error.message, 'error'); }
+        finally { button.disabled = false; }
+    });
     document.addEventListener('click', event => {
         if(event.target.closest('#createQuiz')) alert('Quiz builder: add questions, correct answers, time limit, passing score, attempts and unlock rules.');
         const closeDialog = event.target.closest('[data-close-dialog]');

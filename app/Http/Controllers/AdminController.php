@@ -37,6 +37,14 @@ class AdminController extends Controller
             return back()->withErrors(['email' => 'The email or password is incorrect.'])->onlyInput('email');
         }
         $request->session()->regenerate();
+        if ($request->user()->suspended_at) {
+            Auth::logout();
+            $message = 'This account has been suspended.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 403)
+                : back()->withErrors(['email' => $message]);
+        }
         if (! in_array($request->user()->role, ['admin', 'super_admin'], true)) {
             Auth::logout();
 
@@ -80,15 +88,19 @@ class AdminController extends Controller
             $data['openSupportCount'] = SupportRequest::where('status', 'open')->count();
         }
         if ($section === 'members') {
-            $filters = $request->validate(['search' => 'nullable|string|max:100', 'role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])]]);
+            $filters = $request->validate(['search' => 'nullable|string|max:100', 'role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])], 'account_status' => ['nullable', Rule::in(['active', 'suspended'])]]);
             $search = trim($filters['search'] ?? '');
             $role = $filters['role'] ?? '';
+            $accountStatus = $filters['account_status'] ?? '';
             $data['members'] = User::query()->withCount('communities')
                 ->when($search !== '', fn ($query) => $query->where(fn ($users) => $users->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))
                 ->when($role !== '', fn ($query) => $role === 'member' ? $query->where(fn ($roles) => $roles->whereNull('role')->orWhere('role', 'member')) : $query->where('role', $role))
+                ->when($accountStatus === 'active', fn ($query) => $query->whereNull('suspended_at'))
+                ->when($accountStatus === 'suspended', fn ($query) => $query->whereNotNull('suspended_at'))
                 ->latest()->paginate(30)->withQueryString();
             $data['memberSearch'] = $search;
             $data['memberRole'] = $role;
+            $data['memberAccountStatus'] = $accountStatus;
             $data['memberMetrics'] = [
                 'Total members' => User::count(),
                 'Community members' => User::has('communities')->count(),
@@ -210,11 +222,118 @@ class AdminController extends Controller
     {
         $data = $request->validate(['role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])]]);
         $nextRole = $data['role'] ?: 'member';
-        abort_if($request->user()->is($user) && $nextRole !== ($user->role ?: 'member'), 422, 'You cannot change your own administrator role.');
-        abort_if($request->user()->role !== 'super_admin' && (in_array($user->role, ['admin', 'super_admin'], true) || in_array($nextRole, ['admin', 'super_admin'], true)), 403, 'Only a super administrator can manage administrator roles.');
+        if ($request->user()->is($user) && $nextRole !== ($user->role ?: 'member')) {
+            $message = 'You cannot change your own administrator role.';
+
+            return $request->expectsJson() ? response()->json(['message' => $message], 422) : back()->withErrors(['member' => $message]);
+        }
+        if ($request->user()->role !== 'super_admin' && (in_array($user->role, ['admin', 'super_admin'], true) || in_array($nextRole, ['admin', 'super_admin'], true))) {
+            $message = 'Only a super administrator can manage administrator roles.';
+
+            return $request->expectsJson() ? response()->json(['message' => $message], 403) : back()->withErrors(['member' => $message]);
+        }
         $user->update(['role' => $nextRole]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => "{$user->name}'s role was updated."]);
+        }
+
         return back()->with('status', "{$user->name}'s role was updated.");
+    }
+
+    public function showMember(Request $request, User $user)
+    {
+        $user->load('communities:id,name')->loadCount(['communities', 'posts', 'comments']);
+
+        $payload = [
+            'member' => [
+                'id' => $user->id, 'name' => $user->name, 'email' => $user->email,
+                'phone_number' => $user->phone_number, 'role' => $user->role ?: 'member',
+                'avatar' => $user->avatar, 'bio' => $user->bio, 'hobbies' => $user->hobbies,
+                'marital_status' => $user->marital_status, 'date_of_birth' => $user->date_of_birth?->format('Y-m-d'),
+                'workplace' => $user->workplace, 'occupation' => $user->occupation,
+                'is_profile_private' => $user->is_profile_private, 'email_verified' => $user->email_verified_at !== null,
+                'suspended' => $user->suspended_at !== null, 'suspended_at' => $user->suspended_at?->format('d M Y, H:i'),
+                'joined_at' => $user->created_at->format('d M Y, H:i'), 'last_updated' => $user->updated_at->diffForHumans(),
+                'communities_count' => $user->communities_count, 'posts_count' => $user->posts_count,
+                'comments_count' => $user->comments_count, 'communities' => $user->communities->pluck('name'),
+            ],
+            'actions' => [
+                'role' => route('admin.members.update', $user),
+                'details' => route('admin.members.details', $user),
+                'suspension' => route('admin.members.suspension', $user),
+                'password' => route('admin.members.password', $user),
+            ],
+        ];
+
+        if ($request->expectsJson()) {
+            return response()->json($payload);
+        }
+
+        return view('admin', ['section' => 'members', 'memberPage' => true, 'member' => $user, 'memberPayload' => $payload]);
+    }
+
+    public function updateMemberDetails(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:200',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'phone_number' => 'nullable|string|max:30',
+            'date_of_birth' => 'nullable|date|before:today',
+            'marital_status' => 'nullable|string|max:40',
+            'occupation' => 'nullable|string|max:120',
+            'workplace' => 'nullable|string|max:160',
+            'bio' => 'nullable|string|max:1000',
+            'hobbies' => 'nullable|string|max:500',
+        ]);
+        abort_if($request->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can edit an administrator account.');
+        [$firstName, $lastName] = array_pad(explode(' ', trim($data['name']), 2), 2, '');
+        $user->update([...$data, 'name' => trim($data['name']), 'first_name' => $firstName, 'last_name' => $lastName, 'email' => strtolower($data['email'])]);
+
+        $message = "{$user->name}'s details were updated.";
+
+        return $request->expectsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+    }
+
+    public function updateMemberSuspension(Request $request, User $user)
+    {
+        $data = $request->validate(['suspended' => 'required|boolean']);
+        abort_if($request->user()->is($user), 422, 'You cannot suspend your own account.');
+        abort_if($request->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can manage an administrator account.');
+        $user->update(['suspended_at' => $data['suspended'] ? now() : null]);
+
+        if ($data['suspended']) {
+            $user->tokens()->delete();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+        }
+
+        $message = $data['suspended'] ? "{$user->name} was suspended." : "{$user->name} was reactivated.";
+
+        return $request->expectsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+    }
+
+    public function updateMemberPassword(Request $request, User $user)
+    {
+        $data = $request->validate(['password' => 'required|string|min:8|confirmed']);
+        abort_if($request->user()->is($user), 422, 'Change your own password from Settings.');
+        abort_if($request->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can reset an administrator password.');
+        $user->update(['password' => $data['password']]);
+        $user->tokens()->delete();
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
+        $message = "{$user->name}'s password was changed and active sessions were signed out.";
+
+        return $request->expectsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+    }
+
+    public function showPost(Post $post)
+    {
+        $post->load([
+            'user', 'community', 'originalPost.user',
+            'comments' => fn ($query) => $query->with('user:id,name,email,avatar')->latest(),
+        ])->loadCount(['likes', 'comments', 'shares']);
+
+        return view('admin', ['section' => 'posts', 'postPage' => true, 'post' => $post]);
     }
 
     public function destroyMember(User $user)

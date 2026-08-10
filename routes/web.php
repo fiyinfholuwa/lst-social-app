@@ -23,13 +23,18 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout');
     Route::get('/admin/{section?}', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::post('/admin/members', [AdminController::class, 'storeMember'])->name('admin.members.store');
+    Route::get('/admin/members/{user}', [AdminController::class, 'showMember'])->name('admin.members.show');
     Route::patch('/admin/members/{user}', [AdminController::class, 'updateMember'])->name('admin.members.update');
+    Route::patch('/admin/members/{user}/details', [AdminController::class, 'updateMemberDetails'])->name('admin.members.details');
+    Route::patch('/admin/members/{user}/suspension', [AdminController::class, 'updateMemberSuspension'])->name('admin.members.suspension');
+    Route::patch('/admin/members/{user}/password', [AdminController::class, 'updateMemberPassword'])->name('admin.members.password');
     Route::delete('/admin/members/{user}', [AdminController::class, 'destroyMember'])->name('admin.members.destroy');
     Route::post('/admin/communities', [AdminController::class, 'storeCommunity'])->name('admin.communities.store');
     Route::get('/admin/communities/{community}/applications', [AdminController::class, 'communityApplications'])->name('admin.communities.applications');
     Route::patch('/admin/communities/{community}', [AdminController::class, 'updateCommunity'])->name('admin.communities.update');
     Route::delete('/admin/communities/{community}', [AdminController::class, 'destroyCommunity'])->name('admin.communities.destroy');
     Route::post('/admin/community-applications/{application}', [AdminController::class, 'reviewApplication'])->name('admin.applications.review');
+    Route::get('/admin/posts/{post}', [AdminController::class, 'showPost'])->name('admin.posts.show');
     Route::post('/admin/posts/{post}/review', [AdminController::class, 'reviewPost'])->name('admin.posts.review');
     Route::post('/admin/quizzes', [AdminController::class, 'storeQuiz'])->name('admin.quizzes.store');
     Route::patch('/admin/quizzes/{quiz}', [AdminController::class, 'updateQuiz'])->name('admin.quizzes.update');

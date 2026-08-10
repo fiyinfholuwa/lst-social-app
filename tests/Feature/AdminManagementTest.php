@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\Community;
 use App\Models\CommunityApplication;
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AdminManagementTest extends TestCase
@@ -41,6 +43,51 @@ class AdminManagementTest extends TestCase
         $this->get('/admin/communities')->assertOk()->assertSee('New community')->assertSee('Delete community');
         $this->post('/admin/communities', ['name' => 'Created Circle'])->assertRedirect();
         $this->assertDatabaseHas('communities', ['name' => 'Created Circle']);
+    }
+
+    public function test_super_admin_can_view_suspend_and_reset_a_member_via_ajax(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $member = User::factory()->create(['name' => 'Detailed Member', 'phone_number' => '+2348000000000']);
+
+        $this->actingAs($admin)->getJson("/admin/members/{$member->id}")
+            ->assertOk()->assertJsonPath('member.name', 'Detailed Member')
+            ->assertJsonPath('member.phone_number', '+2348000000000');
+
+        $this->patchJson("/admin/members/{$member->id}/details", [
+            'name' => 'Updated Detailed Member', 'email' => 'updated-member@example.com',
+            'phone_number' => '+2348111111111', 'occupation' => 'Counsellor',
+        ])->assertOk();
+        $this->assertDatabaseHas('users', [
+            'id' => $member->id, 'name' => 'Updated Detailed Member',
+            'email' => 'updated-member@example.com', 'occupation' => 'Counsellor',
+        ]);
+
+        $this->patchJson("/admin/members/{$member->id}/suspension", ['suspended' => true])
+            ->assertOk();
+        $this->assertNotNull($member->fresh()->suspended_at);
+
+        $this->patchJson("/admin/members/{$member->id}/password", [
+            'password' => 'UpdatedPassword123!', 'password_confirmation' => 'UpdatedPassword123!',
+        ])->assertOk();
+        $this->assertTrue(Hash::check('UpdatedPassword123!', $member->fresh()->password));
+
+        $this->patchJson("/admin/members/{$member->id}/suspension", ['suspended' => false])
+            ->assertOk();
+        $this->assertNull($member->fresh()->suspended_at);
+    }
+
+    public function test_admin_can_view_full_post_details(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $author = User::factory()->create(['name' => 'Post Author']);
+        $community = Community::create(['name' => 'Post Community']);
+        $post = Post::create(['user_id' => $author->id, 'community_id' => $community->id, 'content' => 'The complete post content.', 'status' => 'pending']);
+        $post->comments()->create(['user_id' => $admin->id, 'text' => 'A complete comment.']);
+
+        $this->actingAs($admin)->get("/admin/posts/{$post->id}")
+            ->assertOk()->assertSee('The complete post content.')
+            ->assertSee('Post Author')->assertSee('Post Community')->assertSee('A complete comment.');
     }
 
     public function test_admin_can_review_a_community_application(): void

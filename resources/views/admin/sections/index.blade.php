@@ -6,41 +6,58 @@
 @endif
 
 @if($section === 'overview')
-    <div class="page-heading"><div><div class="eyebrow">Live workspace</div><h1>Overview</h1><p>Current platform activity and work requiring attention.</p></div></div>
-    <section class="stats">@foreach($overviewMetrics as $label=>$value)<article class="card stat"><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>@endforeach</section>
-    <section class="grid"><article class="card panel"><div class="panel-head"><div><h2>Newest members</h2><div class="panel-sub">Recently created accounts</div></div><a href="{{ url('/admin/members') }}">Manage</a></div><div class="activity">@forelse($recentMembers as $member)<div class="activity-item"><div class="avatar">{{ strtoupper(substr($member->name,0,2)) }}</div><div><p><strong>{{ $member->name }}</strong> · {{ $member->email }}</p><time>{{ $member->created_at->diffForHumans() }}</time></div></div>@empty<div class="empty-cell">No members yet.</div>@endforelse</div></article>
-    <article class="card panel"><div class="panel-head"><div><h2>Recent applications</h2><div class="panel-sub">Latest community membership activity</div></div><a href="{{ url('/admin/moderation') }}">Review</a></div><div class="activity">@forelse($recentApplications as $application)<div class="activity-item"><div class="avatar">{{ strtoupper(substr($application->user?->name ?? '?',0,2)) }}</div><div><p><strong>{{ $application->user?->name ?? 'Deleted member' }}</strong> applied to {{ $application->community?->name }}</p><time>{{ ucfirst($application->status) }} · {{ $application->created_at->diffForHumans() }}</time></div></div>@empty<div class="empty-cell">No applications yet.</div>@endforelse</div></article></section>
-    @if($openSupportCount)<div class="admin-notice error"><strong>{{ $openSupportCount }}</strong> support request{{ $openSupportCount===1?'':'s' }} need attention. <a href="{{ url('/admin/moderation') }}">Open moderation</a></div>@endif
+    @php
+        $metricIcons = [
+            'Total members' => '<circle cx="9" cy="8" r="4"/><path d="M2 21c.8-4 3.1-6 7-6s6.2 2 7 6M17 5c2.5.6 4 2.2 4 4.5S19.5 13.4 17 14"/>',
+            'Communities' => '<path d="M4 21v-9l8-6 8 6v9M9 21v-6h6v6"/>',
+            'Pending applications' => '<path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/>',
+            'Pending posts' => '<path d="M12 3 4 6v5c0 5.1 3.4 8.7 8 10 4.6-1.3 8-4.9 8-10V6zM9 12l2 2 4-5"/>',
+        ];
+    @endphp
+    <div class="dashboard-welcome">
+        <div><div class="eyebrow">{{ now()->format('l, d F Y') }}</div><h1>Welcome back, {{ explode(' ', auth()->user()->name)[0] }}</h1></div>
+    </div>
+
+    <section class="stats dashboard-stats">
+        @foreach($overviewMetrics as $label=>$value)
+            <article class="card stat dashboard-stat"><div class="stat-top"><span class="stat-icon {{ str_contains(strtolower($label), 'pending') ? 'red' : '' }}"><svg class="icon">{!! $metricIcons[$label] ?? '<path d="M4 20V10M10 20V4M16 20v-7"/>' !!}</svg></span><span class="metric-live"><i></i> Live</span></div><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>
+        @endforeach
+    </section>
+
+    <section class="dashboard-grid">
+        <article class="card panel dashboard-panel">
+            <div class="panel-head"><div><h2>Newest members</h2><div class="panel-sub">The latest people to join LST Social</div></div><a class="panel-link" href="{{ url('/admin/members') }}">View all →</a></div>
+            <div class="dashboard-list">@forelse($recentMembers as $member)<div class="dashboard-row"><div class="avatar">{{ strtoupper(substr($member->name,0,2)) }}</div><div class="dashboard-row-copy"><strong>{{ $member->name }}</strong><span>{{ $member->email }}</span></div><time>{{ $member->created_at->diffForHumans() }}</time></div>@empty<div class="dashboard-empty"><span>◎</span><strong>No members yet</strong><small>New accounts will appear here.</small></div>@endforelse</div>
+        </article>
+        <article class="card panel dashboard-panel">
+            <div class="panel-head"><div><h2>Recent applications</h2><div class="panel-sub">Latest community membership requests</div></div><a class="panel-link" href="{{ url('/admin/moderation') }}">Review all →</a></div>
+            <div class="dashboard-list">@forelse($recentApplications as $application)<div class="dashboard-row"><div class="avatar">{{ strtoupper(substr($application->user?->name ?? '?',0,2)) }}</div><div class="dashboard-row-copy"><strong>{{ $application->user?->name ?? 'Deleted member' }}</strong><span>{{ $application->community?->name ?? 'Unavailable community' }}</span></div><span class="admin-pill {{ $application->status }}">{{ ucfirst($application->status) }}</span></div>@empty<div class="dashboard-empty"><span>✓</span><strong>You are all caught up</strong><small>New applications will appear here.</small></div>@endforelse</div>
+        </article>
+    </section>
 @elseif($section === 'members')
-    <div class="page-heading"><div><div class="eyebrow">People & access</div><h1>Members</h1><p>Manage member roles, community participation and accounts.</p></div></div>
+    <div class="page-heading"><div><div class="eyebrow">People & access</div><h1>Members</h1><p>Search profiles, review account details and manage member access.</p></div><details class="create-member"><summary class="btn btn-primary">+ Add member</summary><form class="admin-form compact floating-form" method="POST" action="{{ route('admin.members.store') }}">@csrf<label>Full name<input name="name" required></label><label>Email<input type="email" name="email" required></label><div class="form-grid"><label>Temporary password<input type="password" name="password" minlength="8" required></label><label>Confirm password<input type="password" name="password_confirmation" required></label></div><label>Role<select name="role">@foreach(['member','moderator','admin','super_admin'] as $role)<option value="{{ $role }}">{{ ucfirst(str_replace('_',' ',$role)) }}</option>@endforeach</select></label><label class="check-label"><input type="checkbox" name="email_verified" value="1"> Mark email verified</label><button class="btn btn-primary">Create account</button></form></details></div>
     <section class="stats">
         @foreach($memberMetrics as $label => $value)
             <article class="card stat"><div class="stat-top"><span class="stat-icon">{{ substr($label, 0, 1) }}</span><span class="trend">Live</span></div><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>
         @endforeach
     </section>
-    <section class="card panel">
-        <div class="panel-head"><div><h2>All members</h2><div class="panel-sub">{{ number_format($members->total()) }} matching accounts</div></div><form method="GET" class="application-search"><input type="search" name="search" value="{{ $memberSearch }}" placeholder="Name or email"><select name="role"><option value="">All roles</option>@foreach(['member','moderator','admin','super_admin'] as $role)<option value="{{ $role }}" @selected($memberRole===$role)>{{ ucfirst(str_replace('_',' ',$role)) }}</option>@endforeach</select><button class="mini-btn">Filter</button></form></div>
-        <details><summary class="mini-btn">Create member</summary><form class="admin-form compact" method="POST" action="{{ route('admin.members.store') }}">@csrf<label>Full name<input name="name" required></label><label>Email<input type="email" name="email" required></label><label>Temporary password<input type="password" name="password" minlength="8" required></label><label>Confirm password<input type="password" name="password_confirmation" required></label><label>Role<select name="role">@foreach(['member','moderator','admin','super_admin'] as $role)<option value="{{ $role }}">{{ ucfirst(str_replace('_',' ',$role)) }}</option>@endforeach</select></label><label><input type="checkbox" name="email_verified" value="1"> Mark email verified</label><button class="btn btn-primary">Create account</button></form></details>
+    <section class="card members-panel">
+        <div class="members-toolbar"><div><h2>Member directory</h2><span><strong>{{ number_format($members->total()) }}</strong> matching account{{ $members->total() === 1 ? '' : 's' }}</span></div><form id="member-filter" method="GET" action="{{ url('/admin/members') }}" class="member-filter"><label class="member-search"><svg class="icon"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" name="search" value="{{ $memberSearch }}" placeholder="Search name or email" autocomplete="off"></label><select name="role" aria-label="Filter by role"><option value="">All roles</option>@foreach(['member','moderator','admin','super_admin'] as $role)<option value="{{ $role }}" @selected($memberRole===$role)>{{ ucfirst(str_replace('_',' ',$role)) }}</option>@endforeach</select><select name="account_status" aria-label="Filter by account status"><option value="">All accounts</option><option value="active" @selected($memberAccountStatus==='active')>Active</option><option value="suspended" @selected($memberAccountStatus==='suspended')>Suspended</option></select><button class="mini-btn" type="submit">Apply</button>@if($memberSearch || $memberRole || $memberAccountStatus)<a class="clear-filter" href="{{ url('/admin/members') }}">Clear</a>@endif</form></div>
         <div class="admin-table-wrap"><table class="admin-table">
-            <thead><tr><th>Member</th><th>Role</th><th>Communities</th><th>Joined</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Member</th><th>Status</th><th>Role</th><th>Communities</th><th>Joined</th><th></th></tr></thead>
             <tbody>
             @forelse($members as $member)
                 <tr>
-                    <td><strong>{{ $member->name }}</strong><small>{{ $member->email }}</small></td>
+                    <td><div class="table-person"><div class="avatar">{{ strtoupper(substr($member->name,0,2)) }}</div><div><strong>{{ $member->name }}</strong><small>{{ $member->email }}</small></div></div></td>
+                    <td><span class="account-status {{ $member->suspended_at ? 'suspended' : 'active' }}"><i></i>{{ $member->suspended_at ? 'Suspended' : 'Active' }}</span></td>
                     <td><span class="admin-pill">{{ ucfirst(str_replace('_', ' ', $member->role ?: 'member')) }}</span></td>
                     <td>{{ $member->communities_count }}</td><td>{{ $member->created_at->format('d M Y') }}</td>
-                    <td><div class="row-actions">
-                        <form method="POST" action="{{ route('admin.members.update', $member) }}">@csrf @method('PATCH')
-                            <select name="role" aria-label="Role for {{ $member->name }}"><option value="member" @selected(($member->role ?: 'member') === 'member')>Member</option><option value="moderator" @selected($member->role === 'moderator')>Moderator</option><option value="admin" @selected($member->role === 'admin')>Admin</option><option value="super_admin" @selected($member->role === 'super_admin')>Super admin</option></select>
-                            <button class="mini-btn" type="submit">Save</button>
-                        </form>
-                        <form method="POST" action="{{ route('admin.members.destroy', $member) }}" onsubmit="return confirm('Remove {{ addslashes($member->name) }} and all associated data?')">@csrf @method('DELETE')<button class="mini-btn danger" type="submit">Remove</button></form>
-                    </div></td>
+                    <td><a class="member-view-btn" href="{{ route('admin.members.show', $member) }}">View details <span>→</span></a></td>
                 </tr>
-            @empty<tr><td colspan="5" class="empty-cell">No members found.</td></tr>@endforelse
+            @empty<tr><td colspan="6" class="empty-cell">No members match your search and filters.</td></tr>@endforelse
             </tbody>
         </table></div>
-        @if($members->hasPages()){{ $members->links() }}@endif
+        @if($members->hasPages())<nav class="admin-pagination" aria-label="Member pages">@if($members->onFirstPage())<span>← Previous</span>@else<a href="{{ $members->previousPageUrl() }}">← Previous</a>@endif<strong>Page {{ $members->currentPage() }} of {{ $members->lastPage() }}</strong>@if($members->hasMorePages())<a href="{{ $members->nextPageUrl() }}">Next →</a>@else<span>Next →</span>@endif</nav>@endif
     </section>
 @elseif($section === 'communities')
     <div class="page-heading"><div><div class="eyebrow">Spaces & membership</div><h1>Communities</h1><p>Manage community details, assign owners and review membership applications.</p></div></div>
@@ -78,21 +95,21 @@
     </section>
 @elseif($section === 'posts')
     <div class="page-heading"><div><div class="eyebrow">Community moderation</div><h1>Community posts</h1><p>Review member posts before they become visible in their community.</p></div></div>
-    <section class="stats">
-        @foreach($postMetrics as $label => $value)<article class="card stat"><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>@endforeach
+    <section class="stats post-stats">
+        @foreach($postMetrics as $label => $value)<article class="card stat"><div class="stat-top"><span class="stat-icon {{ $label === 'Pending review' ? 'red' : '' }}"><svg class="icon">@if($label === 'Pending review')<path d="M12 8v5M12 17h.01M4 21h16L12 3z"/>@elseif($label === 'Approved')<path d="M5 12l4 4L19 6"/>@else<path d="M6 6l12 12M18 6 6 18"/>@endif</svg></span><span class="metric-live"><i></i> Live</span></div><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>@endforeach
     </section>
-    <section class="card panel"><form method="GET" class="application-search"><select name="status"><option value="">All statuses</option>@foreach(['pending','approved','rejected'] as $status)<option value="{{ $status }}" @selected($postStatus===$status)>{{ ucfirst($status) }}</option>@endforeach</select><select name="community"><option value="">All communities</option>@foreach($postCommunities as $community)<option value="{{ $community->id }}" @selected((string)$postCommunity===(string)$community->id)>{{ $community->name }}</option>@endforeach</select><button class="mini-btn">Filter</button></form>
+    <section class="card posts-panel"><div class="posts-toolbar"><div><h2>Post directory</h2><span><strong>{{ number_format($posts->total()) }}</strong> matching post{{ $posts->total()===1?'':'s' }}</span></div><form method="GET" action="{{ url('/admin/posts') }}" class="post-filter" data-post-filter><select name="status"><option value="">All statuses</option>@foreach(['pending','approved','rejected'] as $status)<option value="{{ $status }}" @selected($postStatus===$status)>{{ ucfirst($status) }}</option>@endforeach</select><select name="community"><option value="">All communities</option>@foreach($postCommunities as $community)<option value="{{ $community->id }}" @selected((string)$postCommunity===(string)$community->id)>{{ $community->name }}</option>@endforeach</select><button class="mini-btn">Apply filters</button>@if($postStatus || $postCommunity)<a class="clear-filter" href="{{ url('/admin/posts') }}">Clear</a>@endif</form></div>
         <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Author</th><th>Community</th><th>Post</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>
         @forelse($posts as $post)<tr>
             <td><strong>{{ $post->user->name }}</strong><small>{{ $post->user->email }}</small></td>
             <td>{{ $post->community->name }}</td>
-            <td style="max-width:420px">{{ Str::limit($post->content, 180) }}</td>
+            <td style="max-width:420px"><a class="post-preview-link" href="{{ route('admin.posts.show',$post) }}">{{ Str::limit($post->content, 180) ?: 'View post details' }}</a></td>
             <td><span class="admin-pill {{ $post->status }}">{{ ucfirst($post->status) }}</span></td>
             <td>{{ $post->created_at->format('d M Y, H:i') }}</td>
-            <td><div class="application-actions">@if($post->status === 'pending')<form method="POST" action="{{ route('admin.posts.review', $post) }}">@csrf<input type="hidden" name="action" value="approve"><button class="mini-btn approve">Approve</button></form><form method="POST" action="{{ route('admin.posts.review', $post) }}">@csrf<input type="hidden" name="action" value="reject"><button class="mini-btn danger">Reject</button></form>@else<span>Reviewed</span>@endif</div></td>
-        </tr>@empty<tr><td colspan="6" class="empty-cell">No community posts have been submitted.</td></tr>@endforelse
+            <td><div class="application-actions"><a class="mini-btn" href="{{ route('admin.posts.show',$post) }}">View details</a>@if($post->status === 'pending')<form method="POST" action="{{ route('admin.posts.review', $post) }}">@csrf<input type="hidden" name="action" value="approve"><button class="mini-btn approve">Approve</button></form><form method="POST" action="{{ route('admin.posts.review', $post) }}">@csrf<input type="hidden" name="action" value="reject"><button class="mini-btn danger">Reject</button></form>@endif</div></td>
+        </tr>@empty<tr><td colspan="6"><div class="posts-empty"><span>▤</span><strong>No posts found</strong><small>Try changing the filters or check back when members submit new content.</small></div></td></tr>@endforelse
         </tbody></table></div>
-        @if($posts->hasPages()){{ $posts->links() }}@endif
+        @if($posts->hasPages())<nav class="admin-pagination ajax-pagination" aria-label="Post pages">@if($posts->onFirstPage())<span>← Previous</span>@else<a href="{{ $posts->previousPageUrl() }}">← Previous</a>@endif<strong>Page {{ $posts->currentPage() }} of {{ $posts->lastPage() }}</strong>@if($posts->hasMorePages())<a href="{{ $posts->nextPageUrl() }}">Next →</a>@else<span>Next →</span>@endif</nav>@endif
     </section>
 @elseif($section === 'quizzes')
     <div class="page-heading"><div><div class="eyebrow">Learning gates</div><h1>Quizzes</h1><p>Create, publish and maintain community quizzes and answers.</p></div></div>

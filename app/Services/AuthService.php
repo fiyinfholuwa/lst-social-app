@@ -40,6 +40,10 @@ class AuthService
             throw new AuthenticationException('These credentials do not match our records.');
         }
 
+        if ($user->suspended_at) {
+            throw new AuthenticationException('This account has been suspended. Please contact support.');
+        }
+
         return [
             'user' => $user,
             'token' => $user->createToken('mobile', ['*'], expiresAt: null)->plainTextToken,

@@ -53,7 +53,6 @@ export default function FriendsScreen({ navigation }) {
       setHasMoreRequests(Boolean(requestResponse.hasMorePages));
     }).catch(error => {
       if (active) {
-        setFriends([]);
         console.error('Unable to load friends:', error);
       }
     }).finally(() => { if (active) setLoadingFriends(false); });

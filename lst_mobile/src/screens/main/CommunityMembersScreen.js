@@ -32,7 +32,7 @@ export default function CommunityMembersScreen({ route, navigation }) {
       setHasMore(response.hasMorePages);
       setTotal(response.total);
     } catch (error) {
-      if (requestedPage === 1) setMembers([]);
+      console.error('Unable to load community members:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);

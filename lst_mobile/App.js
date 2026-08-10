@@ -11,6 +11,7 @@ import { CommunityApplicationsProvider } from './src/context/CommunityApplicatio
 import { NotificationsProvider } from './src/context/NotificationsContext';
 import { AppAlertProvider } from './src/context/AppAlertContext';
 import { ChatUnreadProvider } from './src/context/ChatUnreadContext';
+import { ConnectivityProvider } from './src/context/ConnectivityContext';
 
         export default function App() {
           return (
@@ -22,12 +23,14 @@ import { ChatUnreadProvider } from './src/context/ChatUnreadContext';
               <CommunityApplicationsProvider>
                 <NotificationsProvider>
                   <ChatUnreadProvider>
+                  <ConnectivityProvider>
                   <AppAlertProvider>
                     <NavigationContainer>
                       <AppNavigator />
                       <StatusBar style="auto" />
                     </NavigationContainer>
                   </AppAlertProvider>
+                  </ConnectivityProvider>
                   </ChatUnreadProvider>
                 </NotificationsProvider>
               </CommunityApplicationsProvider>

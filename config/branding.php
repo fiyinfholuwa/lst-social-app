@@ -8,4 +8,6 @@ return [
         'https://lovestraighttalks.com/wp-content/uploads/2019/08/0abbb10e-210f-4a45-b10c-854f16c93320.png',
     ),
     'support_email' => env('BRAND_SUPPORT_EMAIL', 'support@lovestraighttalks.com'),
+    'ios_app_url' => env('BRAND_IOS_APP_URL', 'https://apps.apple.com/us/search?term=LST%20Social'),
+    'android_app_url' => env('BRAND_ANDROID_APP_URL', 'https://play.google.com/store/search?q=LST%20Social&c=apps'),
 ];

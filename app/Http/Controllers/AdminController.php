@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Community;
 use App\Models\CommunityApplication;
 use App\Models\Post;
+use App\Models\PlatformSetting;
 use App\Models\Quiz;
 use App\Models\SupportRequest;
 use App\Models\User;
@@ -29,12 +30,25 @@ class AdminController extends Controller
     {
         $credentials = $request->validate(['email' => 'required|email', 'password' => 'required|string']);
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'The email or password is incorrect.'], 422);
+            }
+
             return back()->withErrors(['email' => 'The email or password is incorrect.'])->onlyInput('email');
         }
         $request->session()->regenerate();
         if (! in_array($request->user()->role, ['admin', 'super_admin'], true)) {
             Auth::logout();
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'This account does not have administrator access.'], 403);
+            }
+
             return back()->withErrors(['email' => 'This account does not have administrator access.']);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['redirect' => route('admin.dashboard')]);
         }
 
         return redirect()->intended(route('admin.dashboard'));
@@ -138,6 +152,13 @@ class AdminController extends Controller
 
         if ($section === 'settings') {
             $data['admin'] = $request->user();
+            $data['branding'] = [
+                'brand_name' => PlatformSetting::valueFor('brand_name', config('branding.name')),
+                'product_name' => PlatformSetting::valueFor('product_name', config('branding.product_name')),
+                'support_email' => PlatformSetting::valueFor('support_email', config('branding.support_email')),
+                'ios_app_url' => PlatformSetting::valueFor('ios_app_url', config('branding.ios_app_url')),
+                'android_app_url' => PlatformSetting::valueFor('android_app_url', config('branding.android_app_url')),
+            ];
         }
 
         $view = 'admin.sections.index';
@@ -335,6 +356,20 @@ class AdminController extends Controller
         $request->user()->update(['password' => Hash::make($data['password'])]);
 
         return back()->with('status', 'Password updated.');
+    }
+
+    public function updateBranding(Request $request)
+    {
+        $data = $request->validate([
+            'brand_name' => 'required|string|max:150',
+            'product_name' => 'required|string|max:150',
+            'support_email' => 'required|email|max:255',
+            'ios_app_url' => 'required|url:http,https|max:2000',
+            'android_app_url' => 'required|url:http,https|max:2000',
+        ]);
+        foreach ($data as $key => $value) PlatformSetting::put($key, trim($value));
+
+        return back()->with('status', 'Landing-page branding and download links updated.');
     }
 
     private function quizData(Request $request): array

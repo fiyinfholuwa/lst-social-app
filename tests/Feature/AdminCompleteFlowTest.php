@@ -53,4 +53,30 @@ class AdminCompleteFlowTest extends TestCase
         $this->assertTrue(Hash::check('NewPassword123!', $admin->fresh()->password));
         $this->delete("/admin/members/{$admin->id}")->assertStatus(422);
     }
+
+    public function test_admin_can_update_public_branding_and_download_links(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+
+        $this->actingAs($admin)->patch('/admin/settings/branding', [
+            'brand_name' => 'Love Straight Talks Africa',
+            'product_name' => 'LST Connect',
+            'support_email' => 'help@lovestraighttalks.com',
+            'ios_app_url' => 'https://apps.apple.com/app/id123456789',
+            'android_app_url' => 'https://play.google.com/store/apps/details?id=com.example.lstconnect',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('platform_settings', [
+            'key' => 'product_name',
+            'value' => 'LST Connect',
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Love Straight Talks Africa')
+            ->assertSee('LST Connect')
+            ->assertSee('help@lovestraighttalks.com')
+            ->assertSee('https://apps.apple.com/app/id123456789', false)
+            ->assertSee('https://play.google.com/store/apps/details?id=com.example.lstconnect', false);
+    }
 }

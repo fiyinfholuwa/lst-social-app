@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {
   AudioModule,
   RecordingPresets,
@@ -103,6 +103,9 @@ function VoiceNote({ message, mine, theme, activeVoiceId, onActivate }) {
 export default function ChatDetailScreen({ route, navigation }) {
   const { chatId } = route.params;
   const [messages, setMessages] = useState([]);
+  const [messagesPage, setMessagesPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const [inputText, setInputText] = useState('');
   const [chat, setChat] = useState(null);
   const [activeVoiceId, setActiveVoiceId] = useState(null);
@@ -128,13 +131,22 @@ export default function ChatDetailScreen({ route, navigation }) {
     return () => clearInterval(refreshTimer);
   }, [chatId]);
 
-  const loadMessages = async () => {
+  const loadMessages = async (requestedPage = 1) => {
+    if (requestedPage > 1) setLoadingMoreMessages(true);
     try {
-      const data = await apiService.getMessages(chatId);
-      setMessages([...data].reverse());
+      const response = await apiService.getMessages(chatId, requestedPage);
+      setMessages(current => {
+        if (requestedPage > 1) return [...current, ...response.data];
+        const incomingIds = new Set(response.data.map(message => String(message.id)));
+        return [...response.data, ...current.filter(message => !incomingIds.has(String(message.id)))];
+      });
+      setMessagesPage(response.currentPage);
+      setHasMoreMessages(Boolean(response.hasMorePages));
       refreshUnreadChats();
     } catch (error) {
       console.error('Unable to load messages:', error);
+    } finally {
+      if (requestedPage > 1) setLoadingMoreMessages(false);
     }
   };
 
@@ -226,6 +238,9 @@ export default function ChatDetailScreen({ route, navigation }) {
         data={messages}
         keyExtractor={item => item.id}
         inverted
+        onEndReached={() => hasMoreMessages && !loadingMoreMessages && loadMessages(messagesPage + 1)}
+        onEndReachedThreshold={0.35}
+        ListFooterComponent={loadingMoreMessages ? <ActivityIndicator style={styles.messagesFooter} color={theme.primary} /> : null}
         contentContainerStyle={styles.messages}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={<View style={styles.emptyConversation}><View style={[styles.emptyConversationIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="chatbubbles-outline" size={24} color={theme.primary} /></View><Text style={[styles.emptyConversationTitle, { color: theme.text }]}>Start the conversation</Text><Text style={[styles.emptyConversationText, { color: theme.secondaryText }]}>Send a kind message, an emoji, or a voice note.</Text></View>}
@@ -325,6 +340,7 @@ const styles = StyleSheet.create({
   profileName: { fontSize: 14, fontWeight: '700' },
   profileHint: { fontSize: 11, marginTop: 2 },
   messages: { flexGrow: 1, paddingVertical: 14 },
+  messagesFooter: { paddingVertical: 14 },
   messageRow: { marginVertical: 4, flexDirection: 'row' },
   myMessage: { justifyContent: 'flex-end' },
   otherMessage: { justifyContent: 'flex-start' },

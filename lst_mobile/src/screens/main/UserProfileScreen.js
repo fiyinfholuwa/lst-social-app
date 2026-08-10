@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
@@ -20,6 +20,9 @@ export default function UserProfileScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
   const [posts, setPosts] = useState([]);
+  const [postsPage, setPostsPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
   const [loadError, setLoadError] = useState('');
   const {
     getRelationship,
@@ -35,12 +38,13 @@ export default function UserProfileScreen({ route, navigation }) {
   useEffect(() => {
     let active = true;
     setLoadError('');
-    Promise.all([apiService.getUser(userId), apiService.getPosts()])
-      .then(([person, allPosts]) => {
+    Promise.all([apiService.getUser(userId), apiService.getUserPosts(userId, 1)])
+      .then(([person, postPage]) => {
         if (!active) return;
-        const userPosts = allPosts.filter(post => String(post.userId) === String(userId));
         setProfile(person);
-        setPosts(userPosts);
+        setPosts(postPage.data);
+        setPostsPage(postPage.currentPage);
+        setHasMorePosts(Boolean(postPage.hasMorePages));
       })
       .catch(error => active && setLoadError(error.message || 'This profile could not be loaded.'));
     return () => { active = false; };
@@ -56,9 +60,25 @@ export default function UserProfileScreen({ route, navigation }) {
   const sharedCommunities = joinedCommunities.filter(id => ownCommunities.includes(id)).length;
 
   const refreshPosts = async () => {
-    const allPosts = await apiService.getPosts();
-    const userPosts = allPosts.filter(post => String(post.userId) === String(userId));
-    setPosts(userPosts);
+    const response = await apiService.getUserPosts(userId, 1);
+    setPosts(response.data);
+    setPostsPage(response.currentPage);
+    setHasMorePosts(Boolean(response.hasMorePages));
+  };
+
+  const loadMorePosts = async () => {
+    if (!hasMorePosts || loadingMorePosts) return;
+    setLoadingMorePosts(true);
+    try {
+      const response = await apiService.getUserPosts(userId, postsPage + 1);
+      setPosts(current => [...current, ...response.data]);
+      setPostsPage(response.currentPage);
+      setHasMorePosts(Boolean(response.hasMorePages));
+    } catch (error) {
+      Alert.alert('Couldn’t load more posts', error.message);
+    } finally {
+      setLoadingMorePosts(false);
+    }
   };
 
   const sharePost = post => navigation.navigate('SharePost', { postId: post.id });
@@ -138,7 +158,15 @@ export default function UserProfileScreen({ route, navigation }) {
   );
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.content}
+      scrollEventThrottle={250}
+      onScroll={({ nativeEvent }) => {
+        const distanceFromBottom = nativeEvent.contentSize.height - nativeEvent.layoutMeasurement.height - nativeEvent.contentOffset.y;
+        if (distanceFromBottom < 350) loadMorePosts();
+      }}
+    >
       <View style={[styles.hero, { backgroundColor: theme.card, borderColor: theme.border }]}> 
         <View style={[styles.heroAccent, { backgroundColor: theme.primary }]}>
           <View style={[styles.heroGlow, { backgroundColor: theme.accent }]} />
@@ -231,6 +259,7 @@ export default function UserProfileScreen({ route, navigation }) {
             <Text style={[styles.emptyPostsText, { color: theme.secondaryText }]}>Posts shared by this account will appear here.</Text>
           </View>
         )}
+        {loadingMorePosts ? <ActivityIndicator style={styles.postsFooter} color={theme.primary} /> : null}
       </View>
       <ConfirmModal
         visible={showCancelRequest}
@@ -294,4 +323,5 @@ const styles = StyleSheet.create({
   loadError: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 28 },
   loadErrorText: { fontSize: 14, lineHeight: 21, textAlign: 'center' },
   profilePost: { marginHorizontal: 0, width: '100%' },
+  postsFooter: { paddingVertical: 18 },
 });

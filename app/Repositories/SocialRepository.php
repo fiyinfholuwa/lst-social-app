@@ -116,9 +116,39 @@ class SocialRepository
         return $user->belongsToMany(Post::class, 'saved_posts')->pluck('posts.id')->map(fn ($id) => (string) $id)->all();
     }
 
+    public function savedPostsPage(User $user, User $viewer, int $perPage = 10)
+    {
+        $query = $user->belongsToMany(Post::class, 'saved_posts')
+            ->with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
+            ->withCount(['likes', 'comments', 'shares'])
+            ->where(fn ($posts) => $posts->where('status', 'approved')->orWhere('posts.user_id', $viewer->id))
+            ->where(fn ($scope) => $scope->whereNull('community_id')
+                ->orWhereHas('community.members', fn ($members) => $members->whereKey($viewer->id)))
+            ->orderByPivot('created_at', 'desc');
+
+        return $this->visibleTo($query, $viewer)->paginate($perPage);
+    }
+
+    public function userPostsPage(User $profile, User $viewer, int $perPage = 10)
+    {
+        $query = Post::with(['user', 'likes' => fn ($likes) => $likes->whereKey($viewer->id), 'originalPost.user'])
+            ->withCount(['likes', 'comments', 'shares'])
+            ->where('user_id', $profile->id)
+            ->whereNull('community_id')
+            ->where('status', 'approved')
+            ->latest();
+
+        return $this->visibleTo($query, $viewer)->paginate($perPage);
+    }
+
     public function communities()
     {
         return Community::with('admin')->withCount('members')->get();
+    }
+
+    public function communitiesPage(int $perPage = 20)
+    {
+        return Community::with('admin')->withCount('members')->orderBy('name')->paginate($perPage);
     }
 
     public function community(int $id, ?User $viewer = null): Community

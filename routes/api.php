@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/user', [SocialController::class, 'updateProfile']);
     Route::get('/users/search', [ConnectionController::class, 'searchUsers']);
     Route::get('/users/{user}', [SocialController::class, 'user']);
+    Route::get('/users/{user}/posts', [SocialController::class, 'userPosts']);
     Route::get('/posts', [SocialController::class, 'posts']);
     Route::post('/posts', [SocialController::class, 'createPost']);
     Route::patch('/posts/{post}', [SocialController::class, 'updatePost']);

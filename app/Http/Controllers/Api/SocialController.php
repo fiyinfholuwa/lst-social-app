@@ -207,6 +207,12 @@ class SocialController extends Controller
 
     public function saved(Request $r)
     {
+        if ($r->has('page')) {
+            $page = $this->repo->savedPostsPage($r->user(), $r->user());
+
+            return response()->json($this->postPageData($page));
+        }
+
         $ids = $this->cache->remember("saved:{$r->user()->id}", 'ids', CacheService::MEDIUM,
             fn () => $this->repo->savedIds($r->user()));
 
@@ -221,10 +227,27 @@ class SocialController extends Controller
         return response()->json(['saved' => $saved]);
     }
 
-    public function communities()
+    public function communities(Request $request)
     {
+        if ($request->has('page')) {
+            $page = $this->repo->communitiesPage();
+
+            return response()->json([
+                'data' => $page->getCollection()->map(fn ($community) => $this->service->communityData($community))->values(),
+                'currentPage' => $page->currentPage(),
+                'lastPage' => $page->lastPage(),
+                'hasMorePages' => $page->hasMorePages(),
+                'total' => $page->total(),
+            ]);
+        }
+
         return response()->json($this->cache->remember('communities', 'list', CacheService::LONG,
             fn () => $this->repo->communities()->map(fn ($c) => $this->service->communityData($c))->all()));
+    }
+
+    public function userPosts(Request $request, User $user)
+    {
+        return response()->json($this->postPageData($this->repo->userPostsPage($user, $request->user())));
     }
 
     public function community(Request $r, Community $community)
@@ -490,8 +513,37 @@ class SocialController extends Controller
 
     public function notifications(Request $r)
     {
+        if ($r->has('page')) {
+            $page = $r->user()->notifications()->latest()->paginate(20);
+
+            return response()->json([
+                'data' => $page->getCollection()->map(fn ($n) => $this->notificationData($n))->values(),
+                'currentPage' => $page->currentPage(),
+                'lastPage' => $page->lastPage(),
+                'hasMorePages' => $page->hasMorePages(),
+                'total' => $page->total(),
+                'unreadTotal' => $r->user()->notifications()->whereNull('read_at')->count(),
+            ]);
+        }
+
         return response()->json($this->cache->remember("notifications:{$r->user()->id}", 'list', CacheService::SHORT,
-            fn () => $r->user()->notifications()->latest()->get()->map(fn ($n) => ['id' => (string) $n->id, 'icon' => $n->icon, 'title' => $n->title, 'message' => $n->message, 'time' => $n->created_at->diffForHumans(), 'unread' => $n->read_at === null, 'screen' => $n->screen])->all()));
+            fn () => $r->user()->notifications()->latest()->get()->map(fn ($n) => $this->notificationData($n))->all()));
+    }
+
+    private function notificationData(Notification $notification): array
+    {
+        return ['id' => (string) $notification->id, 'icon' => $notification->icon, 'title' => $notification->title, 'message' => $notification->message, 'time' => $notification->created_at->diffForHumans(), 'unread' => $notification->read_at === null, 'screen' => $notification->screen];
+    }
+
+    private function postPageData($page): array
+    {
+        return [
+            'data' => $page->getCollection()->map(fn (Post $post) => $this->service->postData($post))->values(),
+            'currentPage' => $page->currentPage(),
+            'lastPage' => $page->lastPage(),
+            'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
+        ];
     }
 
     public function readNotification(Request $r, Notification $notification)

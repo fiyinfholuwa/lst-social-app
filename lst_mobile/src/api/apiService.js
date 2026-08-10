@@ -31,6 +31,7 @@ const apiService = {
     return httpClient.postForm('/user', form);
   },
   getUser: userId => httpClient.get(`/users/${userId}`),
+  getUserPosts: (userId, page = 1) => httpClient.get(`/users/${userId}/posts?page=${page}`),
   getPosts: () => httpClient.get('/posts'),
   getPostsPage: page => httpClient.get(`/posts?page=${page}`),
   getPost: postId => httpClient.get(`/posts/${postId}`),
@@ -58,8 +59,10 @@ const apiService = {
   updateComment: (commentId, text) => httpClient.patch(`/comments/${commentId}`, { text }),
   deleteComment: commentId => httpClient.delete(`/comments/${commentId}`),
   getSavedPostIds: async () => (await httpClient.get('/saved-posts')).savedPostIds,
+  getSavedPostsPage: (page = 1) => httpClient.get(`/saved-posts?page=${page}`),
   toggleSavedPost: postId => httpClient.post(`/posts/${postId}/save`),
   getCommunities: () => httpClient.get('/communities'),
+  getCommunitiesPage: (page = 1) => httpClient.get(`/communities?page=${page}`),
   getCommunity: communityId => httpClient.get(`/communities/${communityId}`),
   getCommunityPosts: (communityId, page = 1) => httpClient.get(`/communities/${communityId}/posts?page=${page}`),
   getCommunityMembers: async communityId => (await httpClient.get(`/communities/${communityId}/members`)).data,
@@ -90,7 +93,7 @@ const apiService = {
   },
   getChat: chatId => httpClient.get(`/chats/${chatId}`),
   getOrCreateChat: otherUser => httpClient.post(`/chats/with/${otherUser.id}`),
-  getMessages: chatId => httpClient.get(`/chats/${chatId}/messages`),
+  getMessages: (chatId, page = 1) => httpClient.get(`/chats/${chatId}/messages?page=${page}`),
   sendMessage: (chatId, text) => httpClient.post(`/chats/${chatId}/messages`, { text }),
   sendVoiceMessage: (chatId, audioUri, duration) => {
     const form = new FormData();
@@ -100,7 +103,7 @@ const apiService = {
     appendFile(form, 'audio', { uri: audioUri, fileName: `voice-note.${extension || 'm4a'}` }, `voice-note.${extension || 'm4a'}`);
     return httpClient.postForm(`/chats/${chatId}/messages`, form);
   },
-  getNotifications: () => httpClient.get('/notifications'),
+  getNotifications: (page = 1) => httpClient.get(`/notifications?page=${page}`),
   markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
   markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),
   sendEmailVerification: () => httpClient.post('/email/verification-notification'),

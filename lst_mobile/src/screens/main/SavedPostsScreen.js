@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
@@ -12,17 +12,29 @@ import { useAuth } from '../../context/AuthContext';
 export default function SavedPostsScreen({ navigation }) {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { savedPostIds, savedPostsLoading, isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
+  const { savedPostsLoading, isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const friendshipState = useFriendships();
   const blockedUserIds = Array.isArray(friendshipState?.blockedUserIds) ? friendshipState.blockedUserIds : [];
 
-  const loadSavedPosts = useCallback(async () => {
-    const results = await Promise.allSettled(savedPostIds.map(id => apiService.getPost(id)));
-    setPosts(results.filter(result => result.status === 'fulfilled').map(result => result.value).filter(Boolean));
-    setLoading(false);
-  }, [savedPostIds]);
+  const loadSavedPosts = useCallback(async (requestedPage = 1) => {
+    if (requestedPage === 1) setLoading(true); else setLoadingMore(true);
+    try {
+      const response = await apiService.getSavedPostsPage(requestedPage);
+      setPosts(current => requestedPage === 1 ? response.data : [...current, ...response.data]);
+      setPage(response.currentPage);
+      setHasMore(Boolean(response.hasMorePages));
+    } catch (error) {
+      Alert.alert('Couldn’t load saved posts', error.message);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
 
   useEffect(() => { loadSavedPosts(); }, [loadSavedPosts]);
 
@@ -53,14 +65,17 @@ export default function SavedPostsScreen({ navigation }) {
             onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
             onOriginalPress={item.originalPost ? () => navigation.navigate('PostDetail', { postId: item.originalPost.id }) : undefined}
             onUserPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
-            onLike={() => apiService.likePost(item.id).then(loadSavedPosts).catch(error => Alert.alert('Couldn’t update post', error.message))}
+            onLike={() => apiService.likePost(item.id).then(() => loadSavedPosts(1)).catch(error => Alert.alert('Couldn’t update post', error.message))}
             onShare={() => sharePost(item)}
-            onSave={() => toggleSavedPost(item.id)}
+            onSave={() => toggleSavedPost(item.id).then(saved => { if (!saved) setPosts(current => current.filter(post => post.id !== item.id)); })}
             onEdit={String(item.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: item.id }) : undefined}
             onDelete={String(item.userId) === String(user?.id) ? () => deletePost(item) : undefined}
             isSaved={isPostSaved(item.id)}
           />
         )}
+        onEndReached={() => hasMore && !loadingMore && loadSavedPosts(page + 1)}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footer} color={theme.primary} /> : null}
         ListEmptyComponent={
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: theme.primarySoft }]}>
@@ -90,4 +105,5 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 7 },
   browseButton: { marginTop: 20, paddingVertical: 12, paddingHorizontal: 22, borderRadius: 14 },
   browseText: { color: '#FFFFFF', fontWeight: '700' },
+  footer: { paddingVertical: 18 },
 });

@@ -88,6 +88,19 @@ class ConnectionController extends Controller
 
     public function messages(Request $r, Chat $chat)
     {
+        if ($r->has('page')) {
+            $page = $this->repo->messagesPage($r->user(), $chat);
+            $this->service->invalidateChat($chat);
+
+            return response()->json([
+                'data' => $page->getCollection()->map(fn (Message $message) => $this->messageData($message))->values(),
+                'currentPage' => $page->currentPage(),
+                'lastPage' => $page->lastPage(),
+                'hasMorePages' => $page->hasMorePages(),
+                'total' => $page->total(),
+            ]);
+        }
+
         $messages = $this->repo->messages($r->user(), $chat);
         $this->service->invalidateChat($chat);
 

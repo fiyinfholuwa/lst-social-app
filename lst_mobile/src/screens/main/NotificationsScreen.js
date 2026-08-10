@@ -1,12 +1,12 @@
 import React from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AppIcon from '../../components/AppIcon';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationsContext';
 
 export default function NotificationsScreen({ navigation }) {
   const { theme } = useTheme();
-  const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllRead, loadMore, loading } = useNotifications();
 
   const openNotification = notification => {
     markAsRead(notification.id);
@@ -30,6 +30,9 @@ export default function NotificationsScreen({ navigation }) {
         data={notifications}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={loading && notifications.length ? <ActivityIndicator style={styles.footer} color={theme.primary} /> : null}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -85,4 +88,5 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingHorizontal: 35, paddingTop: 80 },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 6 },
+  footer: { paddingVertical: 18 },
 });

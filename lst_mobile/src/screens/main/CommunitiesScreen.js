@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
@@ -52,6 +52,9 @@ export default function CommunitiesScreen({ navigation }) {
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const { theme } = useTheme();
@@ -62,16 +65,19 @@ export default function CommunitiesScreen({ navigation }) {
     refreshUser().catch(() => {});
   }, [refreshUser]));
 
-  const loadCommunities = async () => {
-    setLoading(true);
+  const loadCommunities = async (requestedPage = 1) => {
+    if (requestedPage === 1) setLoading(true); else setLoadingMore(true);
     setLoadError(null);
     try {
-      const data = await apiService.getCommunities();
-      setCommunities(Array.isArray(data) ? data : []);
+      const response = await apiService.getCommunitiesPage(requestedPage);
+      setCommunities(current => requestedPage === 1 ? response.data : [...current, ...response.data]);
+      setPage(response.currentPage);
+      setHasMore(Boolean(response.hasMorePages));
     } catch (error) {
       setLoadError(error.message || 'Unable to load communities.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -163,6 +169,9 @@ export default function CommunitiesScreen({ navigation }) {
         ListHeaderComponent={<ListHeader />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        onEndReached={() => hasMore && !loadingMore && loadCommunities(page + 1)}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footer} color={theme.primary} /> : null}
         renderItem={({ item }) => {
           if (loading) return <CommunitySkeleton theme={theme} />;
 
@@ -245,4 +254,5 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 12, marginTop: 5 },
   retry: { marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 },
   retryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  footer: { paddingVertical: 18 },
 });

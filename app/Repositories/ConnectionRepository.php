@@ -135,6 +135,14 @@ class ConnectionRepository
         return $chat->messages()->oldest()->get();
     }
 
+    public function messagesPage(User $user, Chat $chat, int $perPage = 30)
+    {
+        $this->chat($user, $chat);
+        $chat->messages()->where('sender_id', '!=', $user->id)->whereNull('read_at')->update(['read_at' => now()]);
+
+        return $chat->messages()->latest()->paginate($perPage);
+    }
+
     public function send(User $user, Chat $chat, array $data): Message
     {
         $this->chat($user, $chat);

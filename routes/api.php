@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{post}/save', [SocialController::class, 'toggleSaved']);
     Route::get('/communities', [SocialController::class, 'communities']);
     Route::get('/communities/{community}', [SocialController::class, 'community']);
+    Route::get('/communities/{community}/articles', [SocialController::class, 'communityArticles']);
     Route::get('/communities/{community}/posts', [SocialController::class, 'communityPosts']);
     Route::get('/communities/{community}/members', [SocialController::class, 'members']);
     Route::get('/communities/{community}/member-directory', [SocialController::class, 'memberDirectory']);

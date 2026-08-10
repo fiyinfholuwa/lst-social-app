@@ -16,6 +16,7 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   const { user } = useAuth();
   const { submitApplication } = useCommunityApplications();
   const [community, setCommunity] = useState(null);
+  const [communityArticles, setCommunityArticles] = useState(null);
   const [selectedPath, setSelectedPath] = useState(null);
   const [abstinenceBand, setAbstinenceBand] = useState(null);
   const [supportArea, setSupportArea] = useState(null);
@@ -38,14 +39,16 @@ export default function CommunityApplicationScreen({ route, navigation }) {
       return;
     }
     apiService.getCommunity(communityId).then(setCommunity);
+    apiService.getCommunityArticles(communityId).then(setCommunityArticles).catch(() => setCommunityArticles([]));
   }, [communityId, navigation, user?.emailVerified]);
 
   if (!user?.emailVerified) return <Loader />;
 
-  if (!community || !requirement) return <Loader />;
+  if (!community || !requirement || communityArticles === null) return <Loader />;
 
-  if (requirementKey === 'comm4' && !readingComplete) {
-    return <QuickMaritalReadingGate theme={theme} onComplete={() => setReadingComplete(true)} />;
+  const requiresReading = communityArticles.length > 0 || requirementKey === 'comm4';
+  if (requiresReading && !readingComplete) {
+    return <QuickMaritalReadingGate theme={theme} articles={communityArticles} useFallback={requirementKey === 'comm4'} onComplete={() => setReadingComplete(true)} />;
   }
 
   const toggleAgreement = index => {
@@ -55,8 +58,8 @@ export default function CommunityApplicationScreen({ route, navigation }) {
   };
 
   const submit = async () => {
-    if (requirementKey === 'comm4' && !readingComplete) {
-      setNotice({ title: 'Complete the required reading', message: 'Pass all three article quizzes before submitting your application.' });
+    if (requiresReading && !readingComplete) {
+      setNotice({ title: 'Complete the required learning', message: 'Read each article and pass its quiz before submitting your application.' });
       return;
     }
     if (requirement.paths && !selectedPath) {

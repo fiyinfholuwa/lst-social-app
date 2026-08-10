@@ -62,7 +62,7 @@ export default function EditProfileScreen({ navigation }) {
   const pickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return Alert.alert('Photo access needed', 'Allow photo access to select a profile picture.');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
     if (result.canceled) return;
 
     try {

@@ -3,17 +3,17 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { quickMaritalArticles } from '../data/quickMaritalReading';
 import AppIcon from './AppIcon';
 
-const PASS_SCORE = 7;
 const QUIZ_TIME_SECONDS = 5 * 60;
 
-export default function QuickMaritalReadingGate({ theme, onComplete }) {
+export default function QuickMaritalReadingGate({ theme, articles: databaseArticles = [], useFallback = false, onComplete }) {
+  const articles = databaseArticles.length ? databaseArticles : (useFallback ? quickMaritalArticles : []);
   const [articleIndex, setArticleIndex] = useState(0);
-  const [stage, setStage] = useState('confirm');
+  const [stage, setStage] = useState('reading');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [latestScore, setLatestScore] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(QUIZ_TIME_SECONDS);
-  const article = quickMaritalArticles[articleIndex];
+  const article = articles[articleIndex];
 
   useEffect(() => {
     if (stage !== 'quiz') return undefined;
@@ -25,7 +25,7 @@ export default function QuickMaritalReadingGate({ theme, onComplete }) {
       );
       setLatestScore(score);
       setStage('failed');
-      Alert.alert('Time is up', 'Your five minutes have ended. Please read the article and try again.');
+      Alert.alert('Time is up', `The ${article.durationMinutes || 5}-minute quiz has ended. Review the article and try again.`);
       return undefined;
     }
 
@@ -40,7 +40,7 @@ export default function QuickMaritalReadingGate({ theme, onComplete }) {
     setAnswers([]);
     setQuestionIndex(0);
     setLatestScore(null);
-    setRemainingSeconds(QUIZ_TIME_SECONDS);
+    setRemainingSeconds((article.durationMinutes || 5) * 60);
     setStage('quiz');
   };
 
@@ -61,19 +61,20 @@ export default function QuickMaritalReadingGate({ theme, onComplete }) {
       0,
     );
 
-    if (score < PASS_SCORE) {
+    const requiredScore = Math.ceil(article.questions.length * ((article.passingScore || 70) / 100));
+    if (score < requiredScore) {
       setLatestScore(score);
       setStage('failed');
       return;
     }
 
-    if (articleIndex === quickMaritalArticles.length - 1) {
+    if (articleIndex === articles.length - 1) {
       onComplete();
       return;
     }
 
     setArticleIndex(current => current + 1);
-    setStage('confirm');
+    setStage('reading');
     setAnswers([]);
     setQuestionIndex(0);
   };
@@ -81,21 +82,22 @@ export default function QuickMaritalReadingGate({ theme, onComplete }) {
   if (stage === 'reading' || stage === 'failed') {
     return (
       <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
-        <Text style={[styles.eyebrow, { color: theme.primary }]}>
-          ARTICLE {articleIndex + 1} OF {quickMaritalArticles.length}
-        </Text>
+        <View style={styles.readingMeta}>
+          <Text style={[styles.eyebrow, { color: theme.primary }]}>READING {articleIndex + 1} OF {articles.length}</Text>
+          <Text style={[styles.progress, { color: theme.secondaryText }]}>{article.passingScore || 70}% required</Text>
+        </View>
         <Text style={[styles.title, { color: theme.text }]}>{article.title}</Text>
         {stage === 'failed' ? (
           <View style={[styles.notice, { backgroundColor: theme.primarySoft }]}>
             <AppIcon name="book-open" size={17} color={theme.primary} />
             <Text style={[styles.noticeText, { color: theme.primary }]}>
-              Your score was {latestScore}/10. You need at least {PASS_SCORE}/10. Please read the article carefully before trying again.
+              Your score was {latestScore}/{article.questions.length}. You need at least {Math.ceil(article.questions.length * ((article.passingScore || 70) / 100))}/{article.questions.length}. Please read the article carefully before trying again.
             </Text>
           </View>
         ) : null}
         <Text style={[styles.articleText, { color: theme.text }]}>{article.content}</Text>
         <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]} onPress={beginQuiz}>
-          <Text style={styles.primaryButtonText}>I’ve read it — take the quiz</Text>
+          <Text style={styles.primaryButtonText}>Continue to quiz</Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -112,7 +114,7 @@ export default function QuickMaritalReadingGate({ theme, onComplete }) {
 
     return (
       <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
-        <Text style={[styles.eyebrow, { color: theme.primary }]}>{article.title.toUpperCase()}</Text>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>QUIZ · READING {articleIndex + 1} OF {articles.length}</Text>
         <View style={styles.quizMeta}>
           <Text style={[styles.progress, { color: theme.secondaryText }]}>
             Question {questionIndex + 1} of {article.questions.length}
@@ -169,28 +171,7 @@ export default function QuickMaritalReadingGate({ theme, onComplete }) {
     );
   }
 
-  return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.eyebrow, { color: theme.primary }]}>REQUIRED READING</Text>
-      <Text style={[styles.title, { color: theme.text }]}>
-        Article {articleIndex + 1} of {quickMaritalArticles.length}
-      </Text>
-      <Text style={[styles.articleTitle, { color: theme.text }]}>{article.title}</Text>
-      <Text style={[styles.description, { color: theme.secondaryText }]}>
-        You have five minutes to complete each 10-question quiz and must score at least {PASS_SCORE}/10 before submitting your application.
-      </Text>
-      <Text style={[styles.prompt, { color: theme.text }]}>Have you read this article?</Text>
-      <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]} onPress={beginQuiz}>
-        <Text style={styles.primaryButtonText}>Yes — take the quiz</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.secondaryButton, styles.readButton, { borderColor: theme.border }]}
-        onPress={() => setStage('reading')}
-      >
-        <Text style={[styles.secondaryButtonText, { color: theme.text }]}>No — read the article</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -203,6 +184,7 @@ const styles = StyleSheet.create({
   prompt: { fontSize: 15, fontWeight: '700', marginTop: 30, marginBottom: 14 },
   progress: { fontSize: 12, fontWeight: '700', marginTop: 10 },
   quizMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  readingMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   timer: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999 },
   timerText: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
   question: { fontSize: 19, lineHeight: 27, fontWeight: '700', marginTop: 28, marginBottom: 8 },

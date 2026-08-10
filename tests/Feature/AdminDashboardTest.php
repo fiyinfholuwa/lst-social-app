@@ -23,7 +23,7 @@ class AdminDashboardTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'super_admin']));
         $this->get('admin/quizzes', ['X-Requested-With' => 'XMLHttpRequest'])
             ->assertOk()
-            ->assertSee('Create, publish and maintain community quizzes and answers.')
+            ->assertSee('Manage assessments that are not attached to a required reading article.')
             ->assertDontSee('<aside', false)
             ->assertDontSee('<header', false);
     }

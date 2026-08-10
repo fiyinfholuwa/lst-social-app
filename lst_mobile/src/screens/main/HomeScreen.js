@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ActivityIndicator, Alert, View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
         import { useTheme } from '../../context/ThemeContext';
@@ -29,6 +29,10 @@ import { useNotifications } from '../../context/NotificationsContext';
             ? friendshipState.blockedUserIds
             : [];
           const { unreadCount } = useNotifications();
+          const visiblePosts = useMemo(
+            () => posts.filter(post => !blockedUserIds.includes(post.userId)),
+            [posts, blockedUserIds],
+          );
 
           const loadPosts = useCallback(async () => {
             try {
@@ -98,7 +102,7 @@ import { useNotifications } from '../../context/NotificationsContext';
                 onAction={() => navigation.navigate('Notifications')}
               />
               <FlatList
-                data={posts.filter(post => !blockedUserIds.includes(post.userId))}
+                data={visiblePosts}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.feedContent}
                 renderItem={({ item }) => (
@@ -124,6 +128,10 @@ import { useNotifications } from '../../context/NotificationsContext';
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.tint} />}
                 onEndReached={loadMorePosts}
                 onEndReachedThreshold={0.5}
+                initialNumToRender={5}
+                maxToRenderPerBatch={5}
+                updateCellsBatchingPeriod={50}
+                windowSize={7}
                 ListFooterComponent={loadingMore ? <View style={styles.loadingFooter}><ActivityIndicator color={theme.tint} /></View> : null}
                 ListEmptyComponent={<View style={styles.empty}><Text style={[styles.emptyTitle, { color: theme.text }]}>{loadError ? 'Couldn’t load posts' : 'No posts yet'}</Text><Text style={[styles.emptyText, { color: theme.secondaryText }]}>{loadError || 'New posts will appear here.'}</Text>{loadError ? <TouchableOpacity style={[styles.retry, { backgroundColor: theme.primary }]} onPress={loadPosts}><Text style={styles.retryText}>Try again</Text></TouchableOpacity> : null}</View>}
                 ListHeaderComponent={

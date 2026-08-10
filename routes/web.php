@@ -36,9 +36,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/community-applications/{application}', [AdminController::class, 'reviewApplication'])->name('admin.applications.review');
     Route::get('/admin/posts/{post}', [AdminController::class, 'showPost'])->name('admin.posts.show');
     Route::post('/admin/posts/{post}/review', [AdminController::class, 'reviewPost'])->name('admin.posts.review');
+    Route::get('/admin/quizzes/create', [AdminController::class, 'createQuiz'])->name('admin.quizzes.create');
+    Route::get('/admin/quizzes/{quiz}/edit', [AdminController::class, 'editQuiz'])->name('admin.quizzes.edit');
     Route::post('/admin/quizzes', [AdminController::class, 'storeQuiz'])->name('admin.quizzes.store');
     Route::patch('/admin/quizzes/{quiz}', [AdminController::class, 'updateQuiz'])->name('admin.quizzes.update');
     Route::delete('/admin/quizzes/{quiz}', [AdminController::class, 'destroyQuiz'])->name('admin.quizzes.destroy');
+    Route::get('/admin/articles/create', [AdminController::class, 'createArticle'])->name('admin.articles.create');
+    Route::get('/admin/articles/{article}/edit', [AdminController::class, 'editArticle'])->name('admin.articles.edit');
+    Route::post('/admin/articles', [AdminController::class, 'storeArticle'])->name('admin.articles.store');
+    Route::patch('/admin/articles/{article}', [AdminController::class, 'updateArticle'])->name('admin.articles.update');
+    Route::delete('/admin/articles/{article}', [AdminController::class, 'destroyArticle'])->name('admin.articles.destroy');
     Route::patch('/admin/support-requests/{supportRequest}', [AdminController::class, 'updateSupportRequest'])->name('admin.support.update');
     Route::patch('/admin/settings/profile', [AdminController::class, 'updateAdminProfile'])->name('admin.settings.profile');
     Route::patch('/admin/settings/password', [AdminController::class, 'updateAdminPassword'])->name('admin.settings.password');

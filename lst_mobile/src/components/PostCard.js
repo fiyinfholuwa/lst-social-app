@@ -9,7 +9,7 @@ import EmojiText from './EmojiText';
 const PREVIEW_LIMIT = 180;
 const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
 
-export default function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false, containerStyle }) {
+function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false, containerStyle }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const isLong = post.content.length > PREVIEW_LIMIT;
@@ -106,6 +106,16 @@ export default function PostCard({ post, onPress, onOriginalPress, onUserPress, 
     </View>
   );
 }
+
+const samePostCard = (previous, next) => (
+  previous.post === next.post
+  && previous.isSaved === next.isSaved
+  && previous.containerStyle === next.containerStyle
+  && Boolean(previous.onEdit) === Boolean(next.onEdit)
+  && Boolean(previous.onDelete) === Boolean(next.onDelete)
+);
+
+export default React.memo(PostCard, samePostCard);
 
 const styles = StyleSheet.create({
   card: { marginHorizontal: 14, marginBottom: 12, padding: 15, borderRadius: 18, borderWidth: 1, overflow: 'visible' },

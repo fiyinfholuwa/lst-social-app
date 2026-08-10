@@ -9,6 +9,7 @@ use App\Models\CommunityApplication;
 use App\Models\Comment;
 use App\Models\Notification;
 use App\Models\Post;
+use App\Models\LearningArticle;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Repositories\SocialRepository;
@@ -31,6 +32,21 @@ class SocialController extends Controller
         }
 
         return response()->json($this->service->posts($r->user()));
+    }
+
+    public function communityArticles(Request $request, Community $community)
+    {
+        $articles = LearningArticle::query()->where('community_id', $community->id)->where('status', 'published')
+            ->with('questions.answers')->orderBy('position')->orderBy('id')->get()->map(fn ($article) => [
+                'id' => $article->id, 'title' => $article->title, 'content' => $article->content,
+                'durationMinutes' => $article->duration_minutes, 'passingScore' => $article->passing_score,
+                'questions' => $article->questions->map(fn ($question) => [
+                    'question' => $question->question, 'options' => $question->answers->pluck('answer')->values(),
+                    'correctIndex' => $question->answers->search(fn ($answer) => $answer->is_correct),
+                ])->values(),
+            ])->values();
+
+        return response()->json(['articles' => $articles]);
     }
 
     public function post(Request $r, Post $post)

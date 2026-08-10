@@ -1,5 +1,6 @@
 @php
-    $workspace = ['overview', 'members', 'communities', 'posts', 'quizzes'];
+    $workspace = ['overview', 'members', 'communities', 'posts', 'articles'];
+    $labels = ['articles' => 'Learning'];
     $manage = ['moderation', 'analytics', 'settings'];
 @endphp
 <aside class="sidebar" id="sidebar">
@@ -7,9 +8,9 @@
     <div class="nav-label">WORKSPACE</div>
     <nav class="nav">
         @foreach($workspace as $key)
-            <a data-admin-link class="{{ ($section ?? 'overview') === $key ? 'active' : '' }}" href="{{ url('/admin'.($key === 'overview' ? '' : '/'.$key)) }}">
+            <a data-admin-link class="{{ (($section ?? 'overview') === $key || ($key === 'articles' && ($section ?? '') === 'quizzes')) ? 'active' : '' }}" href="{{ url('/admin'.($key === 'overview' ? '' : '/'.$key)) }}">
                 <svg class="icon" aria-hidden="true">@switch($key)@case('overview')<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>@break @case('members')<circle cx="9" cy="8" r="4"/><path d="M2 21c.8-4 3.1-6 7-6s6.2 2 7 6M17 5c2.5.6 4 2.2 4 4.5S19.5 13.4 17 14"/>@break @case('communities')<path d="M4 21v-9l8-6 8 6v9M9 21v-6h6v6M7 8V4h3v2"/>@break @case('posts')<path d="M5 3h11l3 3v15H5zM8 10h8M8 14h8M8 18h5"/>@break @default<path d="M9 11l2 2 4-5M4 3h16v18H4zM8 17h8"/>@endswitch</svg>
-                <span>{{ ucfirst($key) }}</span>@if($key === 'quizzes' && \App\Models\Quiz::where('status','draft')->count())<span class="badge">{{ \App\Models\Quiz::where('status','draft')->count() }}</span>@endif
+                <span>{{ $labels[$key] ?? ucfirst($key) }}</span>@if($key === 'articles' && (\App\Models\LearningArticle::where('status','draft')->count() + \App\Models\Quiz::where('status','draft')->count()))<span class="badge">{{ \App\Models\LearningArticle::where('status','draft')->count() + \App\Models\Quiz::where('status','draft')->count() }}</span>@endif
             </a>
         @endforeach
     </nav>

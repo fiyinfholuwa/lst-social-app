@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Community;
 use App\Models\CommunityApplication;
 use App\Models\Post;
+use App\Models\LearningArticle;
 use App\Models\PlatformSetting;
 use App\Models\Quiz;
 use App\Models\SupportRequest;
@@ -19,7 +20,7 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
-    private const SECTIONS = ['overview', 'members', 'communities', 'posts', 'quizzes', 'moderation', 'analytics', 'settings'];
+    private const SECTIONS = ['overview', 'members', 'communities', 'posts', 'quizzes', 'articles', 'moderation', 'analytics', 'settings'];
 
     public function loginForm()
     {
@@ -144,7 +145,17 @@ class AdminController extends Controller
 
         if ($section === 'quizzes') {
             $data['quizzes'] = Quiz::with('community:id,name')->withCount('questions')->latest()->paginate(25);
-            $data['quizCommunities'] = Community::orderBy('name')->get(['id', 'name']);
+            $data['quizCommunities'] = Community::withCount(['quizzes', 'members'])->orderBy('name')->get(['id', 'name']);
+            $data['quizMetrics'] = [
+                'Total quizzes' => Quiz::count(),
+                'Published' => Quiz::where('status', 'published')->count(),
+                'Drafts' => Quiz::where('status', 'draft')->count(),
+                'Eligible communities' => Community::count(),
+            ];
+        }
+        if ($section === 'articles') {
+            $data['articles'] = LearningArticle::with('community:id,name')->withCount('questions')->orderBy('community_id')->orderBy('position')->paginate(25);
+            $data['articleCommunities'] = Community::withCount('learningArticles')->orderBy('name')->get(['id', 'name']);
         }
 
         if ($section === 'moderation') {
@@ -434,7 +445,25 @@ class AdminController extends Controller
         $data = $this->quizData($request);
         DB::transaction(fn () => $this->persistQuiz(new Quiz, $data));
 
-        return back()->with('status', 'Quiz created successfully.');
+        return redirect('/admin/quizzes')->with('status', 'Quiz created successfully.');
+    }
+
+    public function createQuiz()
+    {
+        return view('admin', [
+            'section' => 'quizzes', 'quizEditorPage' => true, 'quiz' => null,
+            'quizCommunities' => Community::withCount('quizzes')->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function editQuiz(Quiz $quiz)
+    {
+        $quiz->load('questions.answers', 'community:id,name');
+
+        return view('admin', [
+            'section' => 'quizzes', 'quizEditorPage' => true, 'quiz' => $quiz,
+            'quizCommunities' => Community::withCount('quizzes')->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function updateQuiz(Request $request, Quiz $quiz)
@@ -450,6 +479,37 @@ class AdminController extends Controller
         $quiz->delete();
 
         return back()->with('status', 'Quiz deleted.');
+    }
+
+    public function createArticle()
+    {
+        return view('admin', ['section' => 'articles', 'articleEditorPage' => true, 'article' => null, 'articleCommunities' => Community::withCount('learningArticles')->orderBy('name')->get(['id', 'name'])]);
+    }
+
+    public function editArticle(LearningArticle $article)
+    {
+        $article->load('questions.answers');
+        return view('admin', ['section' => 'articles', 'articleEditorPage' => true, 'article' => $article, 'articleCommunities' => Community::withCount('learningArticles')->orderBy('name')->get(['id', 'name'])]);
+    }
+
+    public function storeArticle(Request $request)
+    {
+        $data = $this->articleData($request);
+        DB::transaction(fn () => $this->persistArticle(new LearningArticle, $data));
+        return redirect('/admin/articles')->with('status', 'Article created successfully.');
+    }
+
+    public function updateArticle(Request $request, LearningArticle $article)
+    {
+        $data = $this->articleData($request);
+        DB::transaction(fn () => $this->persistArticle($article, $data));
+        return back()->with('status', 'Article updated successfully.');
+    }
+
+    public function destroyArticle(LearningArticle $article)
+    {
+        $article->delete();
+        return redirect('/admin/articles')->with('status', 'Article deleted.');
     }
 
     public function updateSupportRequest(Request $request, SupportRequest $supportRequest)
@@ -504,6 +564,30 @@ class AdminController extends Controller
             'questions.*.answers' => 'required|array|min:2|max:10', 'questions.*.answers.*' => 'required|string|max:1000',
             'questions.*.correct' => 'required|integer|min:0|max:9',
         ]);
+    }
+
+    private function articleData(Request $request): array
+    {
+        $article = $request->route('article');
+        return $request->validate([
+            'community_id' => 'required|exists:communities,id',
+            'title' => ['required','string','max:255',Rule::unique('learning_articles','title')->where('community_id',$request->input('community_id'))->ignore($article?->id)],
+            'content' => 'required|string|max:50000', 'position' => 'required|integer|min:1|max:1000',
+            'duration_minutes' => 'required|integer|min:1|max:600', 'passing_score' => 'required|integer|min:1|max:100',
+            'status' => ['required',Rule::in(['draft','published'])], 'questions' => 'required|array|min:1|max:100',
+            'questions.*.question' => 'required|string|max:2000', 'questions.*.answers' => 'required|array|min:2|max:10',
+            'questions.*.answers.*' => 'required|string|max:1000', 'questions.*.correct' => 'required|integer|min:0|max:9',
+        ]);
+    }
+
+    private function persistArticle(LearningArticle $article, array $data): void
+    {
+        $questions = $data['questions']; unset($data['questions']); $article->fill($data)->save(); $article->questions()->delete();
+        foreach ($questions as $questionPosition => $questionData) {
+            abort_if($questionData['correct'] >= count($questionData['answers']), 422, 'A correct-answer selection is outside its answer list.');
+            $question = $article->questions()->create(['question'=>$questionData['question'],'position'=>$questionPosition+1]);
+            foreach ($questionData['answers'] as $answerPosition => $answer) $question->answers()->create(['answer'=>$answer,'is_correct'=>$answerPosition === (int)$questionData['correct'],'position'=>$answerPosition+1]);
+        }
     }
 
     private function persistQuiz(Quiz $quiz, array $data): void

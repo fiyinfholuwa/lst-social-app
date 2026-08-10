@@ -39,7 +39,7 @@ export default function CreatePostScreen({ navigation, route }) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       orderedSelection: true,
       selectionLimit: MAX_IMAGES - images.length,

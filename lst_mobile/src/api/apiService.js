@@ -64,6 +64,7 @@ const apiService = {
   getCommunities: () => httpClient.get('/communities'),
   getCommunitiesPage: (page = 1) => httpClient.get(`/communities?page=${page}`),
   getCommunity: communityId => httpClient.get(`/communities/${communityId}`),
+  getCommunityArticles: async communityId => (await httpClient.get(`/communities/${communityId}/articles`)).articles,
   getCommunityPosts: (communityId, page = 1) => httpClient.get(`/communities/${communityId}/posts?page=${page}`),
   getCommunityMembers: async communityId => (await httpClient.get(`/communities/${communityId}/members`)).data,
   getCommunityMemberDirectory: (communityId, query = '', page = 1) => httpClient.get(`/communities/${communityId}/member-directory?q=${encodeURIComponent(query)}&page=${page}`),

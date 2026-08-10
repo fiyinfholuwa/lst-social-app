@@ -46,7 +46,7 @@ export default function EditPostScreen({ route, navigation }) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       orderedSelection: true,
       selectionLimit: MAX_IMAGES - images.length,

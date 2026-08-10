@@ -1,7 +1,7 @@
 @php($existingQuestions = $quiz?->questions ?? collect())
-<label>Community<select name="community_id" required><option value="">Choose community</option>@foreach($quizCommunities as $community)<option value="{{ $community->id }}" @selected((int)old('community_id',$quiz?->community_id)===(int)$community->id)>{{ $community->name }}</option>@endforeach</select></label>
+<label>Community<select name="community_id" required><option value="">Choose community</option>@foreach($quizCommunities as $community)<option value="{{ $community->id }}" @selected((int)old('community_id',$quiz?->community_id ?? request('community'))===(int)$community->id)>{{ $community->name }} · {{ $community->quizzes_count ?? 0 }} existing</option>@endforeach</select></label>
 <label>Title<input name="title" value="{{ old('title',$quiz?->title) }}" required></label>
-<label>Instructions<textarea name="instructions">{{ old('instructions',$quiz?->instructions) }}</textarea></label>
+<label>Article / instructions<textarea name="instructions" placeholder="Add the learning content or instructions members should read before taking this quiz.">{{ old('instructions',$quiz?->instructions) }}</textarea></label>
 <div class="form-grid"><label>Duration (minutes)<input type="number" min="1" max="600" name="duration_minutes" value="{{ old('duration_minutes',$quiz?->duration_minutes) }}"></label><label>Passing score %<input type="number" min="1" max="100" name="passing_score" value="{{ old('passing_score',$quiz?->passing_score ?? 80) }}" required></label><label>Maximum attempts<input type="number" min="1" max="100" name="max_attempts" value="{{ old('max_attempts',$quiz?->max_attempts) }}"></label><label>Status<select name="status"><option value="draft" @selected(old('status',$quiz?->status)==='draft')>Draft</option><option value="published" @selected(old('status',$quiz?->status ?? 'published')==='published')>Published</option></select></label></div>
 <label><input type="checkbox" name="randomize_questions" value="1" @checked(old('randomize_questions',$quiz?->randomize_questions))> Randomize questions</label><label><input type="checkbox" name="show_answers" value="1" @checked(old('show_answers',$quiz?->show_answers ?? true))> Show answers after completion</label>
 <div data-question-list>
@@ -12,4 +12,4 @@
 @endforelse
 </div>
 <button class="mini-btn" type="button" data-add-question>Add question</button>
-<button class="btn btn-primary" type="submit">{{ $quiz ? 'Save quiz' : 'Create quiz' }}</button>
+<button class="btn btn-primary" type="submit">{{ $quiz ? 'Update quiz' : 'Create quiz' }}</button>

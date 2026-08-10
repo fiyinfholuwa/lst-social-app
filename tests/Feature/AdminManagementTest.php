@@ -17,6 +17,7 @@ class AdminManagementTest extends TestCase
 
     public function test_admin_can_manage_members_and_communities(): void
     {
+        $this->actingAs(User::factory()->create(['role' => 'super_admin']));
         Storage::fake('public');
         $member = User::factory()->create(['name' => 'Managed Member']);
         $administrator = User::factory()->create(['name' => 'Community Administrator', 'role' => 'admin']);
@@ -37,13 +38,14 @@ class AdminManagementTest extends TestCase
         $uploadedPath = public_path(trim(config('uploads.directory'), '/').'/'.ltrim(str_replace(config('uploads.url_prefix'), '', parse_url($community->image, PHP_URL_PATH)), '/'));
         $this->assertFileExists($uploadedPath);
         File::delete($uploadedPath);
-        $this->get('/admin/communities')->assertOk()->assertDontSee('New community')->assertDontSee('Delete community');
-        $this->post('/admin/communities', ['name' => 'Forbidden Circle'])->assertMethodNotAllowed();
-        $this->delete("/admin/communities/{$community->id}")->assertMethodNotAllowed();
+        $this->get('/admin/communities')->assertOk()->assertSee('New community')->assertSee('Delete community');
+        $this->post('/admin/communities', ['name' => 'Created Circle'])->assertRedirect();
+        $this->assertDatabaseHas('communities', ['name' => 'Created Circle']);
     }
 
     public function test_admin_can_review_a_community_application(): void
     {
+        $this->actingAs(User::factory()->create(['role' => 'super_admin']));
         $member = User::factory()->create();
         $community = Community::create(['name' => 'Review Circle']);
         $application = CommunityApplication::create([

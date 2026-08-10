@@ -16,7 +16,8 @@
         .applications-table{min-width:760px}.applications-table .application-actions{width:auto;padding-left:0;justify-content:flex-end}
         @media(max-width:1050px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.quick-grid{grid-template-columns:repeat(4,1fr)}.lower{grid-template-columns:1fr 1fr}.community-grid{grid-template-columns:1fr}}
         @media(max-width:760px){.app{display:block}.sidebar{transform:translateX(-105%);transition:.25s}.sidebar.open{transform:translateX(0)}.mobile-overlay.show{display:block;position:fixed;inset:0;background:rgba(7,20,38,.52);z-index:25}.main{width:100%}.topbar{height:66px;padding:0 16px}.menu-btn{display:grid}.search{max-width:none}.search input{font-size:16px}.content{padding:22px 16px 35px}.page-heading{align-items:start}.page-heading h1{font-size:23px}.page-heading p{font-size:12px}.page-heading .btn span{display:none}.stats{grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:15px}.stat-value{font-size:23px}.grid,.lower{grid-template-columns:1fr}.quick-grid{grid-template-columns:repeat(2,1fr)}.application-row{flex-wrap:wrap}.application-actions{width:100%;padding-left:48px}.row-actions{align-items:flex-start;flex-direction:column}.application-stats{grid-template-columns:1fr}.application-toolbar{align-items:stretch;flex-direction:column}.application-search input{width:100%;min-width:0}.application-toolbar form{width:100%}.application-search{width:100%}.admin-pagination strong{display:none}}
-        @media(max-width:430px){.topbar .search{display:none}.stats{grid-template-columns:1fr 1fr}.stat-label{font-size:11px}.stat-icon{width:34px;height:34px}.trend{display:none}.panel{padding:16px}.quiz{grid-template-columns:1fr}.quiz-score{text-align:left;display:flex;gap:5px;align-items:baseline}.quiz-meta{gap:7px}.page-heading{margin-bottom:19px}}
+        .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.quiz-question{border:1px solid var(--line);border-radius:14px;padding:15px;margin:14px 0}.quiz-question legend{font-weight:800;padding:0 7px}.panel details{margin:10px 0}.panel details>summary{cursor:pointer}.top-actions form{margin:0}.top-actions a{text-decoration:none}.admin-form input[type=checkbox]{width:auto;height:auto;margin-right:7px}
+        @media(max-width:430px){.topbar .search{display:none}.stats{grid-template-columns:1fr 1fr}.stat-label{font-size:11px}.stat-icon{width:34px;height:34px}.trend{display:none}.panel{padding:16px}.quiz{grid-template-columns:1fr}.quiz-score{text-align:left;display:flex;gap:5px;align-items:baseline}.quiz-meta{gap:7px}.page-heading{margin-bottom:19px}.form-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
@@ -28,7 +29,7 @@
         <div class="content" id="adminContent" aria-live="polite">
             @if($applicationsPage ?? false)
                 @include('admin.sections.community-applications')
-            @elseif(($section ?? 'overview') !== 'overview')
+            @elseif(in_array(($section ?? 'overview'), ['overview','members','communities','posts','quizzes','moderation','analytics','settings'], true))
                 @include('admin.sections.index', ['section' => $section])
             @else
             <div class="page-heading">
@@ -108,6 +109,21 @@
                 body.replaceChildren(template.content.cloneNode(true));
                 dialog.showModal();
             }
+        }
+        const addQuestion = event.target.closest('[data-add-question]');
+        if (addQuestion) {
+            const form = addQuestion.closest('[data-quiz-form]');
+            const list = form.querySelector('[data-question-list]');
+            const index = list.querySelectorAll('.quiz-question').length;
+            const fieldset = document.createElement('fieldset');
+            fieldset.className = 'quiz-question';
+            fieldset.innerHTML = `<legend>Question <span data-question-number>${index + 1}</span></legend><label>Question<input name="questions[${index}][question]" required></label><div class="form-grid">${[0,1,2,3].map(answer => `<label>Answer ${answer + 1}<input name="questions[${index}][answers][${answer}]" required></label>`).join('')}</div><label>Correct answer<select name="questions[${index}][correct]">${[0,1,2,3].map(answer => `<option value="${answer}">Answer ${answer + 1}</option>`).join('')}</select></label><button class="mini-btn danger" type="button" data-remove-question>Remove question</button>`;
+            list.appendChild(fieldset);
+        }
+        const removeQuestion = event.target.closest('[data-remove-question]');
+        if (removeQuestion) {
+            const list = removeQuestion.closest('[data-question-list]');
+            if (list.querySelectorAll('.quiz-question').length > 1) removeQuestion.closest('.quiz-question').remove();
         }
     });
 </script>

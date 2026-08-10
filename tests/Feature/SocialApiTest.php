@@ -88,7 +88,9 @@ class SocialApiTest extends TestCase
 
         auth()->forgetGuards();
         $this->flushHeaders()->withHeaders($headers)->getJson('/api/posts')->assertJsonMissing(['id' => $postId]);
-        $this->post("/admin/posts/{$postId}/review", ['action' => 'approve'])->assertRedirect();
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $this->actingAs($admin)->post("/admin/posts/{$postId}/review", ['action' => 'approve'])->assertRedirect();
+        auth()->forgetGuards();
         $this->withHeaders($headers)->getJson('/api/posts')->assertJsonMissing(['id' => $postId]);
         $this->withHeaders($headers)->getJson("/api/communities/{$community->id}/posts")
             ->assertJsonFragment(['id' => $postId, 'status' => 'approved']);

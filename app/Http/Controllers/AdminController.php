@@ -5,24 +5,76 @@ namespace App\Http\Controllers;
 use App\Models\Community;
 use App\Models\CommunityApplication;
 use App\Models\Post;
+use App\Models\Quiz;
+use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\CacheService;
 use App\Services\UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
     private const SECTIONS = ['overview', 'members', 'communities', 'posts', 'quizzes', 'moderation', 'analytics', 'settings'];
 
+    public function loginForm()
+    {
+        return view('admin.login');
+    }
+
+    public function login(Request $request)
+    {
+        $credentials = $request->validate(['email' => 'required|email', 'password' => 'required|string']);
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()->withErrors(['email' => 'The email or password is incorrect.'])->onlyInput('email');
+        }
+        $request->session()->regenerate();
+        if (! in_array($request->user()->role, ['admin', 'super_admin'], true)) {
+            Auth::logout();
+            return back()->withErrors(['email' => 'This account does not have administrator access.']);
+        }
+
+        return redirect()->intended(route('admin.dashboard'));
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
+
     public function index(Request $request, string $section = 'overview')
     {
         abort_unless(in_array($section, self::SECTIONS, true), 404);
 
         $data = compact('section');
+        if ($section === 'overview') {
+            $data['overviewMetrics'] = [
+                'Total members' => User::count(),
+                'Communities' => Community::count(),
+                'Pending applications' => CommunityApplication::where('status', 'pending')->count(),
+                'Pending posts' => Post::whereNotNull('community_id')->where('status', 'pending')->count(),
+            ];
+            $data['recentMembers'] = User::latest()->limit(6)->get();
+            $data['recentApplications'] = CommunityApplication::with(['user:id,name', 'community:id,name'])->latest()->limit(6)->get();
+            $data['openSupportCount'] = SupportRequest::where('status', 'open')->count();
+        }
         if ($section === 'members') {
-            $data['members'] = User::query()->withCount('communities')->latest()->get();
+            $filters = $request->validate(['search' => 'nullable|string|max:100', 'role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])]]);
+            $search = trim($filters['search'] ?? '');
+            $role = $filters['role'] ?? '';
+            $data['members'] = User::query()->withCount('communities')
+                ->when($search !== '', fn ($query) => $query->where(fn ($users) => $users->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))
+                ->when($role !== '', fn ($query) => $role === 'member' ? $query->where(fn ($roles) => $roles->whereNull('role')->orWhere('role', 'member')) : $query->where('role', $role))
+                ->latest()->paginate(30)->withQueryString();
+            $data['memberSearch'] = $search;
+            $data['memberRole'] = $role;
             $data['memberMetrics'] = [
                 'Total members' => User::count(),
                 'Community members' => User::has('communities')->count(),
@@ -47,16 +99,45 @@ class AdminController extends Controller
         }
 
         if ($section === 'posts') {
+            $filters = $request->validate(['status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])], 'community' => 'nullable|integer|exists:communities,id']);
             $data['posts'] = Post::query()
                 ->whereNotNull('community_id')
+                ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+                ->when($filters['community'] ?? null, fn ($query, $community) => $query->where('community_id', $community))
                 ->with(['user:id,name,email', 'community:id,name'])
-                ->latest()
-                ->paginate(50);
+                ->latest()->paginate(50)->withQueryString();
+            $data['postCommunities'] = Community::orderBy('name')->get(['id', 'name']);
+            $data['postStatus'] = $filters['status'] ?? '';
+            $data['postCommunity'] = $filters['community'] ?? '';
             $data['postMetrics'] = [
                 'Pending review' => Post::whereNotNull('community_id')->where('status', 'pending')->count(),
                 'Approved' => Post::whereNotNull('community_id')->where('status', 'approved')->count(),
                 'Rejected' => Post::whereNotNull('community_id')->where('status', 'rejected')->count(),
             ];
+        }
+
+        if ($section === 'quizzes') {
+            $data['quizzes'] = Quiz::with('community:id,name')->withCount('questions')->latest()->paginate(25);
+            $data['quizCommunities'] = Community::orderBy('name')->get(['id', 'name']);
+        }
+
+        if ($section === 'moderation') {
+            $data['pendingApplications'] = CommunityApplication::with(['user:id,name,email', 'community:id,name'])->where('status', 'pending')->latest()->paginate(20, ['*'], 'applications_page');
+            $data['pendingPosts'] = Post::with(['user:id,name', 'community:id,name'])->whereNotNull('community_id')->where('status', 'pending')->latest()->paginate(20, ['*'], 'posts_page');
+            $data['supportRequests'] = SupportRequest::with('user:id,name,email')->latest()->paginate(20, ['*'], 'support_page');
+        }
+
+        if ($section === 'analytics') {
+            $data['analyticsMetrics'] = [
+                'Members' => User::count(), 'Verified members' => User::whereNotNull('email_verified_at')->count(),
+                'Timeline posts' => Post::whereNull('community_id')->count(), 'Community posts' => Post::whereNotNull('community_id')->count(),
+                'Open support requests' => SupportRequest::where('status', 'open')->count(), 'Published quizzes' => Quiz::where('status', 'published')->count(),
+            ];
+            $data['communityAnalytics'] = Community::withCount(['members', 'posts', 'applications'])->orderByDesc('members_count')->get();
+        }
+
+        if ($section === 'settings') {
+            $data['admin'] = $request->user();
         }
 
         $view = 'admin.sections.index';
@@ -107,17 +188,62 @@ class AdminController extends Controller
     public function updateMember(Request $request, User $user)
     {
         $data = $request->validate(['role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])]]);
-        $user->update(['role' => $data['role'] ?: 'member']);
+        $nextRole = $data['role'] ?: 'member';
+        abort_if($request->user()->is($user) && $nextRole !== ($user->role ?: 'member'), 422, 'You cannot change your own administrator role.');
+        abort_if($request->user()->role !== 'super_admin' && (in_array($user->role, ['admin', 'super_admin'], true) || in_array($nextRole, ['admin', 'super_admin'], true)), 403, 'Only a super administrator can manage administrator roles.');
+        $user->update(['role' => $nextRole]);
 
         return back()->with('status', "{$user->name}'s role was updated.");
     }
 
     public function destroyMember(User $user)
     {
+        abort_if(request()->user()->is($user), 422, 'You cannot remove your own account.');
+        abort_if(request()->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can remove an administrator.');
         $name = $user->name;
         $user->delete();
 
         return back()->with('status', "{$name} was removed.");
+    }
+
+    public function storeMember(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:200', 'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed', 'role' => ['required', Rule::in(['member', 'moderator', 'admin', 'super_admin'])],
+            'email_verified' => 'nullable|boolean',
+        ]);
+        abort_if($request->user()->role !== 'super_admin' && in_array($data['role'], ['admin', 'super_admin'], true), 403, 'Only a super administrator can create another administrator.');
+        [$firstName, $lastName] = array_pad(explode(' ', trim($data['name']), 2), 2, '');
+        User::create([
+            'name' => trim($data['name']), 'first_name' => $firstName, 'last_name' => $lastName,
+            'email' => strtolower($data['email']), 'password' => $data['password'], 'role' => $data['role'],
+            'email_verified_at' => $request->boolean('email_verified') ? now() : null,
+        ]);
+
+        return back()->with('status', 'Member account created.');
+    }
+
+    public function storeCommunity(Request $request, CacheService $cache, UploadService $uploads)
+    {
+        $data = $this->communityData($request);
+        unset($data['image']);
+        if ($request->hasFile('image')) $data['image'] = $uploads->store($request->file('image'), 'communities');
+        $community = Community::create($data);
+        if ($community->admin_id) $community->members()->syncWithoutDetaching([$community->admin_id]);
+        $cache->invalidate('communities');
+
+        return back()->with('status', 'Community created successfully.');
+    }
+
+    public function destroyCommunity(Community $community, CacheService $cache, UploadService $uploads)
+    {
+        $name = $community->name;
+        $uploads->delete($community->image, 'communities');
+        $community->delete();
+        $cache->invalidate('communities', "community:{$community->id}");
+
+        return redirect('/admin/communities')->with('status', "{$name} was deleted.");
     }
 
     public function updateCommunity(Request $request, Community $community, CacheService $cache, UploadService $uploads)
@@ -129,6 +255,7 @@ class AdminController extends Controller
         }
 
         $community->update($data);
+        if ($community->admin_id) $community->members()->syncWithoutDetaching([$community->admin_id]);
         $cache->invalidate('communities', "community:{$community->id}");
 
         return back()->with('status', 'Community updated successfully.');
@@ -160,6 +287,86 @@ class AdminController extends Controller
         $cache->invalidate('posts', "post:{$post->id}", "user:{$post->user_id}", "community:{$post->community_id}");
 
         return back()->with('status', "Post {$status}.");
+    }
+
+    public function storeQuiz(Request $request)
+    {
+        $data = $this->quizData($request);
+        DB::transaction(fn () => $this->persistQuiz(new Quiz, $data));
+
+        return back()->with('status', 'Quiz created successfully.');
+    }
+
+    public function updateQuiz(Request $request, Quiz $quiz)
+    {
+        $data = $this->quizData($request);
+        DB::transaction(fn () => $this->persistQuiz($quiz, $data));
+
+        return back()->with('status', 'Quiz updated successfully.');
+    }
+
+    public function destroyQuiz(Quiz $quiz)
+    {
+        $quiz->delete();
+
+        return back()->with('status', 'Quiz deleted.');
+    }
+
+    public function updateSupportRequest(Request $request, SupportRequest $supportRequest)
+    {
+        $data = $request->validate(['status' => ['required', Rule::in(['open', 'in_progress', 'resolved', 'closed'])]]);
+        $supportRequest->update($data);
+
+        return back()->with('status', 'Support request updated.');
+    }
+
+    public function updateAdminProfile(Request $request)
+    {
+        $data = $request->validate(['name' => 'required|string|max:200', 'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($request->user()->id)]]);
+        [$firstName, $lastName] = array_pad(explode(' ', trim($data['name']), 2), 2, '');
+        $request->user()->update($data + ['first_name' => $firstName, 'last_name' => $lastName]);
+
+        return back()->with('status', 'Administrator profile updated.');
+    }
+
+    public function updateAdminPassword(Request $request)
+    {
+        $data = $request->validate(['current_password' => 'required|current_password', 'password' => 'required|string|min:8|confirmed']);
+        $request->user()->update(['password' => Hash::make($data['password'])]);
+
+        return back()->with('status', 'Password updated.');
+    }
+
+    private function quizData(Request $request): array
+    {
+        $quiz = $request->route('quiz');
+        return $request->validate([
+            'community_id' => 'required|exists:communities,id',
+            'title' => ['required', 'string', 'max:255', Rule::unique('quizzes', 'title')->where('community_id', $request->input('community_id'))->ignore($quiz?->id)],
+            'instructions' => 'nullable|string|max:3000', 'duration_minutes' => 'nullable|integer|min:1|max:600',
+            'passing_score' => 'required|integer|min:1|max:100', 'max_attempts' => 'nullable|integer|min:1|max:100',
+            'status' => ['required', Rule::in(['draft', 'published'])], 'randomize_questions' => 'nullable|boolean', 'show_answers' => 'nullable|boolean',
+            'questions' => 'required|array|min:1|max:100', 'questions.*.question' => 'required|string|max:2000',
+            'questions.*.answers' => 'required|array|min:2|max:10', 'questions.*.answers.*' => 'required|string|max:1000',
+            'questions.*.correct' => 'required|integer|min:0|max:9',
+        ]);
+    }
+
+    private function persistQuiz(Quiz $quiz, array $data): void
+    {
+        $questions = $data['questions'];
+        unset($data['questions']);
+        $data['randomize_questions'] = (bool) ($data['randomize_questions'] ?? false);
+        $data['show_answers'] = (bool) ($data['show_answers'] ?? false);
+        $quiz->fill($data)->save();
+        $quiz->questions()->delete();
+        foreach ($questions as $questionPosition => $questionData) {
+            abort_if($questionData['correct'] >= count($questionData['answers']), 422, 'A correct-answer selection is outside its answer list.');
+            $question = $quiz->questions()->create(['question' => $questionData['question'], 'position' => $questionPosition + 1]);
+            foreach ($questionData['answers'] as $answerPosition => $answer) {
+                $question->answers()->create(['answer' => $answer, 'is_correct' => $answerPosition === (int) $questionData['correct'], 'position' => $answerPosition + 1]);
+            }
+        }
     }
 
     private function communityData(Request $request): array

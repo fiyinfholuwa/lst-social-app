@@ -7,6 +7,7 @@ use App\Models\CommunityApplication;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class MobileCommunityModerationTest extends TestCase
@@ -55,5 +56,73 @@ class MobileCommunityModerationTest extends TestCase
         $this->actingAs($member)->getJson("/api/communities/{$community->id}/moderation")
             ->assertForbidden()
             ->assertJsonPath('message', 'Only this community’s administrator can review requests.');
+    }
+
+    public function test_moderators_are_notified_when_users_submit_applications_and_posts(): void
+    {
+        Queue::fake();
+        $communityAdmin = User::factory()->create();
+        $admin = User::factory()->create(['role' => 'admin']);
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $member = User::factory()->create();
+        $community = Community::create(['name' => 'Managed Circle', 'admin_id' => $communityAdmin->id]);
+        $community->members()->attach($member);
+
+        $this->actingAs($member)->postJson("/api/communities/{$community->id}/applications", [
+            'answers' => ['motivation' => 'I want to grow'],
+        ])->assertCreated();
+
+        $this->actingAs($member)->postJson("/api/communities/{$community->id}/posts", [
+            'content' => 'Please approve this post',
+        ])->assertCreated()->assertJsonPath('status', 'pending');
+
+        foreach ([$communityAdmin, $admin, $superAdmin] as $moderator) {
+            $this->assertDatabaseHas('notifications', [
+                'user_id' => $moderator->id,
+                'title' => 'New community application',
+            ]);
+            $this->assertDatabaseHas('notifications', [
+                'user_id' => $moderator->id,
+                'title' => 'Community post awaiting approval',
+            ]);
+        }
+
+        $this->assertDatabaseMissing('notifications', [
+            'user_id' => $member->id,
+            'title' => 'New community application',
+        ]);
+    }
+
+    public function test_users_are_notified_when_applications_and_posts_are_reviewed(): void
+    {
+        Queue::fake();
+        $admin = User::factory()->create();
+        $applicant = User::factory()->create();
+        $author = User::factory()->create();
+        $community = Community::create(['name' => 'Managed Circle', 'admin_id' => $admin->id]);
+        $application = CommunityApplication::create([
+            'community_id' => $community->id,
+            'user_id' => $applicant->id,
+            'answers' => ['motivation' => 'I want to grow'],
+            'status' => 'pending',
+        ]);
+        $post = Post::create([
+            'community_id' => $community->id,
+            'user_id' => $author->id,
+            'content' => 'Please review',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)->postJson("/api/communities/{$community->id}/moderation/applications/{$application->id}", ['action' => 'approve'])->assertOk();
+        $this->actingAs($admin)->postJson("/api/communities/{$community->id}/moderation/posts/{$post->id}", ['action' => 'approve'])->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $applicant->id,
+            'title' => 'Community application approved',
+        ]);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $author->id,
+            'title' => 'Community post approved',
+        ]);
     }
 }

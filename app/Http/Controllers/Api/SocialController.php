@@ -396,6 +396,16 @@ class SocialController extends Controller
             'image' => $images[0] ?? null,
         ]);
 
+        if (! $canPublishDirectly) {
+            $this->notifyCommunityModerators($community, $r->user(), [
+                'icon' => 'document-text',
+                'title' => 'Community post awaiting approval',
+                'message' => $r->user()->name.' submitted a post in '.$community->name.'.',
+                'screen' => 'CommunityModeration',
+                'route_params' => ['communityId' => (string) $community->id, 'communityName' => $community->name],
+            ]);
+        }
+
         return response()->json(['id' => (string) $post->id, 'status' => $post->status, 'message' => $canPublishDirectly ? 'Your post is now live in the community.' : 'Your post was submitted for approval.'], 201);
     }
 
@@ -414,6 +424,14 @@ class SocialController extends Controller
 
         $application = $this->repo->apply($r->user(), $community, $d['answers']);
         $this->cache->invalidate("applications:{$r->user()->id}");
+
+        $this->notifyCommunityModerators($community, $r->user(), [
+            'icon' => 'person-add',
+            'title' => 'New community application',
+            'message' => $r->user()->name.' applied to join '.$community->name.'.',
+            'screen' => 'CommunityModeration',
+            'route_params' => ['communityId' => (string) $community->id, 'communityName' => $community->name],
+        ]);
 
         return response()->json($application, 201);
     }
@@ -487,6 +505,13 @@ class SocialController extends Controller
             $community->members()->detach($application->user_id);
         }
         $this->cache->invalidate('communities', "community:{$community->id}", "applications:{$application->user_id}", "user:{$application->user_id}");
+        $this->notifications->createFor($application->user, [
+            'icon' => $status === 'approved' ? 'checkmark-circle' : 'close-circle',
+            'title' => $status === 'approved' ? 'Community application approved' : 'Community application rejected',
+            'message' => 'Your application to join '.$community->name.' was '.$status.'.',
+            'screen' => 'CommunityDetail',
+            'route_params' => ['communityId' => (string) $community->id],
+        ]);
 
         return response()->json(['message' => "Application {$status}.", 'status' => $status]);
     }
@@ -499,8 +524,28 @@ class SocialController extends Controller
         $status = $data['action'] === 'approve' ? 'approved' : 'rejected';
         $post->update(['status' => $status]);
         $this->cache->invalidate('posts', "post:{$post->id}", "user:{$post->user_id}", "community:{$community->id}");
+        $this->notifications->createFor($post->user, [
+            'icon' => $status === 'approved' ? 'checkmark-circle' : 'close-circle',
+            'title' => $status === 'approved' ? 'Community post approved' : 'Community post rejected',
+            'message' => 'Your post in '.$community->name.' was '.$status.'.',
+            'screen' => $status === 'approved' ? 'PostDetail' : 'CommunityDetail',
+            'route_params' => $status === 'approved'
+                ? ['postId' => (string) $post->id]
+                : ['communityId' => (string) $community->id],
+        ]);
 
         return response()->json(['message' => "Post {$status}.", 'status' => $status]);
+    }
+
+    private function notifyCommunityModerators(Community $community, User $requester, array $data): void
+    {
+        User::query()
+            ->whereKeyNot($requester->id)
+            ->where(function ($query) use ($community) {
+                $query->whereKey($community->admin_id)
+                    ->orWhereIn('role', ['admin', 'super_admin']);
+            })
+            ->each(fn (User $moderator) => $this->notifications->createFor($moderator, $data));
     }
 
     public function user(Request $request, User $user)

@@ -53,6 +53,8 @@ class SocialRepository
 
     private function visibleTo($query, User $viewer)
     {
+        $audienceColumn = $query->getModel()->qualifyColumn('audience');
+        $userIdColumn = $query->getModel()->qualifyColumn('user_id');
         $friendIds = Friendship::where('status', 'accepted')
             ->where(fn ($friendship) => $friendship->where('sender_id', $viewer->id)->orWhere('receiver_id', $viewer->id))
             ->get(['sender_id', 'receiver_id'])
@@ -63,8 +65,8 @@ class SocialRepository
             ->values();
 
         return $query->where(fn ($visibility) => $visibility
-            ->where('audience', '!=', 'Friends')
-            ->orWhereIn('user_id', $friendIds));
+            ->where($audienceColumn, '!=', 'Friends')
+            ->orWhereIn($userIdColumn, $friendIds));
     }
 
     public function createPost(User $user, array $data): Post
@@ -122,8 +124,8 @@ class SocialRepository
         $query = $user->belongsToMany(Post::class, 'saved_posts')
             ->with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
             ->withCount(['likes', 'comments', 'shares'])
-            ->where(fn ($posts) => $posts->where('status', 'approved')->orWhere('posts.user_id', $viewer->id))
-            ->where(fn ($scope) => $scope->whereNull('community_id')
+            ->where(fn ($posts) => $posts->where('posts.status', 'approved')->orWhere('posts.user_id', $viewer->id))
+            ->where(fn ($scope) => $scope->whereNull('posts.community_id')
                 ->orWhereHas('community.members', fn ($members) => $members->whereKey($viewer->id)))
             ->orderByPivot('created_at', 'desc');
 

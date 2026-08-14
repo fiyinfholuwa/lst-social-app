@@ -53,6 +53,7 @@ class SocialApiTest extends TestCase
         $this->withHeaders($headers)->postJson("/api/posts/{$post['id']}/comments", ['text' => 'Amen'])->assertCreated();
         $this->withHeaders($headers)->postJson("/api/posts/{$post['id']}/save")->assertOk()->assertJsonPath('saved', true);
         $this->withHeaders($headers)->getJson('/api/saved-posts')->assertOk()->assertJsonPath('savedPostIds.0', (string) $post['id']);
+        $this->withHeaders($headers)->getJson('/api/saved-posts?page=1')->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/users/{$other->id}/friend-request")->assertOk()->assertJsonPath('outgoingRequestIds.0', (string) $other->id);
         $chat = $this->withHeaders($headers)->postJson("/api/chats/with/{$other->id}")->assertOk()->json();

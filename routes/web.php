@@ -53,4 +53,5 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/admin/settings/profile', [AdminController::class, 'updateAdminProfile'])->name('admin.settings.profile');
     Route::patch('/admin/settings/password', [AdminController::class, 'updateAdminPassword'])->name('admin.settings.password');
     Route::patch('/admin/settings/branding', [AdminController::class, 'updateBranding'])->name('admin.settings.branding');
+    Route::patch('/admin/settings/feed-banner', [AdminController::class, 'updateFeedBanner'])->name('admin.settings.feed-banner');
 });

@@ -16,6 +16,7 @@ use App\Repositories\SocialRepository;
 use App\Repositories\NotificationRepository;
 use App\Services\CacheService;
 use App\Services\SocialService;
+use App\Services\FeedBannerService;
 use App\Services\UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,12 @@ use Illuminate\Validation\Rule;
 
 class SocialController extends Controller
 {
-    public function __construct(private SocialRepository $repo, private SocialService $service, private CacheService $cache, private UploadService $uploads, private NotificationRepository $notifications) {}
+    public function __construct(private SocialRepository $repo, private SocialService $service, private CacheService $cache, private UploadService $uploads, private NotificationRepository $notifications, private FeedBannerService $feedBanner) {}
+
+    public function feedBanner()
+    {
+        return response()->json($this->feedBanner->current());
+    }
 
     public function posts(Request $r)
     {

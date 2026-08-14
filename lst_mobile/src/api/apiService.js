@@ -107,6 +107,7 @@ const apiService = {
     return httpClient.postForm(`/chats/${chatId}/messages`, form);
   },
   getNotifications: (page = 1) => httpClient.get(`/notifications?page=${page}`),
+  getFeedBanner: () => httpClient.get('/feed-banner'),
   markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
   markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),
   registerPushToken: payload => httpClient.post('/push-tokens', payload),

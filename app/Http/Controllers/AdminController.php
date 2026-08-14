@@ -206,6 +206,12 @@ class AdminController extends Controller
                 'ios_app_url' => PlatformSetting::valueFor('ios_app_url', config('branding.ios_app_url')),
                 'android_app_url' => PlatformSetting::valueFor('android_app_url', config('branding.android_app_url')),
             ];
+            $data['feedBanner'] = [
+                'mode' => PlatformSetting::valueFor('feed_banner_mode', PlatformSetting::valueFor('announcement_enabled', '0') === '1' ? 'announcement' : 'encouragement'),
+                'announcement_title' => PlatformSetting::valueFor('announcement_title', ''),
+                'announcement_text' => PlatformSetting::valueFor('announcement_text', ''),
+                'announcement_action_url' => PlatformSetting::valueFor('announcement_action_url', ''),
+            ];
         }
 
         $view = 'admin.sections.index';
@@ -573,6 +579,24 @@ class AdminController extends Controller
         foreach ($data as $key => $value) PlatformSetting::put($key, trim($value));
 
         return back()->with('status', 'Landing-page branding and download links updated.');
+    }
+
+    public function updateFeedBanner(Request $request)
+    {
+        $data = $request->validate([
+            'feed_banner_mode' => ['required', Rule::in(['encouragement', 'announcement'])],
+            'announcement_title' => 'nullable|string|max:80',
+            'announcement_text' => 'required_if:feed_banner_mode,announcement|nullable|string|max:240',
+            'announcement_action_url' => 'nullable|url:https|max:2000',
+        ]);
+
+        PlatformSetting::put('feed_banner_mode', $data['feed_banner_mode']);
+        PlatformSetting::put('announcement_enabled', $data['feed_banner_mode'] === 'announcement' ? '1' : '0');
+        PlatformSetting::put('announcement_title', trim($data['announcement_title'] ?? ''));
+        PlatformSetting::put('announcement_text', trim($data['announcement_text'] ?? ''));
+        PlatformSetting::put('announcement_action_url', trim($data['announcement_action_url'] ?? ''));
+
+        return back()->with('status', $data['feed_banner_mode'] === 'announcement' ? 'Feed announcement published.' : 'Daily encouragement restored.');
     }
 
     private function quizData(Request $request): array

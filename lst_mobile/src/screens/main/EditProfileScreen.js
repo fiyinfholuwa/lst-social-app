@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -32,7 +32,7 @@ const displayDate = value => value
   ? parseDate(value).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
   : 'Select your date of birth';
 
-function ProfileField({ label, value, onChangeText, placeholder, multiline = false, keyboardType, theme }) {
+function ProfileField({ label, value, onChangeText, onFocus, placeholder, multiline = false, keyboardType, theme }) {
   return (
     <View style={styles.field}>
       <Text style={[styles.label, { color: theme.secondaryText }]}>{label}</Text>
@@ -43,6 +43,7 @@ function ProfileField({ label, value, onChangeText, placeholder, multiline = fal
         placeholderTextColor={theme.secondaryText}
         multiline={multiline}
         keyboardType={keyboardType}
+        onFocus={onFocus}
         returnKeyType={multiline ? 'default' : 'next'}
         style={[styles.input, multiline && styles.multiline, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
       />
@@ -58,7 +59,19 @@ export default function EditProfileScreen({ navigation }) {
   const [avatar, setAvatar] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const scrollViewRef = useRef(null);
   const update = (key, value) => setForm(current => ({ ...current, [key]: value }));
+
+  const keepFieldAboveKeyboard = event => {
+    const inputHandle = event.nativeEvent.target;
+    setTimeout(() => {
+      scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+        inputHandle,
+        120,
+        true,
+      );
+    }, Platform.OS === 'android' ? 300 : 100);
+  };
 
   const pickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -92,11 +105,18 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   const field = (label, key, props = {}) => (
-    <ProfileField label={label} value={form[key]} onChangeText={value => update(key, value)} theme={theme} {...props} />
+    <ProfileField label={label} value={form[key]} onChangeText={value => update(key, value)} onFocus={keepFieldAboveKeyboard} theme={theme} {...props} />
   );
 
   return <KeyboardSafeView style={{ backgroundColor: theme.background }}>
-  <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+  <ScrollView
+    ref={scrollViewRef}
+    style={styles.scrollView}
+    contentContainerStyle={styles.content}
+    keyboardShouldPersistTaps="handled"
+    keyboardDismissMode="on-drag"
+    automaticallyAdjustKeyboardInsets
+  >
     <TouchableOpacity style={styles.avatarButton} onPress={pickAvatar} accessibilityLabel="Choose a profile photo">
       <View>
         <Avatar uri={avatar?.uri || user.avatar} size={112} style={[styles.avatar, { backgroundColor: theme.border }]} accessibilityLabel="Profile photo preview" />
@@ -143,5 +163,5 @@ export default function EditProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 18, paddingBottom: 45 }, avatarButton: { alignItems: 'center', marginBottom: 22 }, avatar: { width: 112, height: 112, borderRadius: 56 }, cameraBadge: { position: 'absolute', right: -2, bottom: 1, width: 35, height: 35, borderRadius: 18, borderWidth: 3, alignItems: 'center', justifyContent: 'center' }, changePhoto: { fontSize: 13, fontWeight: '800', marginTop: 10 }, photoHelp: { maxWidth: 320, textAlign: 'center', fontSize: 11, lineHeight: 17, marginTop: 6 }, nameFields: { flexDirection: 'row', gap: 10 }, nameField: { flex: 1 }, field: { marginBottom: 15 }, label: { fontSize: 11, fontWeight: '800', marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.5 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 14, paddingHorizontal: 13, fontSize: 14 }, multiline: { minHeight: 100, paddingTop: 13, textAlignVertical: 'top' }, dateButton: { minHeight: 50, borderWidth: 1, borderRadius: 14, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }, dateText: { flex: 1, fontSize: 14 }, options: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 }, option: { paddingHorizontal: 11, paddingVertical: 9, borderWidth: 1, borderRadius: 999 }, privacy: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderWidth: 1, borderRadius: 16, marginTop: 4 }, privacyCopy: { flex: 1 }, privacyTitle: { fontSize: 14, fontWeight: '800' }, privacyText: { fontSize: 11, lineHeight: 17, marginTop: 4 }, save: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 20 }, saveText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  scrollView: { flex: 1 }, content: { padding: 18, paddingBottom: 160 }, avatarButton: { alignItems: 'center', marginBottom: 22 }, avatar: { width: 112, height: 112, borderRadius: 56 }, cameraBadge: { position: 'absolute', right: -2, bottom: 1, width: 35, height: 35, borderRadius: 18, borderWidth: 3, alignItems: 'center', justifyContent: 'center' }, changePhoto: { fontSize: 13, fontWeight: '800', marginTop: 10 }, photoHelp: { maxWidth: 320, textAlign: 'center', fontSize: 11, lineHeight: 17, marginTop: 6 }, nameFields: { flexDirection: 'row', gap: 10 }, nameField: { flex: 1 }, field: { marginBottom: 15 }, label: { fontSize: 11, fontWeight: '800', marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.5 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 14, paddingHorizontal: 13, fontSize: 14 }, multiline: { minHeight: 100, paddingTop: 13, textAlignVertical: 'top' }, dateButton: { minHeight: 50, borderWidth: 1, borderRadius: 14, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }, dateText: { flex: 1, fontSize: 14 }, options: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 }, option: { paddingHorizontal: 11, paddingVertical: 9, borderWidth: 1, borderRadius: 999 }, privacy: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderWidth: 1, borderRadius: 16, marginTop: 4 }, privacyCopy: { flex: 1 }, privacyTitle: { fontSize: 14, fontWeight: '800' }, privacyText: { fontSize: 11, lineHeight: 17, marginTop: 4 }, save: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 20 }, saveText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
 });

@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   blockedCount: { fontSize: 12, fontWeight: '700' },
   searchBox: { minHeight: 48, marginHorizontal: 14, marginTop: 10, paddingHorizontal: 13, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 },
-  content: { padding: 14 },
+  content: { padding: 14, paddingBottom: 36 },
   moreLoader: { paddingVertical: 18 },
   sectionHeading: { marginTop: 5, marginBottom: 9, paddingHorizontal: 3, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
   emptyContent: { flexGrow: 1 },

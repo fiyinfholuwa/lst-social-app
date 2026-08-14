@@ -75,7 +75,7 @@ export default function FriendRequestsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 14 },
+  content: { padding: 14, paddingBottom: 36 },
   emptyContent: { flexGrow: 1 },
   request: { flexDirection: 'row', padding: 14, borderRadius: 18, borderWidth: 1, marginBottom: 10 },
   avatar: { width: 58, height: 58, borderRadius: 29, marginRight: 12 },

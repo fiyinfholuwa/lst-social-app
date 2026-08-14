@@ -31,6 +31,7 @@
     "expo-image-manipulator": "~56.0.24",
     "expo-image-picker": "~56.0.23",
     "expo-linear-gradient": "~56.0.4",
+    "expo-navigation-bar": "~56.0.3",
     "expo-notifications": "~56.0.23",
     "expo-secure-store": "~56.0.4",
     "expo-splash-screen": "~56.0.14",

@@ -73,7 +73,7 @@ export default function BlockedAccountsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 14 },
+  content: { padding: 14, paddingBottom: 36 },
   emptyContent: { flexGrow: 1 },
   row: { flexDirection: 'row', alignItems: 'center', padding: 13, borderWidth: 1, borderRadius: 16, marginBottom: 10 },
   friendsLink: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 13, borderRadius: 14, marginBottom: 14 },

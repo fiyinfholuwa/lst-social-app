@@ -5,15 +5,18 @@
     "version": "1.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "androidNavigationBar": {
-      "backgroundColor": "#FFFFFF",
-      "barStyle": "dark-content",
-      "enforceContrast": false
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "plugins": [
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "hidden": true,
+          "style": "light"
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -28,7 +31,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF",
           "dark": {
-            "backgroundColor": "#FFFFFF"
+            "backgroundColor": "#1C1118"
           }
         }
       ],

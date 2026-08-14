@@ -12,6 +12,7 @@ use App\Models\Quiz;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\CacheService;
+use App\Services\AccountDeletionService;
 use App\Services\UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -376,12 +377,12 @@ class AdminController extends Controller
         return view('admin', ['section' => 'posts', 'postPage' => true, 'post' => $post]);
     }
 
-    public function destroyMember(User $user)
+    public function destroyMember(User $user, AccountDeletionService $accountDeletion)
     {
         abort_if(request()->user()->is($user), 422, 'You cannot remove your own account.');
         abort_if(request()->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can remove an administrator.');
         $name = $user->name;
-        $user->delete();
+        $accountDeletion->delete($user);
 
         return back()->with('status', "{$name} was removed.");
     }

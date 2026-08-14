@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AuthService;
+use App\Services\AccountDeletionService;
 use App\Services\EmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class AuthController extends Controller
     public function __construct(
         private AuthService $authService,
         private EmailService $emailService,
+        private AccountDeletionService $accountDeletion,
     ) {}
 
     public function register(RegisterRequest $request): JsonResponse
@@ -171,8 +173,7 @@ class AuthController extends Controller
         if (! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages(['password' => 'The password is incorrect.']);
         }
-        $user->tokens()->delete();
-        $user->delete();
+        $this->accountDeletion->delete($user);
 
         return response()->json(['message' => 'Your account has been permanently deleted.']);
     }

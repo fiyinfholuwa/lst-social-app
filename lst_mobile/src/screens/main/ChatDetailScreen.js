@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {
   AudioModule,
   RecordingPresets,
@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
+import KeyboardSafeView from '../../components/KeyboardSafeView';
 import EmojiText from '../../components/EmojiText';
 import EmojiPicker from '../../components/EmojiPicker';
 import Avatar from '../../components/Avatar';
@@ -229,7 +230,7 @@ export default function ChatDetailScreen({ route, navigation }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardSafeView style={{ backgroundColor: theme.background }} keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
       {chat?.withUser ? (
         <TouchableOpacity
           style={[styles.profileHeader, { backgroundColor: theme.card, borderColor: theme.border }]}
@@ -339,7 +340,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         </View>
       )}
       {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
-    </View>
+    </KeyboardSafeView>
   );
 }
 

@@ -8,6 +8,7 @@ import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
 import EmojiPicker from '../../components/EmojiPicker';
+import KeyboardSafeView from '../../components/KeyboardSafeView';
 import { useTheme } from '../../context/ThemeContext';
 
 const MAX_IMAGES = 6;
@@ -116,7 +117,8 @@ export default function EditPostScreen({ route, navigation }) {
 
   if (!post) return <Loader />;
   return (
-    <ScrollView style={[styles.screen, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
+    <KeyboardSafeView style={{ backgroundColor: theme.background }}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always" keyboardDismissMode="on-drag">
       <Text style={[styles.title, { color: theme.text }]}>Update your conversation.</Text>
       <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Update your words and photos before sharing the changes.</Text>
 
@@ -165,6 +167,7 @@ export default function EditPostScreen({ route, navigation }) {
         </LinearGradient>
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardSafeView>
   );
 }
 

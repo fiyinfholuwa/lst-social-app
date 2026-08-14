@@ -47,7 +47,7 @@ export default function PasswordFlowScreen({ navigation }) {
   };
 
   const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }];
-  return <KeyboardAvoidingView style={[styles.screen, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+  return <KeyboardAvoidingView style={[styles.screen, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <LinearGradient colors={[theme.background, theme.accentSoft, theme.secondaryAccentSoft]} locations={[0.15, 0.62, 1]} style={StyleSheet.absoluteFill} />
     <View style={[styles.orb, styles.orbTop, { backgroundColor: theme.warmAccent }]} />
     <View style={[styles.orb, styles.orbSide, { backgroundColor: theme.secondaryAccent }]} />

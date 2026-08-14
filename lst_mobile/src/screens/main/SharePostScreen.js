@@ -5,6 +5,7 @@ import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
 import EmojiText from '../../components/EmojiText';
 import Loader from '../../components/Loader';
+import KeyboardSafeView from '../../components/KeyboardSafeView';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -48,7 +49,8 @@ export default function SharePostScreen({ route, navigation }) {
   const images = post.images?.length ? post.images : post.image ? [post.image] : [];
 
   return (
-    <ScrollView style={[styles.screen, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardSafeView style={{ backgroundColor: theme.background }}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <View style={styles.intro}>
         <View style={[styles.icon, { backgroundColor: theme.primarySoft }]}><AppIcon name="share-alt" size={20} color={theme.primary} /></View>
         <View style={styles.introCopy}>
@@ -85,6 +87,7 @@ export default function SharePostScreen({ route, navigation }) {
         {submitting ? <ActivityIndicator color="#FFFFFF" /> : <><AppIcon name="share-alt" size={16} color="#FFFFFF" /><Text style={styles.buttonText}>Share to my timeline</Text></>}
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardSafeView>
   );
 }
 

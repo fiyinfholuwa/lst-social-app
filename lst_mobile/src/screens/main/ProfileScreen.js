@@ -5,6 +5,7 @@ import Avatar from '../../components/Avatar';
 import Icon from '../../components/AppIcon';
 import ScreenHeader from '../../components/ScreenHeader';
 import PasswordInput from '../../components/PasswordInput';
+import KeyboardSafeView from '../../components/KeyboardSafeView';
 import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useSavedPosts } from '../../context/SavedPostsContext';
@@ -185,6 +186,7 @@ export default function ProfileScreen({ navigation }) {
       </ScrollView>
 
       <Modal visible={otpVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => !checkingOtp && setOtpVisible(false)}>
+        <KeyboardSafeView>
         <Pressable style={styles.modalBackdrop} onPress={() => !checkingOtp && setOtpVisible(false)}>
           <Pressable style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
             <TouchableOpacity
@@ -215,9 +217,11 @@ export default function ProfileScreen({ navigation }) {
             <TouchableOpacity style={styles.modalLink} onPress={verifyEmail} disabled={verifying || checkingOtp}><Text style={[styles.modalLinkText, { color: theme.primary }]}>{verifying ? 'Sending…' : 'Send a new code'}</Text></TouchableOpacity>
           </Pressable>
         </Pressable>
+        </KeyboardSafeView>
       </Modal>
 
       <Modal visible={deleteVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => !deleting && setDeleteVisible(false)}>
+        <KeyboardSafeView>
         <Pressable style={styles.modalBackdrop} onPress={() => !deleting && setDeleteVisible(false)}>
           <Pressable style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
             <View style={[styles.modalIcon, { backgroundColor: theme.accentSoft }]}><Icon name="trash" size={24} color={theme.danger} /></View>
@@ -227,6 +231,7 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.modalActions}><TouchableOpacity style={[styles.modalCancel, { borderColor: theme.border }]} onPress={() => setDeleteVisible(false)} disabled={deleting}><Text style={[styles.modalCancelText, { color: theme.text }]}>Cancel</Text></TouchableOpacity><TouchableOpacity style={[styles.modalDelete, { backgroundColor: theme.danger }]} onPress={deleteAccount} disabled={deleting}>{deleting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.modalPrimaryText}>Delete forever</Text>}</TouchableOpacity></View>
           </Pressable>
         </Pressable>
+        </KeyboardSafeView>
       </Modal>
     </View>
   );

@@ -38,7 +38,7 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient
         colors={[theme.background, theme.accentSoft, theme.secondaryAccentSoft]}
         locations={[0.15, 0.62, 1]}

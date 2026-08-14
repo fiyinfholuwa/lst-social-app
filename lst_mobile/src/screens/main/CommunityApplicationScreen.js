@@ -5,6 +5,7 @@ import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
 import NoticeModal from '../../components/NoticeModal';
 import QuickMaritalReadingGate from '../../components/QuickMaritalReadingGate';
+import KeyboardSafeView from '../../components/KeyboardSafeView';
 import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -121,7 +122,8 @@ export default function CommunityApplicationScreen({ route, navigation }) {
 
   return (
     <>
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardSafeView style={{ backgroundColor: theme.background }}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <Text style={[styles.eyebrow, { color: theme.primary }]}>MEMBERSHIP APPLICATION</Text>
       <Text style={[styles.title, { color: theme.text }]}>{requirement.title}</Text>
       <Text style={[styles.intro, { color: theme.secondaryText }]}>
@@ -269,6 +271,7 @@ export default function CommunityApplicationScreen({ route, navigation }) {
         <Text style={styles.submitText}>{submitting ? 'Submitting...' : 'Submit for review'}</Text>
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardSafeView>
     <NoticeModal visible={Boolean(notice)} title={notice?.title} message={notice?.message} tone={notice?.tone} buttonLabel={notice?.submitted ? 'Done' : 'Review form'} onClose={closeNotice} />
     </>
   );

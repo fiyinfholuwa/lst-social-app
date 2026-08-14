@@ -6,6 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
+import KeyboardSafeView from '../../components/KeyboardSafeView';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -94,7 +95,8 @@ export default function EditProfileScreen({ navigation }) {
     <ProfileField label={label} value={form[key]} onChangeText={value => update(key, value)} theme={theme} {...props} />
   );
 
-  return <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+  return <KeyboardSafeView style={{ backgroundColor: theme.background }}>
+  <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <TouchableOpacity style={styles.avatarButton} onPress={pickAvatar} accessibilityLabel="Choose a profile photo">
       <View>
         <Avatar uri={avatar?.uri || user.avatar} size={112} style={[styles.avatar, { backgroundColor: theme.border }]} accessibilityLabel="Profile photo preview" />
@@ -136,7 +138,8 @@ export default function EditProfileScreen({ navigation }) {
     {field('Place of work', 'workplace', { placeholder: 'Where do you work?' })}
     <View style={[styles.privacy, { backgroundColor: theme.card, borderColor: theme.border }]}><View style={styles.privacyCopy}><Text style={[styles.privacyTitle, { color: theme.text }]}>Private profile</Text><Text style={[styles.privacyText, { color: theme.secondaryText }]}>Hide your bio, hobbies, relationship status, birth date and work information from visitors.</Text></View><Switch value={form.is_profile_private} onValueChange={value => update('is_profile_private', value)} trackColor={{ true: theme.primary }} /></View>
     <TouchableOpacity style={[styles.save, { backgroundColor: theme.primary }]} onPress={save} disabled={saving}>{saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>Save profile</Text>}</TouchableOpacity>
-  </ScrollView>;
+  </ScrollView>
+  </KeyboardSafeView>;
 }
 
 const styles = StyleSheet.create({

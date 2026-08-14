@@ -10,6 +10,7 @@ import apiService from '../../api/apiService';
 import Icon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
 import EmojiPicker from '../../components/EmojiPicker';
+import KeyboardSafeView from '../../components/KeyboardSafeView';
 
 const MAX_IMAGES = 6;
 
@@ -124,7 +125,8 @@ export default function CreatePostScreen({ navigation, route }) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
+    <KeyboardSafeView style={{ backgroundColor: theme.background }}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always" keyboardDismissMode="on-drag">
       <Text style={[styles.eyebrow, { color: theme.accent }]}>{communityId ? 'COMMUNITY POST' : 'CREATE A POST'}</Text>
       <Text style={[styles.heading, { color: theme.text }]}>Share what’s on your heart.</Text>
       <Text style={[styles.subheading, { color: theme.secondaryText }]}>{communityId ? `Community posts stay inside ${communityName || 'this community'}. Member posts are reviewed before appearing.` : ['admin', 'super_admin'].includes(user?.role) ? 'Your administrator post will be visible to everyone.' : 'Your post will be visible to your friends.'}</Text>
@@ -199,6 +201,7 @@ export default function CreatePostScreen({ navigation, route }) {
         </LinearGradient>
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardSafeView>
   );
 }
 

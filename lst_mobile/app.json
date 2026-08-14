@@ -48,6 +48,8 @@
       }
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS"
@@ -55,7 +57,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#F7F8FB"
       },
-      "package": "com.fiyinfholuwa.lstsocial"
+      "package": "com.lstsocial.com"
     },
     "extra": {
       "eas": {

@@ -43,7 +43,7 @@ export default function FeedbackScreen({ route, navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={[styles.screen, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[styles.screen, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={[styles.intro, { backgroundColor: theme.primarySoft }]}>
           <AppIcon name="shield-checkmark-outline" size={20} color={theme.primary} />

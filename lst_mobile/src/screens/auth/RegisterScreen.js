@@ -100,7 +100,7 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient colors={[theme.background, theme.secondaryAccentSoft, theme.accentSoft]} style={StyleSheet.absoluteFill} />
       <View style={[styles.orb, styles.orbTop, { backgroundColor: theme.secondaryAccent }]} />
       <View style={[styles.orb, styles.orbBottom, { backgroundColor: theme.warmAccent }]} />

@@ -7,6 +7,8 @@ use App\Http\Resources\UserResource;
 use App\Models\Community;
 use App\Models\CommunityApplication;
 use App\Models\Comment;
+use App\Models\ContentReport;
+use App\Models\Message;
 use App\Models\Notification;
 use App\Models\Post;
 use App\Models\LearningArticle;
@@ -30,6 +32,59 @@ class SocialController extends Controller
     public function feedBanner()
     {
         return response()->json($this->feedBanner->current());
+    }
+
+    public function reportContent(Request $request)
+    {
+        $data = $request->validate([
+            'targetType' => ['required', Rule::in(['post', 'user', 'message'])],
+            'targetId' => 'required|integer|min:1',
+            'reason' => ['required', Rule::in(['harassment', 'hate', 'sexual_content', 'violence', 'spam', 'impersonation', 'privacy', 'self_harm', 'other'])],
+            'details' => 'nullable|string|max:1000',
+        ]);
+
+        $reporter = $request->user();
+        $targetId = (int) $data['targetId'];
+        $reportedUserId = null;
+        $excerpt = null;
+
+        if ($data['targetType'] === 'user') {
+            $target = User::findOrFail($targetId);
+            abort_if($target->is($reporter), 422, 'You cannot report your own account.');
+            $reportedUserId = $target->id;
+            $excerpt = $target->name;
+        } elseif ($data['targetType'] === 'post') {
+            $this->service->post($targetId, $reporter);
+            $target = Post::findOrFail($targetId);
+            abort_if($target->user_id === $reporter->id, 422, 'You cannot report your own post.');
+            $reportedUserId = $target->user_id;
+            $excerpt = $target->content;
+        } else {
+            $target = Message::with('chat.users:id')->findOrFail($targetId);
+            abort_unless($target->chat->users->contains('id', $reporter->id), 403, 'You cannot report a message outside your conversations.');
+            abort_if($target->sender_id === $reporter->id, 422, 'You cannot report your own message.');
+            $reportedUserId = $target->sender_id;
+            $excerpt = $target->type === 'voice' ? '[Voice note]' : $target->text;
+        }
+
+        abort_if(ContentReport::where([
+            'reporter_id' => $reporter->id,
+            'target_type' => $data['targetType'],
+            'target_id' => $targetId,
+            'status' => 'pending',
+        ])->exists(), 422, 'You have already reported this item.');
+
+        $report = ContentReport::create([
+            'reporter_id' => $reporter->id,
+            'reported_user_id' => $reportedUserId,
+            'target_type' => $data['targetType'],
+            'target_id' => $targetId,
+            'reason' => $data['reason'],
+            'details' => trim($data['details'] ?? '') ?: null,
+            'content_excerpt' => mb_substr((string) $excerpt, 0, 1000),
+        ]);
+
+        return response()->json(['id' => (string) $report->id, 'message' => 'Report submitted for review.'], 201);
     }
 
     public function posts(Request $r)

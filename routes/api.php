@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}/posts', [SocialController::class, 'userPosts']);
     Route::get('/posts', [SocialController::class, 'posts']);
     Route::get('/feed-banner', [SocialController::class, 'feedBanner']);
+    Route::post('/reports', [SocialController::class, 'reportContent'])->middleware('throttle:10,1');
     Route::post('/posts', [SocialController::class, 'createPost']);
     Route::patch('/posts/{post}', [SocialController::class, 'updatePost']);
     Route::delete('/posts/{post}', [SocialController::class, 'deletePost']);

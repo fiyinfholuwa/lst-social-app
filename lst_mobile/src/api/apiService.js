@@ -116,6 +116,7 @@ const apiService = {
   verifyEmailOtp: code => httpClient.post('/email/verify-otp', { code }),
   deleteAccount: password => httpClient.delete('/user', { body: { password } }),
   submitSupportRequest: (type, subject, message) => httpClient.post('/support-requests', { type, subject, message }),
+  submitReport: (targetType, targetId, reason, details) => httpClient.post('/reports', { targetType, targetId, reason, details: details || undefined }),
 };
 
 export default apiService;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Community;
 use App\Models\CommunityApplication;
+use App\Models\ContentReport;
 use App\Models\Post;
 use App\Models\LearningArticle;
 use App\Models\PlatformSetting;
@@ -159,8 +160,6 @@ class AdminController extends Controller
         }
 
         if ($section === 'moderation') {
-            $data['pendingApplications'] = CommunityApplication::with(['user:id,name,email', 'community:id,name'])->where('status', 'pending')->latest()->paginate(20, ['*'], 'applications_page');
-            $data['pendingPosts'] = Post::with(['user:id,name', 'community:id,name'])->whereNotNull('community_id')->where('status', 'pending')->latest()->paginate(20, ['*'], 'posts_page');
             $data['supportRequests'] = SupportRequest::with('user:id,name,email')->latest()->paginate(20, ['*'], 'support_page');
         }
 
@@ -579,6 +578,52 @@ class AdminController extends Controller
         foreach ($data as $key => $value) PlatformSetting::put($key, trim($value));
 
         return back()->with('status', 'Landing-page branding and download links updated.');
+    }
+
+    public function updateContentReport(Request $request, ContentReport $contentReport)
+    {
+        $data = $request->validate(['status' => ['required', Rule::in(['pending', 'reviewed', 'actioned', 'dismissed'])]]);
+        $contentReport->update([
+            'status' => $data['status'],
+            'reviewed_by' => $data['status'] === 'pending' ? null : $request->user()->id,
+            'reviewed_at' => $data['status'] === 'pending' ? null : now(),
+        ]);
+
+        return $request->expectsJson()
+            ? response()->json(['message' => 'Content report updated.'])
+            : back()->with('status', 'Content report updated.');
+    }
+
+    public function contentReportHistory(Request $request)
+    {
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::in(['pending', 'reviewed', 'actioned', 'dismissed'])],
+            'type' => ['nullable', Rule::in(['post', 'user', 'message'])],
+            'search' => 'nullable|string|max:100',
+            'page' => 'nullable|integer|min:1',
+        ]);
+        $search = trim($filters['search'] ?? '');
+        $reports = ContentReport::query()
+            ->with(['reporter:id,name,email', 'reportedUser:id,name,email', 'reviewer:id,name'])
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('target_type', $type))
+            ->when($search !== '', fn ($query) => $query->where(function ($reports) use ($search) {
+                $reports->where('content_excerpt', 'like', "%{$search}%")
+                    ->orWhere('details', 'like', "%{$search}%")
+                    ->orWhereHas('reporter', fn ($users) => $users->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+                    ->orWhereHas('reportedUser', fn ($users) => $users->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"));
+            }))
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+            ->latest()
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('admin.sections.report-history', [
+            'reports' => $reports,
+            'reportStatus' => $filters['status'] ?? '',
+            'reportType' => $filters['type'] ?? '',
+            'reportSearch' => $search,
+        ]);
     }
 
     public function updateFeedBanner(Request $request)

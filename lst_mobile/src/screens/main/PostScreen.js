@@ -26,6 +26,7 @@ import PostOptionsMenu from '../../components/PostOptionsMenu';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import EmojiPicker from '../../components/EmojiPicker';
 import EmojiText from '../../components/EmojiText';
+import ReportModal from '../../components/ReportModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DETAIL_IMAGE_WIDTH = Dimensions.get('window').width - 36;
@@ -108,6 +109,7 @@ export default function PostScreen({ route, navigation }) {
   const [editingComment, setEditingComment] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [reportingPost, setReportingPost] = useState(false);
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const { user } = useAuth();
@@ -312,7 +314,11 @@ export default function PostScreen({ route, navigation }) {
             </Text>
             {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
           </TouchableOpacity>
-          {String(post.userId) === String(user?.id) ? <PostOptionsMenu onEdit={() => navigation.navigate('EditPost', { postId: post.id })} onDelete={deletePost} /> : null}
+          <PostOptionsMenu
+            onEdit={String(post.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: post.id }) : undefined}
+            onDelete={String(post.userId) === String(user?.id) ? deletePost : undefined}
+            onReport={String(post.userId) !== String(user?.id) ? () => setReportingPost(true) : undefined}
+          />
         </View>
 
         <View style={styles.contextRow}>
@@ -462,6 +468,7 @@ export default function PostScreen({ route, navigation }) {
           <AppIcon name="arrow-up" solid size={16} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
+      <ReportModal visible={reportingPost} targetType="post" targetId={post.id} targetName="post" onClose={result => { setReportingPost(false); if (result?.submitted) Alert.alert('Report received', 'Thank you. The moderation team will review this post.'); }} />
     </KeyboardAvoidingView>
   );
 }

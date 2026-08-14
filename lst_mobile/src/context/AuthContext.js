@@ -1,8 +1,8 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-        import AsyncStorage from '@react-native-async-storage/async-storage';
         import apiService from '../api/apiService';
         import { setUnauthorizedHandler } from '../api/httpClient';
         import { unregisterCurrentPushToken } from '../services/pushNotifications';
+        import { getAuthToken, removeAuthToken, setAuthToken } from '../utils/authTokenStorage';
 
         const AuthContext = createContext();
 
@@ -18,12 +18,12 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 
           useEffect(() => {
             const loadUser = async () => {
-              const token = await AsyncStorage.getItem('@auth_token');
+              const token = await getAuthToken();
               if (token) {
                 try {
                   await refreshUser();
                 } catch (e) {
-                  await AsyncStorage.removeItem('@auth_token');
+                  await removeAuthToken();
                   setUser(null);
                 }
               }
@@ -36,14 +36,14 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 
           const login = async (email, password) => {
             const data = await apiService.login(email, password);
-            await AsyncStorage.setItem('@auth_token', data.token);
+            await setAuthToken(data.token);
             setUser(data.user);
             return data;
           };
 
           const register = async (firstName, lastName, email, password, passwordConfirmation) => {
             const data = await apiService.register(firstName, lastName, email, password, passwordConfirmation);
-            await AsyncStorage.setItem('@auth_token', data.token);
+            await setAuthToken(data.token);
             setUser(data.user);
             return data;
           };
@@ -55,7 +55,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
             } catch (e) {
               // token may already be invalid/expired server-side; proceed with local logout regardless
             }
-            await AsyncStorage.removeItem('@auth_token');
+            await removeAuthToken();
             setUser(null);
           };
 

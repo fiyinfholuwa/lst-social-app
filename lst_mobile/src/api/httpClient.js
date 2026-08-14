@@ -1,7 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './config';
+import { getAuthToken, removeAuthToken } from '../utils/authTokenStorage';
 
-const AUTH_TOKEN_KEY = '@auth_token';
 let unauthorizedHandler = null;
 let connectivityHandler = null;
 
@@ -35,7 +34,7 @@ async function request(path, { method = 'GET', body, auth = true, formData = fal
   if (!formData) headers['Content-Type'] = 'application/json';
 
   if (auth) {
-    const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    const token = await getAuthToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
@@ -79,7 +78,7 @@ async function request(path, { method = 'GET', body, auth = true, formData = fal
 
   if (!response.ok) {
     if (response.status === 401 && auth) {
-      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+      await removeAuthToken();
       unauthorizedHandler?.();
     }
     const fallbackMessage = response.status === 413

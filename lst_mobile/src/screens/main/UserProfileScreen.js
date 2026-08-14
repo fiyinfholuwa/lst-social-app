@@ -6,6 +6,7 @@ import Avatar from '../../components/Avatar';
 import ConfirmModal from '../../components/ConfirmModal';
 import Loader from '../../components/Loader';
 import PostCard from '../../components/PostCard';
+import ReportModal from '../../components/ReportModal';
 import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useSavedPosts } from '../../context/SavedPostsContext';
@@ -16,6 +17,7 @@ export default function UserProfileScreen({ route, navigation }) {
   const [profile, setProfile] = useState(null);
   const [showCancelRequest, setShowCancelRequest] = useState(false);
   const [cancellingRequest, setCancellingRequest] = useState(false);
+  const [reportingUser, setReportingUser] = useState(false);
   const { user } = useAuth();
   const { theme } = useTheme();
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
@@ -219,7 +221,12 @@ export default function UserProfileScreen({ route, navigation }) {
         ) : null}
       </View> : null}
 
-      {!isOwnProfile && relationship === 'friends' ? <View style={[styles.accountActions, { borderTopColor: theme.border }]}>
+      {!isOwnProfile ? <View style={[styles.accountActions, { borderTopColor: theme.border }]}>
+        <TouchableOpacity style={styles.accountAction} onPress={() => setReportingUser(true)}>
+          <AppIcon name="flag" size={15} color={theme.danger} />
+          <Text style={[styles.accountActionText, { color: theme.danger }]}>Report</Text>
+        </TouchableOpacity>
+        {relationship === 'friends' ? <>
           <TouchableOpacity style={styles.accountAction} onPress={confirmUnfriend}>
             <AppIcon name="user-minus" size={15} color={theme.secondaryText} />
             <Text style={[styles.accountActionText, { color: theme.secondaryText }]}>Unfriend</Text>
@@ -228,6 +235,7 @@ export default function UserProfileScreen({ route, navigation }) {
           <AppIcon name="ban" size={15} color={theme.danger} />
           <Text style={[styles.accountActionText, { color: theme.danger }]}>Block account</Text>
         </TouchableOpacity>
+        </> : null}
       </View> : null}
 
       {!isOwnProfile && relationship !== 'blocked' ? <View style={[styles.notice, { backgroundColor: theme.primarySoft }]}>
@@ -276,6 +284,7 @@ export default function UserProfileScreen({ route, navigation }) {
         onCancel={() => setShowCancelRequest(false)}
         onConfirm={confirmCancelRequest}
       />
+      <ReportModal visible={reportingUser} targetType="user" targetId={userId} targetName={profile.name} onClose={result => { setReportingUser(false); if (result?.submitted) Alert.alert('Report received', 'Thank you. The moderation team will review this account.'); }} />
     </ScrollView>
   );
 }

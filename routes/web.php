@@ -25,6 +25,7 @@ Route::post('/admin/login', [AdminController::class, 'login'])->middleware('thro
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout');
     Route::get('/admin/{section?}', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/moderation/reports/history', [AdminController::class, 'contentReportHistory'])->name('admin.reports.history');
     Route::post('/admin/members', [AdminController::class, 'storeMember'])->name('admin.members.store');
     Route::get('/admin/members/{user}', [AdminController::class, 'showMember'])->name('admin.members.show');
     Route::patch('/admin/members/{user}', [AdminController::class, 'updateMember'])->name('admin.members.update');
@@ -50,6 +51,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/admin/articles/{article}', [AdminController::class, 'updateArticle'])->name('admin.articles.update');
     Route::delete('/admin/articles/{article}', [AdminController::class, 'destroyArticle'])->name('admin.articles.destroy');
     Route::patch('/admin/support-requests/{supportRequest}', [AdminController::class, 'updateSupportRequest'])->name('admin.support.update');
+    Route::patch('/admin/content-reports/{contentReport}', [AdminController::class, 'updateContentReport'])->name('admin.reports.update');
     Route::patch('/admin/settings/profile', [AdminController::class, 'updateAdminProfile'])->name('admin.settings.profile');
     Route::patch('/admin/settings/password', [AdminController::class, 'updateAdminPassword'])->name('admin.settings.password');
     Route::patch('/admin/settings/branding', [AdminController::class, 'updateBranding'])->name('admin.settings.branding');

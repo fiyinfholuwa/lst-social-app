@@ -28,6 +28,7 @@ const OUTLINE_ICONS = {
   'create-outline': 'pencil-outline',
   'ellipsis-h': 'ellipsis-horizontal',
   'file-alt': 'document-text-outline',
+  flag: 'flag-outline',
   heart: 'heart-outline',
   happy: 'happy-outline',
   'heart-outline': 'heart-outline',

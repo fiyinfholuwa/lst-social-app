@@ -53,6 +53,7 @@
         @media(max-width:480px){.settings-nav a{flex-basis:185px}.settings-nav a small{display:none}}
         .settings-layout.tabs-ready .settings-section{display:none}.settings-layout.tabs-ready .settings-section.active{display:block}.settings-layout.tabs-ready .settings-nav a.active{background:var(--navy);color:#fff}.settings-layout.tabs-ready .settings-nav a.active>span{background:var(--red);color:#fff}.settings-layout.tabs-ready .settings-nav a.active small{color:#cbd5e1}.settings-layout.tabs-ready .settings-account-grid{display:block}
         .menu-btn{display:grid}.sidebar{transition:transform .24s ease}.app{transition:grid-template-columns .24s ease}.app.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}.app.sidebar-collapsed .sidebar{transform:translateX(-105%)}
+        .report-history-panel{min-height:330px;margin-bottom:22px;transition:opacity .18s}.report-history-panel.loading{opacity:.55}.report-loading,.report-load-error{min-height:285px;display:grid;place-content:center;justify-items:center;gap:10px;color:var(--muted);text-align:center}.report-loading span{width:28px;height:28px;border:3px solid #dfe4ec;border-top-color:var(--red);border-radius:50%;animation:report-spin .7s linear infinite}.report-load-error strong{color:var(--navy)}@keyframes report-spin{to{transform:rotate(360deg)}}.report-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 170px 160px auto auto;gap:9px;margin-bottom:17px}.report-toolbar input,.report-toolbar select,.report-status-form select{height:42px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 11px;font:inherit;color:var(--ink);outline:none}.report-toolbar input:focus,.report-toolbar select:focus,.report-status-form select:focus{border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(36,59,100,.08)}.report-table{min-width:900px}.report-excerpt{display:block;max-width:460px;line-height:1.55}.report-status-form{display:flex;align-items:center;gap:7px}.report-pagination>div{display:flex;align-items:center;gap:5px}.report-pagination a.active{background:var(--navy);border-color:var(--navy);color:#fff}.report-total{margin-top:17px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}@media(max-width:900px){.report-toolbar{grid-template-columns:1fr 1fr}.report-toolbar input{grid-column:1/-1}}@media(max-width:620px){.report-toolbar{grid-template-columns:1fr}.report-toolbar input{grid-column:auto}.report-pagination{align-items:flex-start;flex-direction:column}.report-pagination>div{flex-wrap:wrap}}
     </style>
 </head>
 <body>
@@ -142,6 +143,31 @@
         layout.classList.add('tabs-ready');
     }
 
+    async function loadReportHistory(url) {
+        const panel = document.querySelector('[data-report-history]');
+        if (!panel) return;
+        panel.classList.add('loading');
+        panel.setAttribute('aria-busy', 'true');
+        try {
+            const response = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'text/html'}});
+            if (!response.ok) throw new Error('Could not load report history.');
+            panel.innerHTML = await response.text();
+            panel.dataset.reportHistoryLoaded = 'true';
+        } catch (error) {
+            panel.innerHTML = `<div class="report-load-error"><strong>Couldn’t load report history</strong><span>Please check the connection and try again.</span><button class="mini-btn" data-report-retry type="button">Try again</button></div>`;
+            panel.dataset.failedUrl = url;
+        } finally {
+            panel.classList.remove('loading');
+            panel.removeAttribute('aria-busy');
+        }
+    }
+
+    function initializeReportHistory() {
+        const panel = document.querySelector('[data-report-history]');
+        if (!panel || panel.dataset.reportHistoryLoaded === 'true') return;
+        loadReportHistory(panel.dataset.reportHistoryUrl);
+    }
+
     async function loadAdmin(url, push = true) {
         const content = document.getElementById('adminContent');
         content.style.opacity = '.45';
@@ -151,6 +177,7 @@
             content.innerHTML = await response.text();
             if (push) history.pushState({url}, '', url);
             initializeSettingsTabs();
+            initializeReportHistory();
             document.querySelectorAll('[data-admin-link]').forEach(item => item.classList.toggle('active', item.href === url));
             sidebar.classList.remove('open'); overlay.classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'});
         } catch (error) { window.location.href = url; }
@@ -170,6 +197,7 @@
         loadAdmin(link.href);
     });
     initializeSettingsTabs();
+    initializeReportHistory();
     window.addEventListener('popstate', () => loadAdmin(window.location.href, false));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const escapeHtml = value => String(value ?? 'Not provided').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[character]));
@@ -209,6 +237,52 @@
         if (!event.target.matches('#member-filter select')) return;
         const form = event.target.form;
         loadAdmin(`${form.action}?${new URLSearchParams(new FormData(form))}`);
+    });
+
+    let reportSearchTimer;
+    document.addEventListener('input', event => {
+        if (!event.target.matches('[data-report-filter] input[name="search"]')) return;
+        clearTimeout(reportSearchTimer);
+        reportSearchTimer = setTimeout(() => {
+            const form = event.target.form;
+            loadReportHistory(`${form.action}?${new URLSearchParams(new FormData(form))}`);
+        }, 350);
+    });
+    document.addEventListener('change', event => {
+        if (!event.target.matches('[data-report-filter] select')) return;
+        const form = event.target.form;
+        loadReportHistory(`${form.action}?${new URLSearchParams(new FormData(form))}`);
+    });
+    document.addEventListener('submit', event => {
+        if (!event.target.matches('[data-report-filter]')) return;
+        event.preventDefault();
+        loadReportHistory(`${event.target.action}?${new URLSearchParams(new FormData(event.target))}`);
+    });
+    document.addEventListener('click', event => {
+        const page = event.target.closest('[data-report-page], [data-report-clear]');
+        const retry = event.target.closest('[data-report-retry]');
+        if (!page && !retry) return;
+        event.preventDefault();
+        const panel = document.querySelector('[data-report-history]');
+        loadReportHistory(page?.href || panel?.dataset.failedUrl || panel?.dataset.reportHistoryUrl);
+    });
+    document.addEventListener('submit', async event => {
+        if (!event.target.matches('[data-report-action]')) return;
+        event.preventDefault();
+        const form = event.target;
+        const button = form.querySelector('button');
+        button.disabled = true;
+        try {
+            const response = await fetch(form.action, {method:'POST',headers:{'X-CSRF-TOKEN':csrfToken,'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(form)});
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.message || 'Could not update the report.');
+            showToast(payload.message);
+            const currentUrl = document.querySelector('[data-report-history-content]')?.dataset.currentUrl;
+            loadReportHistory(currentUrl || document.querySelector('[data-report-history]')?.dataset.reportHistoryUrl);
+        } catch (error) {
+            showToast(error.message, 'error');
+            button.disabled = false;
+        }
     });
     document.addEventListener('submit', event => {
         if (!event.target.matches('#member-filter')) return;

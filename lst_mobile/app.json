@@ -38,7 +38,8 @@
           "color": "#D62839",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "ios": {
       "bundleIdentifier": "com.fiyinfholuwa.lstsocial",

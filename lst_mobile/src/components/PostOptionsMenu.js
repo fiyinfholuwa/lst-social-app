@@ -3,7 +3,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TouchableOpacity
 import { useTheme } from '../context/ThemeContext';
 import AppIcon from './AppIcon';
 
-export default function PostOptionsMenu({ onEdit, onDelete }) {
+export default function PostOptionsMenu({ onEdit, onDelete, onReport }) {
   const [open, setOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -37,18 +37,23 @@ export default function PostOptionsMenu({ onEdit, onDelete }) {
       </TouchableOpacity>
 
       {open ? (
-        <View style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.border, shadowColor: theme.text }]}>
+        <View style={[styles.menu, { width: 14 + ([onEdit, onDelete, onReport].filter(Boolean).length * 48), backgroundColor: theme.card, borderColor: theme.border, shadowColor: theme.text }]}>
+          {onReport ? <TouchableOpacity style={styles.row} onPress={() => choose(onReport)} accessibilityLabel="Report post"><View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}><AppIcon name="flag" size={18} color={theme.danger} /></View></TouchableOpacity> : null}
+          {onReport && (onEdit || onDelete) ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
+          {onEdit ? <>
           <TouchableOpacity style={styles.row} onPress={() => choose(onEdit)} accessibilityLabel="Edit post">
             <View style={[styles.iconWrap, { backgroundColor: theme.primarySoft }]}>
               <AppIcon name="create-outline" size={18} color={theme.primary} />
             </View>
           </TouchableOpacity>
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          </> : null}
+          {onEdit && onDelete ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
+          {onDelete ?
           <TouchableOpacity style={styles.row} onPress={() => choose(() => setConfirmingDelete(true))} accessibilityLabel="Delete post">
             <View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}>
               <AppIcon name="trash" size={18} color={theme.danger} />
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> : null}
         </View>
       ) : null}
 
@@ -82,7 +87,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 39,
     right: 0,
-    width: 112,
     padding: 6,
     borderRadius: 16,
     borderWidth: 1,

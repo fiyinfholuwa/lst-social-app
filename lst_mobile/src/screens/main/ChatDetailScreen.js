@@ -16,6 +16,7 @@ import KeyboardSafeView from '../../components/KeyboardSafeView';
 import EmojiText from '../../components/EmojiText';
 import EmojiPicker from '../../components/EmojiPicker';
 import Avatar from '../../components/Avatar';
+import ReportModal from '../../components/ReportModal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useChatUnread } from '../../context/ChatUnreadContext';
@@ -113,6 +114,7 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [sending, setSending] = useState(false);
+  const [reportingMessage, setReportingMessage] = useState(null);
   const inputRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder, 250);
@@ -260,7 +262,13 @@ export default function ChatDetailScreen({ route, navigation }) {
           const mine = item.senderId === user.id;
           return (
             <View style={[styles.messageRow, mine ? styles.myMessage : styles.otherMessage]}>
-              <View style={[styles.bubble, item.type === 'voice' && styles.voiceBubble, { backgroundColor: mine ? theme.primary : theme.card }]}>
+              <TouchableOpacity
+                activeOpacity={mine ? 1 : 0.82}
+                delayLongPress={450}
+                onLongPress={!mine ? () => setReportingMessage(item) : undefined}
+                accessibilityHint={!mine ? 'Long press to report this message' : undefined}
+                style={[styles.bubble, item.type === 'voice' && styles.voiceBubble, { backgroundColor: mine ? theme.primary : theme.card }]}
+              >
                 {item.type === 'voice' ? (
                   <VoiceNote
                     message={item}
@@ -276,7 +284,8 @@ export default function ChatDetailScreen({ route, navigation }) {
                   <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{item.timestamp}</Text>
                   {mine ? <AppIcon name={item.read ? 'checkmark-done' : 'check'} size={14} color={item.read ? '#22A06B' : 'rgba(255,255,255,0.72)'} /> : null}
                 </View>
-              </View>
+              </TouchableOpacity>
+              {!mine ? <TouchableOpacity style={styles.reportMessageButton} onPress={() => setReportingMessage(item)} accessibilityLabel="Report this message"><AppIcon name="flag" size={14} color={theme.secondaryText} /></TouchableOpacity> : null}
             </View>
           );
         }}
@@ -340,6 +349,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         </View>
       )}
       {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
+      <ReportModal visible={Boolean(reportingMessage)} targetType="message" targetId={reportingMessage?.id} targetName="message" onClose={result => { setReportingMessage(null); if (result?.submitted) Alert.alert('Report received', 'Thank you. The moderation team will review this message.'); }} />
     </KeyboardSafeView>
   );
 }
@@ -361,6 +371,7 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 13, lineHeight: 19 },
   messageMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 5 },
   messageTime: { fontSize: 10 },
+  reportMessageButton: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginLeft: 3 },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -12, paddingHorizontal: 12, paddingTop: 9 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   inputPill: { flex: 1, minHeight: 46, maxHeight: 108, borderWidth: StyleSheet.hairlineWidth, borderRadius: 23, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },

@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import Icon from './AppIcon';
 import Avatar from './Avatar';
 import PostOptionsMenu from './PostOptionsMenu';
 import EmojiText from './EmojiText';
+import ReportModal from './ReportModal';
 
 const PREVIEW_LIMIT = 180;
 const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
 
 function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false, containerStyle }) {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const isLong = post.content.length > PREVIEW_LIMIT;
   const postType = post.type || (post.communityId ? 'Community' : 'Encouragement');
   const images = post.images?.length ? post.images : post.image ? [post.image] : [];
@@ -34,7 +38,7 @@ function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare
             </Text>
             {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
           </TouchableOpacity>
-          {onEdit && onDelete ? <PostOptionsMenu onEdit={onEdit} onDelete={onDelete} /> : null}
+          {(onEdit && onDelete) || String(post.userId) !== String(user?.id) ? <PostOptionsMenu onEdit={onEdit} onDelete={onDelete} onReport={String(post.userId) !== String(user?.id) ? () => setReporting(true) : undefined} /> : null}
         </View>
 
         <View style={styles.contextRow}>
@@ -103,6 +107,7 @@ function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare
           <Icon name="bookmark" size={18} color={isSaved ? theme.accent : theme.secondaryText} />
         </TouchableOpacity>
       </View>
+      <ReportModal visible={reporting} targetType="post" targetId={post.id} targetName="post" onClose={result => { setReporting(false); if (result?.submitted) Alert.alert('Report received', 'Thank you. The moderation team will review this post.'); }} />
     </View>
   );
 }

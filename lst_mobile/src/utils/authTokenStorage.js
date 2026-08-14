@@ -22,7 +22,7 @@ export const setAuthToken = token => SecureStore.setItemAsync(AUTH_TOKEN_KEY, to
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
 });
 
-export const removeAuthToken = async () r=> {
+export const removeAuthToken = async () => {
   await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
   await AsyncStorage.removeItem(LEGACY_AUTH_TOKEN_KEY);
 };

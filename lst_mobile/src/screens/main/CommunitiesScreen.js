@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -58,6 +59,7 @@ export default function CommunitiesScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const { theme } = useTheme();
+  const tabBarHeight = useBottomTabBarHeight();
   const { user, refreshUser } = useAuth();
   const joinedIds = Array.isArray(user?.joinedCommunities) ? user.joinedCommunities.map(String) : [];
 
@@ -167,7 +169,7 @@ export default function CommunitiesScreen({ navigation }) {
         data={loading ? loadingRows : visibleCommunities}
         keyExtractor={item => item.id}
         ListHeaderComponent={<ListHeader />}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 24 }}
         showsVerticalScrollIndicator={false}
         onEndReached={() => hasMore && !loadingMore && loadCommunities(page + 1)}
         onEndReachedThreshold={0.4}
@@ -217,7 +219,6 @@ export default function CommunitiesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingBottom: 100 },
   search: { marginHorizontal: 14, height: 48, borderWidth: 1, borderRadius: 15, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
   searchInput: { flex: 1, fontSize: 13 },
   filters: { paddingHorizontal: 14, paddingVertical: 14, gap: 8 },

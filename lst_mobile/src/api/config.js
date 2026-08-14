@@ -19,4 +19,5 @@ if (!__DEV__ && !configuredUrl?.startsWith('https://')) {
   throw new Error('EXPO_PUBLIC_API_URL must use HTTPS in production.');
 }
 
-export const API_BASE_URL = configuredUrl || `http://${DEV_HOST}:8000/api`;
+// export const API_BASE_URL = configuredUrl || `http://${DEV_HOST}:8000/api`;
+export const API_BASE_URL = `https://social.lovestraighttalks.com/api`;

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
         import { ActivityIndicator, View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
         import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../api/apiService';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -21,6 +22,7 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
           const { theme } = useTheme();
           const { friendIds, incomingRequestIds, blockedUserIds } = useFriendships();
           const { refreshUnreadChats } = useChatUnread();
+          const tabBarHeight = useBottomTabBarHeight();
 
           useFocusEffect(useCallback(() => { setQuery(''); loadChats(1, ''); }, []));
 
@@ -94,7 +96,7 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
               <FlatList
                 data={visibleChats}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={[styles.listContent, visibleChats.length === 0 && styles.emptyList]}
+                contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + 24 }, visibleChats.length === 0 && styles.emptyList]}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={[styles.chatItem, { backgroundColor: theme.card, borderColor: theme.border }]}
@@ -141,7 +143,7 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
 
         const styles = StyleSheet.create({
           container: { flex: 1 },
-          listContent: { paddingTop: 2, paddingBottom: 94 },
+          listContent: { paddingTop: 2 },
           emptyList: { flexGrow: 1 },
           requestBanner: { marginHorizontal: 14, marginBottom: 12, padding: 13, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
           requestText: { flex: 1, fontSize: 13, fontWeight: '700' },

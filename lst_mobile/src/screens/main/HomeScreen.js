@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Alert, View, FlatList, Linking, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
         import { useTheme } from '../../context/ThemeContext';
         import { useAuth } from '../../context/AuthContext';
         import apiService from '../../api/apiService';
@@ -44,6 +45,7 @@ const fallbackFeedBanner = {
             ? friendshipState.blockedUserIds
             : [];
           const { unreadCount } = useNotifications();
+          const tabBarHeight = useBottomTabBarHeight();
           const visiblePosts = useMemo(
             () => posts.filter(post => !blockedUserIds.includes(post.userId)),
             [posts, blockedUserIds],
@@ -148,7 +150,7 @@ const fallbackFeedBanner = {
               <FlatList
                 data={visiblePosts}
                 keyExtractor={(item) => String(item.id)}
-                contentContainerStyle={styles.feedContent}
+                contentContainerStyle={{ paddingBottom: tabBarHeight + 24 }}
                 renderItem={({ item }) => (
                   <PostCard
                     post={item}
@@ -227,7 +229,6 @@ const fallbackFeedBanner = {
 
         const styles = StyleSheet.create({
           container: { flex: 1 },
-          feedContent: { paddingBottom: 94 },
           loadingFooter: { paddingVertical: 20, alignItems: 'center' },
           verseCard: { marginHorizontal: 14, padding: 20, borderRadius: 22, marginBottom: 12 },
           verseLabel: { color: 'rgba(255,255,255,.82)', fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },

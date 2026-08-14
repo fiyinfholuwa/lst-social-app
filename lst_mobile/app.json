@@ -5,6 +5,11 @@
     "version": "1.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "androidNavigationBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content",
+      "enforceContrast": false
+    },
     "assetBundlePatterns": [
       "**/*"
     ],

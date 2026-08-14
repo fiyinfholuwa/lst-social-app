@@ -110,6 +110,7 @@ export default function PostScreen({ route, navigation }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [reportingPost, setReportingPost] = useState(false);
+  const [keyboardOverlap, setKeyboardOverlap] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const { user } = useAuth();
@@ -143,6 +144,23 @@ export default function PostScreen({ route, navigation }) {
   useFocusEffect(useCallback(() => {
     loadPost();
   }, [loadPost]));
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', event => {
+      if (Platform.OS === 'android') {
+        const windowHeight = Dimensions.get('window').height;
+        const keyboardTop = event.endCoordinates?.screenY ?? windowHeight;
+        setKeyboardOverlap(Math.max(0, windowHeight - keyboardTop));
+      }
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardOverlap(0));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const loadMoreComments = async () => {
     if (!hasMoreComments || loadingMoreComments) return;
@@ -388,7 +406,7 @@ export default function PostScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}
     >
       <FlatList
@@ -398,6 +416,8 @@ export default function PostScreen({ route, navigation }) {
         ListHeaderComponent={<PostContent />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         onEndReached={loadMoreComments}
         onEndReachedThreshold={0.4}
         ListFooterComponent={loadingMoreComments ? <ActivityIndicator style={styles.commentsLoader} color={theme.primary} /> : null}
@@ -440,7 +460,7 @@ export default function PostScreen({ route, navigation }) {
       />
 
       {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
-      <View style={[styles.composer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14) }]}>
+      <View style={[styles.composer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14), marginBottom: keyboardOverlap }]}>
         <Avatar uri={user?.avatar} size={34} style={styles.composerAvatar} accessibilityLabel="Your profile avatar" />
         <View style={styles.inputWrap}>
           {replyTo || editingComment ? <View style={[styles.replyingTo, { backgroundColor: theme.primarySoft }]}><Text style={[styles.replyingText, { color: theme.primary }]}>{editingComment ? 'Editing your comment' : `Replying to ${replyTo.userName}`}</Text><TouchableOpacity onPress={() => { setReplyTo(null); setEditingComment(null); setCommentText(''); }} accessibilityLabel={editingComment ? 'Cancel editing' : 'Cancel reply'}><AppIcon name="times" size={13} color={theme.primary} /></TouchableOpacity></View> : null}
@@ -475,7 +495,7 @@ export default function PostScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  listContent: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 24 },
+  listContent: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 40 },
   postCard: { paddingBottom: 8, overflow: 'visible' },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, position: 'relative', zIndex: 100, elevation: 20 },
   avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 11 },

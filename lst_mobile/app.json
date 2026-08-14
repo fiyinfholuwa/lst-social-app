@@ -2,6 +2,7 @@
   "expo": {
     "name": "LST Social",
     "slug": "lst-social",
+    "scheme": "lstsocial",
     "version": "1.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -52,6 +53,9 @@
     "ios": {
       "bundleIdentifier": "com.fiyinfholuwa.lstsocial",
       "supportsTablet": true,
+      "associatedDomains": [
+        "applinks:social.lovestraighttalks.com"
+      ],
       "infoPlist": {
         "NSMicrophoneUsageDescription": "LST Social uses your microphone when you choose to record a voice note."
       }
@@ -66,6 +70,23 @@
       "adaptiveIcon": {
         "backgroundColor": "#F7F8FB"
       },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "social.lovestraighttalks.com",
+              "pathPrefix": "/posts/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "package": "com.lstsocial.com"
     },
     "extra": {

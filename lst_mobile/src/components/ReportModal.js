@@ -4,6 +4,7 @@ import apiService from '../api/apiService';
 import { useTheme } from '../context/ThemeContext';
 import AppIcon from './AppIcon';
 import KeyboardSafeView from './KeyboardSafeView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const REASONS = [
   ['harassment', 'Harassment or bullying'],
@@ -19,6 +20,7 @@ const REASONS = [
 
 export default function ReportModal({ visible, targetType, targetId, targetName, onClose }) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -49,7 +51,7 @@ export default function ReportModal({ visible, targetType, targetId, targetName,
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => !submitting && onClose?.()}>
       <KeyboardSafeView>
         <Pressable style={styles.backdrop} onPress={() => !submitting && onClose?.()}>
-          <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
+          <Pressable style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border, paddingBottom: Math.max(insets.bottom + 20, 36) }]} onPress={() => {}}>
             <View style={styles.handle} />
             <View style={[styles.icon, { backgroundColor: theme.accentSoft }]}><AppIcon name="flag" size={22} color={theme.danger} /></View>
             <Text style={[styles.title, { color: theme.text }]}>Report {targetName || targetType}</Text>

@@ -13,6 +13,7 @@ import { AppAlertProvider } from './src/context/AppAlertContext';
 import { ChatUnreadProvider } from './src/context/ChatUnreadContext';
 import { ConnectivityProvider } from './src/context/ConnectivityContext';
 import PushNotificationManager from './src/components/PushNotificationManager';
+import DeepLinkManager from './src/components/DeepLinkManager';
 import { flushPendingPush, navigationRef } from './src/navigation/navigationRef';
 
 function AppContent() {
@@ -29,7 +30,6 @@ function AppContent() {
       notification: theme.accent,
     },
   }), [isDark, theme]);
-
   return (
       <OnboardingProvider>
         <AuthProvider>
@@ -41,6 +41,7 @@ function AppContent() {
                   <ConnectivityProvider>
                   <AppAlertProvider>
                     <PushNotificationManager />
+                    <DeepLinkManager />
                     <NavigationContainer ref={navigationRef} onReady={flushPendingPush} theme={navigationTheme}>
                       <AppNavigator />
                       <StatusBar style={isDark ? 'light' : 'dark'} />

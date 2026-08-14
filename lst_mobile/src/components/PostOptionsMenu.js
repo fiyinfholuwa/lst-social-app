@@ -3,7 +3,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TouchableOpacity
 import { useTheme } from '../context/ThemeContext';
 import AppIcon from './AppIcon';
 
-export default function PostOptionsMenu({ onEdit, onDelete, onReport }) {
+export default function PostOptionsMenu({ onCopyLink, onEdit, onDelete, onReport }) {
   const [open, setOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -37,22 +37,26 @@ export default function PostOptionsMenu({ onEdit, onDelete, onReport }) {
       </TouchableOpacity>
 
       {open ? (
-        <View style={[styles.menu, { width: 14 + ([onEdit, onDelete, onReport].filter(Boolean).length * 48), backgroundColor: theme.card, borderColor: theme.border, shadowColor: theme.text }]}>
-          {onReport ? <TouchableOpacity style={styles.row} onPress={() => choose(onReport)} accessibilityLabel="Report post"><View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}><AppIcon name="flag" size={18} color={theme.danger} /></View></TouchableOpacity> : null}
+        <View style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.border, shadowColor: theme.text }]}> 
+          <TouchableOpacity style={styles.row} onPress={() => choose(onCopyLink)} accessibilityLabel="Copy post link"><View style={[styles.iconWrap, { backgroundColor: theme.primarySoft }]}><AppIcon name="copy-outline" size={18} color={theme.primary} /></View><Text style={[styles.rowText, { color: theme.text }]}>Copy link</Text></TouchableOpacity>
+          {onReport || onEdit || onDelete ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
+          {onReport ? <TouchableOpacity style={styles.row} onPress={() => choose(onReport)} accessibilityLabel="Report post"><View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}><AppIcon name="flag" size={18} color={theme.danger} /></View><Text style={[styles.rowText, { color: theme.text }]}>Report post</Text></TouchableOpacity> : null}
           {onReport && (onEdit || onDelete) ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
           {onEdit ? <>
           <TouchableOpacity style={styles.row} onPress={() => choose(onEdit)} accessibilityLabel="Edit post">
             <View style={[styles.iconWrap, { backgroundColor: theme.primarySoft }]}>
               <AppIcon name="create-outline" size={18} color={theme.primary} />
             </View>
+            <Text style={[styles.rowText, { color: theme.text }]}>Edit post</Text>
           </TouchableOpacity>
           </> : null}
           {onEdit && onDelete ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
           {onDelete ?
           <TouchableOpacity style={styles.row} onPress={() => choose(() => setConfirmingDelete(true))} accessibilityLabel="Delete post">
-            <View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}>
+            <View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}> 
               <AppIcon name="trash" size={18} color={theme.danger} />
             </View>
+            <Text style={[styles.rowText, { color: theme.text }]}>Delete post</Text>
           </TouchableOpacity> : null}
         </View>
       ) : null}
@@ -87,6 +91,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 39,
     right: 0,
+    width: 184,
     padding: 6,
     borderRadius: 16,
     borderWidth: 1,
@@ -95,12 +100,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
-  row: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center' },
+  row: { minHeight: 46, paddingHorizontal: 7, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowText: { flex: 1, fontSize: 12, fontWeight: '800' },
   iconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  divider: { width: StyleSheet.hairlineWidth, height: 30, marginHorizontal: 2 },
+  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 7 },
   backdrop: { flex: 1, backgroundColor: 'rgba(28,17,24,0.56)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   dialog: { width: '100%', maxWidth: 350, borderWidth: 1, borderRadius: 26, padding: 22, alignItems: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 24 },
   dialogIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

@@ -11,6 +11,10 @@ Route::get('/', function () {
 Route::view('/privacy-policy', 'legal', ['document' => 'privacy'])->name('privacy');
 Route::view('/terms-and-conditions', 'legal', ['document' => 'terms'])->name('terms');
 
+Route::get('/posts/{postId}', function (string $postId) {
+    return view('post-link', ['postId' => $postId]);
+})->whereNumber('postId')->name('posts.link');
+
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     $user = User::findOrFail($id);
     abort_unless(hash_equals((string) $hash, sha1($user->getEmailForVerification())), 403);

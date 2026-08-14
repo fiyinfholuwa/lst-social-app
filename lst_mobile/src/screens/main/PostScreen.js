@@ -28,6 +28,7 @@ import EmojiPicker from '../../components/EmojiPicker';
 import EmojiText from '../../components/EmojiText';
 import ReportModal from '../../components/ReportModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { copyPostLink } from '../../utils/postLinks';
 
 const DETAIL_IMAGE_WIDTH = Dimensions.get('window').width - 36;
 
@@ -333,6 +334,7 @@ export default function PostScreen({ route, navigation }) {
             {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
           </TouchableOpacity>
           <PostOptionsMenu
+            onCopyLink={() => copyPostLink(post.id)}
             onEdit={String(post.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: post.id }) : undefined}
             onDelete={String(post.userId) === String(user?.id) ? deletePost : undefined}
             onReport={String(post.userId) !== String(user?.id) ? () => setReportingPost(true) : undefined}

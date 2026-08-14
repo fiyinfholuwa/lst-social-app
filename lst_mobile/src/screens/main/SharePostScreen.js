@@ -8,6 +8,7 @@ import Loader from '../../components/Loader';
 import KeyboardSafeView from '../../components/KeyboardSafeView';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { copyPostLink, sharePostLink } from '../../utils/postLinks';
 
 export default function SharePostScreen({ route, navigation }) {
   const { postId } = route.params;
@@ -45,6 +46,9 @@ export default function SharePostScreen({ route, navigation }) {
     }
   };
 
+  const copyLink = () => copyPostLink(postId);
+  const shareLink = () => sharePostLink(postId);
+
   if (!post) return <Loader />;
   const images = post.images?.length ? post.images : post.image ? [post.image] : [];
 
@@ -71,7 +75,7 @@ export default function SharePostScreen({ route, navigation }) {
       />
       <Text style={[styles.counter, { color: theme.secondaryText }]}>{note.length}/5000</Text>
 
-      <View style={[styles.original, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View style={[styles.original, { backgroundColor: theme.card, borderColor: theme.border }]}> 
         <View style={styles.authorRow}>
           <Avatar uri={post.userAvatar} size={40} accessibilityLabel={`${post.userName}'s profile avatar`} />
           <View style={styles.authorCopy}>
@@ -81,6 +85,17 @@ export default function SharePostScreen({ route, navigation }) {
         </View>
         <EmojiText style={[styles.postText, { color: theme.text }]}>{post.content}</EmojiText>
         {images[0] ? <Image source={{ uri: images[0] }} style={styles.image} /> : null}
+      </View>
+
+      <View style={styles.linkActions}>
+        <TouchableOpacity style={[styles.linkButton, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={copyLink} accessibilityRole="button">
+          <AppIcon name="copy-outline" size={17} color={theme.primary} />
+          <Text style={[styles.linkButtonText, { color: theme.text }]}>Copy link</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.linkButton, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={shareLink} accessibilityRole="button">
+          <AppIcon name="share-outline" size={17} color={theme.primary} />
+          <Text style={[styles.linkButtonText, { color: theme.text }]}>Share link</Text>
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={submit} disabled={submitting} accessibilityRole="button">
@@ -108,6 +123,9 @@ const styles = StyleSheet.create({
   meta: { fontSize: 10, marginTop: 3 },
   postText: { fontSize: 14, lineHeight: 22, marginTop: 13 },
   image: { width: '100%', height: 210, borderRadius: 13, resizeMode: 'cover', marginTop: 13 },
+  linkActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  linkButton: { flex: 1, minHeight: 48, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  linkButtonText: { fontSize: 12, fontWeight: '800' },
   button: { minHeight: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 },
   buttonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
 });

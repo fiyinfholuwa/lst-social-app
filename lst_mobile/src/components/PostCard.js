@@ -7,6 +7,7 @@ import Avatar from './Avatar';
 import PostOptionsMenu from './PostOptionsMenu';
 import EmojiText from './EmojiText';
 import ReportModal from './ReportModal';
+import { copyPostLink } from '../utils/postLinks';
 
 const PREVIEW_LIMIT = 180;
 const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
@@ -38,7 +39,7 @@ function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare
             </Text>
             {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
           </TouchableOpacity>
-          {(onEdit && onDelete) || String(post.userId) !== String(user?.id) ? <PostOptionsMenu onEdit={onEdit} onDelete={onDelete} onReport={String(post.userId) !== String(user?.id) ? () => setReporting(true) : undefined} /> : null}
+          <PostOptionsMenu onCopyLink={() => copyPostLink(post.id)} onEdit={onEdit} onDelete={onDelete} onReport={String(post.userId) !== String(user?.id) ? () => setReporting(true) : undefined} />
         </View>
 
         <View style={styles.contextRow}>

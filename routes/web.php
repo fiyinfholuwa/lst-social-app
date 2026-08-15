@@ -11,6 +11,37 @@ Route::get('/', function () {
 Route::view('/privacy-policy', 'legal', ['document' => 'privacy'])->name('privacy');
 Route::view('/terms-and-conditions', 'legal', ['document' => 'terms'])->name('terms');
 
+Route::get('/.well-known/apple-app-site-association', function () {
+    $teamId = config('deep_links.apple.team_id');
+    $bundleId = config('deep_links.apple.bundle_id');
+
+    return response()->json([
+        'applinks' => [
+            'apps' => [],
+            'details' => $teamId ? [[
+                'appID' => "{$teamId}.{$bundleId}",
+                'components' => [[
+                    '/' => '/posts/*',
+                    'comment' => 'Open shared LST Social posts in the app',
+                ]],
+            ]] : [],
+        ],
+    ], options: JSON_UNESCAPED_SLASHES)->header('Content-Type', 'application/json');
+})->name('deep-links.apple');
+
+Route::get('/.well-known/assetlinks.json', function () {
+    $fingerprints = config('deep_links.android.sha256_fingerprints');
+
+    return response()->json($fingerprints ? [[
+        'relation' => ['delegate_permission/common.handle_all_urls'],
+        'target' => [
+            'namespace' => 'android_app',
+            'package_name' => config('deep_links.android.package_name'),
+            'sha256_cert_fingerprints' => $fingerprints,
+        ],
+    ]] : [], options: JSON_UNESCAPED_SLASHES)->header('Content-Type', 'application/json');
+})->name('deep-links.android');
+
 Route::get('/posts/{postId}', function (string $postId) {
     return view('post-link', ['postId' => $postId]);
 })->whereNumber('postId')->name('posts.link');

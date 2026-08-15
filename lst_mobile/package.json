@@ -6,6 +6,7 @@
   },
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "expo start",
     "dev": "expo start --dev-client",
     "android": "expo run:android",
@@ -48,7 +49,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "babel-preset-expo": "~56.0.0"
+    "babel-preset-expo": "~56.0.0",
+    "patch-package": "^8.0.1"
   },
   "private": true
 }

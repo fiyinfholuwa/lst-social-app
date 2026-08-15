@@ -14,6 +14,11 @@ export default function PostOptionsMenu({ onCopyLink, onEdit, onDelete, onReport
     action?.();
   };
 
+  const requestDelete = () => {
+    setOpen(false);
+    setConfirmingDelete(true);
+  };
+
   const confirmDelete = async () => {
     if (deleting) return;
     setDeleting(true);
@@ -29,37 +34,29 @@ export default function PostOptionsMenu({ onCopyLink, onEdit, onDelete, onReport
     <View style={styles.anchor}>
       <TouchableOpacity
         style={[styles.trigger, open && { backgroundColor: theme.primarySoft }]}
-        onPress={() => setOpen(value => !value)}
+        onPress={event => {
+          event.stopPropagation?.();
+          setOpen(true);
+        }}
         hitSlop={8}
         accessibilityLabel="Post options"
       >
         <AppIcon name="ellipsis-h" size={19} color={open ? theme.primary : theme.secondaryText} />
       </TouchableOpacity>
 
-      {open ? (
-        <View style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.border, shadowColor: theme.text }]}> 
-          <TouchableOpacity style={styles.row} onPress={() => choose(onCopyLink)} accessibilityLabel="Copy post link"><View style={[styles.iconWrap, { backgroundColor: theme.primarySoft }]}><AppIcon name="copy-outline" size={18} color={theme.primary} /></View><Text style={[styles.rowText, { color: theme.text }]}>Copy link</Text></TouchableOpacity>
-          {onReport || onEdit || onDelete ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
-          {onReport ? <TouchableOpacity style={styles.row} onPress={() => choose(onReport)} accessibilityLabel="Report post"><View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}><AppIcon name="flag" size={18} color={theme.danger} /></View><Text style={[styles.rowText, { color: theme.text }]}>Report post</Text></TouchableOpacity> : null}
-          {onReport && (onEdit || onDelete) ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
-          {onEdit ? <>
-          <TouchableOpacity style={styles.row} onPress={() => choose(onEdit)} accessibilityLabel="Edit post">
-            <View style={[styles.iconWrap, { backgroundColor: theme.primarySoft }]}>
-              <AppIcon name="create-outline" size={18} color={theme.primary} />
-            </View>
-            <Text style={[styles.rowText, { color: theme.text }]}>Edit post</Text>
-          </TouchableOpacity>
-          </> : null}
-          {onEdit && onDelete ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
-          {onDelete ?
-          <TouchableOpacity style={styles.row} onPress={() => choose(() => setConfirmingDelete(true))} accessibilityLabel="Delete post">
-            <View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}> 
-              <AppIcon name="trash" size={18} color={theme.danger} />
-            </View>
-            <Text style={[styles.rowText, { color: theme.text }]}>Delete post</Text>
-          </TouchableOpacity> : null}
-        </View>
-      ) : null}
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.menuBackdrop} onPress={() => setOpen(false)}>
+          <Pressable style={[styles.menu, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
+            <View style={[styles.handle, { backgroundColor: theme.border }]} />
+            <Text style={[styles.menuTitle, { color: theme.text }]}>Post options</Text>
+            <TouchableOpacity style={styles.row} onPress={() => choose(onCopyLink)} accessibilityLabel="Copy post link"><View style={[styles.iconWrap, { backgroundColor: theme.primarySoft }]}><AppIcon name="copy-outline" size={18} color={theme.primary} /></View><Text style={[styles.rowText, { color: theme.text }]}>Copy link</Text></TouchableOpacity>
+            {onEdit ? <TouchableOpacity style={styles.row} onPress={() => choose(onEdit)} accessibilityLabel="Edit post"><View style={[styles.iconWrap, { backgroundColor: theme.primarySoft }]}><AppIcon name="create-outline" size={18} color={theme.primary} /></View><Text style={[styles.rowText, { color: theme.text }]}>Edit post</Text></TouchableOpacity> : null}
+            {onDelete ? <TouchableOpacity style={styles.row} onPress={requestDelete} accessibilityLabel="Delete post"><View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}><AppIcon name="trash" size={18} color={theme.danger} /></View><Text style={[styles.rowText, { color: theme.danger }]}>Delete post</Text></TouchableOpacity> : null}
+            {onReport ? <TouchableOpacity style={styles.row} onPress={() => choose(onReport)} accessibilityLabel="Report post"><View style={[styles.iconWrap, { backgroundColor: theme.accentSoft }]}><AppIcon name="flag" size={18} color={theme.danger} /></View><Text style={[styles.rowText, { color: theme.text }]}>Report post</Text></TouchableOpacity> : null}
+            <TouchableOpacity style={[styles.closeButton, { borderColor: theme.border }]} onPress={() => setOpen(false)} accessibilityLabel="Close post options"><Text style={[styles.closeText, { color: theme.text }]}>Cancel</Text></TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={confirmingDelete} transparent animationType="fade" onRequestClose={() => !deleting && setConfirmingDelete(false)}>
         <Pressable style={styles.backdrop} onPress={() => !deleting && setConfirmingDelete(false)}>
@@ -87,24 +84,22 @@ export default function PostOptionsMenu({ onCopyLink, onEdit, onDelete, onReport
 const styles = StyleSheet.create({
   anchor: { position: 'relative', zIndex: 1000, elevation: 30 },
   trigger: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  menuBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(28,17,24,0.56)' },
   menu: {
-    position: 'absolute',
-    top: 39,
-    right: 0,
-    width: 184,
-    padding: 6,
-    borderRadius: 16,
+    width: '100%',
+    padding: 20,
+    paddingBottom: 30,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     borderWidth: 1,
-    zIndex: 1001,
-    elevation: 32,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
   },
-  row: { minHeight: 46, paddingHorizontal: 7, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rowText: { flex: 1, fontSize: 12, fontWeight: '800' },
-  iconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 7 },
+  handle: { width: 42, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 15 },
+  menuTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
+  row: { minHeight: 54, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rowText: { flex: 1, fontSize: 14, fontWeight: '800' },
+  iconWrap: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  closeButton: { height: 50, borderWidth: 1, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  closeText: { fontSize: 13, fontWeight: '800' },
   backdrop: { flex: 1, backgroundColor: 'rgba(28,17,24,0.56)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   dialog: { width: '100%', maxWidth: 350, borderWidth: 1, borderRadius: 26, padding: 22, alignItems: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 24 },
   dialogIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

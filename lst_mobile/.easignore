@@ -3,6 +3,15 @@ node_modules/
 .expo-shared/
 dist/
 build/
+android/
+ios/
+.gradle/
+.kotlin/
+.cxx/
+.env
+.env.*
+!.env.example
+*.apk
+*.aab
 *.log
 .DS_Store
-

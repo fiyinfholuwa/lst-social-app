@@ -9,12 +9,13 @@ import ScreenHeader from '../../components/ScreenHeader';
 import { useTheme } from '../../context/ThemeContext';
 
 const CACHE_PREFIX = 'sermons:list:v1:';
-const EMPTY_FILTERS = { title: '', speaker: '', category: '' };
+const EMPTY_FILTERS = { query: '', title: '', speaker: '', category: '' };
 
 export default function SermonsScreen({ navigation }) {
   const { theme } = useTheme();
   const tabBarHeight = useBottomTabBarHeight();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [quickSearch, setQuickSearch] = useState('');
   const [draft, setDraft] = useState(EMPTY_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -55,18 +56,30 @@ export default function SermonsScreen({ navigation }) {
     return () => { active = false; };
   }, [applyResponse, cacheKey]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setFilters(current => ({ ...current, query: quickSearch.trim() })), 350);
+    return () => clearTimeout(timer);
+  }, [quickSearch]);
+
   useFocusEffect(useCallback(() => { loadSermons(1, { silent: true }); }, [loadSermons]));
 
   const refresh = async () => { setRefreshing(true); await loadSermons(1, { silent: true }); setRefreshing(false); };
   const openFilters = () => { setDraft(filters); setFilterVisible(true); };
   const applyFilters = () => { setFilters(draft); setFilterVisible(false); };
-  const clearFilters = () => { setDraft(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setFilterVisible(false); };
+  const clearFilters = () => {
+    const cleared = { ...EMPTY_FILTERS, query: filters.query };
+    setDraft(cleared); setFilters(cleared); setFilterVisible(false);
+  };
   const playSermon = sermon => navigation.navigate('SermonDetail', { sermonId: sermon.id });
 
-  const Header = () => <View style={styles.headerRow}>
-    <Text style={[styles.resultLabel, { color: theme.secondaryText }]}>{activeFilterCount ? `${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'} applied` : 'All sermons'}</Text>
+  const Header = () => <View style={styles.searchRow}>
+    <View style={[styles.quickSearch, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AppIcon name="search" size={18} color={theme.secondaryText} />
+      <TextInput value={quickSearch} onChangeText={setQuickSearch} placeholder="Quick search sermons or preachers" placeholderTextColor={theme.secondaryText} returnKeyType="search" style={[styles.quickSearchInput, { color: theme.text }]} />
+      {quickSearch ? <TouchableOpacity onPress={() => setQuickSearch('')} accessibilityLabel="Clear search"><AppIcon name="times-circle" size={18} color={theme.secondaryText} /></TouchableOpacity> : null}
+    </View>
     <TouchableOpacity onPress={openFilters} style={[styles.filterButton, { backgroundColor: activeFilterCount ? theme.primary : theme.card, borderColor: activeFilterCount ? theme.primary : theme.border }]} accessibilityLabel="Filter sermons">
-      <AppIcon name="filter" size={16} color={activeFilterCount ? '#FFFFFF' : theme.text} /><Text style={[styles.filterText, { color: activeFilterCount ? '#FFFFFF' : theme.text }]}>Filter</Text>
+      <AppIcon name="filter" size={18} color={activeFilterCount ? '#FFFFFF' : theme.text} />
       {activeFilterCount ? <View style={styles.badge}><Text style={styles.badgeText}>{activeFilterCount}</Text></View> : null}
     </TouchableOpacity>
   </View>;
@@ -91,5 +104,5 @@ export default function SermonsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 }, content: { paddingHorizontal: 14 }, emptyContent: { flexGrow: 1 }, headerRow: { height: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, resultLabel: { fontSize: 12, fontWeight: '700' }, filterButton: { height: 38, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 7 }, filterText: { fontSize: 12, fontWeight: '800' }, badge: { minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, badgeText: { color: '#111827', fontSize: 9, fontWeight: '900' }, card: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 17, padding: 12, marginBottom: 9, gap: 10 }, playIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, copy: { flex: 1, minWidth: 0 }, title: { fontSize: 13, lineHeight: 18, fontWeight: '800' }, meta: { fontSize: 10, fontWeight: '700', marginTop: 3 }, description: { fontSize: 10, lineHeight: 15, marginTop: 4 }, engagement: { flexDirection: 'row', gap: 11, marginTop: 6 }, engagementItem: { flexDirection: 'row', alignItems: 'center', gap: 4 }, engagementText: { fontSize: 9, fontWeight: '700' }, playButton: { height: 34, borderRadius: 11, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 5 }, playText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' }, loader: { paddingVertical: 30 }, empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 70 }, emptyIcon: { width: 55, height: 55, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, emptyTitle: { fontSize: 17, fontWeight: '800', marginTop: 13 }, emptyText: { fontSize: 12, marginTop: 5 }, modalRoot: { flex: 1 }, backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', justifyContent: 'flex-end' }, sheet: { maxHeight: '90%', borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 9, paddingBottom: 16 }, sheetContent: { paddingBottom: 14 }, handle: { width: 42, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 17 }, sheetHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }, sheetTitle: { fontSize: 19, fontWeight: '900' }, sheetSubtitle: { fontSize: 11, marginTop: 3 }, close: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, label: { fontSize: 12, fontWeight: '800', marginBottom: 7, marginTop: 4 }, inputWrap: { height: 47, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 13 }, input: { flex: 1, height: 45, fontSize: 13 }, categoryList: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingBottom: 20 }, category: { minHeight: 35, borderRadius: 18, borderWidth: 1, paddingHorizontal: 13, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }, categoryText: { fontSize: 11, fontWeight: '800' }, actions: { flexDirection: 'row', gap: 10 }, clearButton: { height: 48, flex: 0.38, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }, applyButton: { height: 48, flex: 0.62, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, actionText: { fontSize: 13, fontWeight: '900' },
+  screen: { flex: 1 }, content: { paddingHorizontal: 14 }, emptyContent: { flexGrow: 1 }, searchRow: { marginTop: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 9 }, quickSearch: { flex: 1, height: 48, borderWidth: 1, borderRadius: 15, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 9 }, quickSearchInput: { flex: 1, height: 46, fontSize: 13 }, filterButton: { width: 48, height: 48, borderRadius: 15, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }, badge: { position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }, badgeText: { color: '#111827', fontSize: 9, fontWeight: '900' }, card: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 17, padding: 12, marginBottom: 9, gap: 10 }, playIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, copy: { flex: 1, minWidth: 0 }, title: { fontSize: 13, lineHeight: 18, fontWeight: '800' }, meta: { fontSize: 10, fontWeight: '700', marginTop: 3 }, description: { fontSize: 10, lineHeight: 15, marginTop: 4 }, engagement: { flexDirection: 'row', gap: 11, marginTop: 6 }, engagementItem: { flexDirection: 'row', alignItems: 'center', gap: 4 }, engagementText: { fontSize: 9, fontWeight: '700' }, playButton: { height: 34, borderRadius: 11, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 5 }, playText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' }, loader: { paddingVertical: 30 }, empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 70 }, emptyIcon: { width: 55, height: 55, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, emptyTitle: { fontSize: 17, fontWeight: '800', marginTop: 13 }, emptyText: { fontSize: 12, marginTop: 5 }, modalRoot: { flex: 1 }, backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', justifyContent: 'flex-end' }, sheet: { maxHeight: '90%', borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 9, paddingBottom: 16 }, sheetContent: { paddingBottom: 14 }, handle: { width: 42, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 17 }, sheetHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }, sheetTitle: { fontSize: 19, fontWeight: '900' }, sheetSubtitle: { fontSize: 11, marginTop: 3 }, close: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, label: { fontSize: 12, fontWeight: '800', marginBottom: 7, marginTop: 4 }, inputWrap: { height: 47, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 13 }, input: { flex: 1, height: 45, fontSize: 13 }, categoryList: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingBottom: 20 }, category: { minHeight: 35, borderRadius: 18, borderWidth: 1, paddingHorizontal: 13, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }, categoryText: { fontSize: 11, fontWeight: '800' }, actions: { flexDirection: 'row', gap: 10 }, clearButton: { height: 48, flex: 0.38, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }, applyButton: { height: 48, flex: 0.62, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, actionText: { fontSize: 13, fontWeight: '900' },
 });

@@ -28,6 +28,7 @@ import PasswordFlowScreen from '../screens/auth/PasswordFlowScreen';
 import CommunityModerationScreen from '../screens/main/CommunityModerationScreen.js';
 import CommunityModerationDetailScreen from '../screens/main/CommunityModerationDetailScreen.js';
 import SharePostScreen from '../screens/main/SharePostScreen';
+import SermonDetailScreen from '../screens/main/SermonDetailScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -74,6 +75,7 @@ import SharePostScreen from '../screens/main/SharePostScreen';
                   <Stack.Screen name="CommunityModeration" component={CommunityModerationScreen} options={{ headerShown: true, title: 'Review Requests' }} />
                   <Stack.Screen name="CommunityModerationDetail" component={CommunityModerationDetailScreen} options={{ headerShown: true, title: 'Review Details' }} />
                   <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
+                  <Stack.Screen name="SermonDetail" component={SermonDetailScreen} options={{ headerShown: true, title: 'Sermon' }} />
                 </>
               )}
             </Stack.Navigator>

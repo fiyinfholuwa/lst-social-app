@@ -32,6 +32,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/posts', [SocialController::class, 'posts']);
     Route::get('/feed-banner', [SocialController::class, 'feedBanner']);
     Route::get('/sermons', [SocialController::class, 'sermons']);
+    Route::get('/sermons/{sermon}', [SocialController::class, 'sermon']);
+    Route::post('/sermons/{sermon}/like', [SocialController::class, 'likeSermon'])->middleware('throttle:social-interactions');
+    Route::get('/sermons/{sermon}/comments', [SocialController::class, 'sermonComments']);
+    Route::post('/sermons/{sermon}/comments', [SocialController::class, 'createSermonComment'])->middleware('throttle:social-interactions');
+    Route::patch('/sermon-comments/{sermonComment}', [SocialController::class, 'updateSermonComment'])->middleware('throttle:social-writes');
+    Route::delete('/sermon-comments/{sermonComment}', [SocialController::class, 'deleteSermonComment'])->middleware('throttle:social-writes');
     Route::post('/reports', [SocialController::class, 'reportContent'])->middleware('throttle:10,1');
     Route::post('/posts', [SocialController::class, 'createPost'])->middleware('throttle:media-uploads');
     Route::patch('/posts/{post}', [SocialController::class, 'updatePost'])->middleware('throttle:media-uploads');

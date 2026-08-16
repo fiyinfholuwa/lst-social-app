@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useTheme } from '../../context/ThemeContext';
 
-export default function SermonsScreen() {
+export default function SermonsScreen({ navigation }) {
   const { theme } = useTheme();
   const tabBarHeight = useBottomTabBarHeight();
   const [query, setQuery] = useState('');
@@ -38,15 +38,7 @@ export default function SermonsScreen() {
     return () => clearTimeout(timer);
   }, [loadSermons]);
 
-  const playSermon = async sermon => {
-    const url = sermon.url?.trim();
-    if (!/^https?:\/\//i.test(url || '')) return Alert.alert('Link unavailable', 'This sermon does not have a valid link.');
-    try {
-      await Linking.openURL(url);
-    } catch (error) {
-      Alert.alert('Couldn’t open sermon', 'No installed app or browser could open this link.');
-    }
-  };
+  const playSermon = sermon => navigation.navigate('SermonDetail', { sermonId: sermon.id });
 
   const Header = () => <>
     <View style={[styles.search, { backgroundColor: theme.card, borderColor: theme.border }]}><AppIcon name="search" size={18} color={theme.secondaryText} /><TextInput value={query} onChangeText={setQuery} placeholder="Search sermon title or speaker" placeholderTextColor={theme.secondaryText} style={[styles.searchInput, { color: theme.text }]} /></View>

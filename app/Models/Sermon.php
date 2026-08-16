@@ -17,4 +17,7 @@ class Sermon extends Model
     {
         return $this->belongsTo(SermonCategory::class, 'sermon_category_id');
     }
+
+    public function likes() { return $this->belongsToMany(User::class, 'sermon_likes')->withTimestamps(); }
+    public function comments() { return $this->hasMany(SermonComment::class); }
 }

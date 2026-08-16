@@ -21,6 +21,7 @@ use App\Services\SocialService;
 use App\Services\FeedBannerService;
 use App\Models\Sermon;
 use App\Models\SermonCategory;
+use App\Models\SermonComment;
 use App\Services\UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -682,6 +683,61 @@ class SocialController extends Controller
             'currentPage' => $page->currentPage(),
             'hasMorePages' => $page->hasMorePages(),
         ]);
+    }
+
+    public function sermon(Request $request, Sermon $sermon)
+    {
+        abort_unless($sermon->is_published, 404);
+        return response()->json($this->sermonData($sermon, $request));
+    }
+
+    public function likeSermon(Request $request, Sermon $sermon)
+    {
+        abort_unless($sermon->is_published, 404);
+        $liked = $sermon->likes()->whereKey($request->user()->id)->exists();
+        $liked ? $sermon->likes()->detach($request->user()->id) : $sermon->likes()->attach($request->user()->id);
+        return response()->json($this->sermonData($sermon->fresh(), $request));
+    }
+
+    public function sermonComments(Request $request, Sermon $sermon)
+    {
+        abort_unless($sermon->is_published, 404);
+        $page = $sermon->comments()->with('user:id,name,avatar')->latest()->paginate(30);
+        return response()->json(['data' => $page->getCollection()->map(fn ($comment) => $this->sermonCommentData($comment, $request))->values(), 'currentPage' => $page->currentPage(), 'hasMorePages' => $page->hasMorePages()]);
+    }
+
+    public function createSermonComment(Request $request, Sermon $sermon)
+    {
+        abort_unless($sermon->is_published, 404);
+        $data = $request->validate(['text' => 'required|string|max:2000']);
+        $comment = $sermon->comments()->create(['user_id' => $request->user()->id, 'text' => trim($data['text'])]);
+        return response()->json($this->sermonCommentData($comment->load('user:id,name,avatar'), $request), 201);
+    }
+
+    public function updateSermonComment(Request $request, SermonComment $sermonComment)
+    {
+        abort_unless($sermonComment->user_id === $request->user()->id, 403, 'You can only edit your own comment.');
+        $data = $request->validate(['text' => 'required|string|max:2000']);
+        $sermonComment->update(['text' => trim($data['text'])]);
+        return response()->json($this->sermonCommentData($sermonComment->load('user:id,name,avatar'), $request));
+    }
+
+    public function deleteSermonComment(Request $request, SermonComment $sermonComment)
+    {
+        abort_unless($sermonComment->user_id === $request->user()->id, 403, 'You can only delete your own comment.');
+        $sermonComment->delete();
+        return response()->json(['message' => 'Comment deleted.']);
+    }
+
+    private function sermonData(Sermon $sermon, Request $request): array
+    {
+        $sermon->loadMissing('category:id,name')->loadCount(['likes', 'comments']);
+        return ['id' => (string) $sermon->id, 'title' => $sermon->title, 'description' => $sermon->description, 'speaker' => $sermon->speaker, 'url' => $sermon->url, 'category' => ['id' => (string) $sermon->category->id, 'name' => $sermon->category->name], 'likes' => $sermon->likes_count, 'commentsCount' => $sermon->comments_count, 'likedByCurrentUser' => $sermon->likes()->whereKey($request->user()->id)->exists()];
+    }
+
+    private function sermonCommentData(SermonComment $comment, Request $request): array
+    {
+        return ['id' => (string) $comment->id, 'text' => $comment->text, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'userAvatar' => $comment->user->avatar, 'mine' => $comment->user_id === $request->user()->id, 'time' => $comment->created_at->diffForHumans(), 'edited' => $comment->updated_at->gt($comment->created_at)];
     }
 
     public function notifications(Request $r)

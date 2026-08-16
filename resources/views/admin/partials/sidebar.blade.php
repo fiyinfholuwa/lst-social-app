@@ -1,5 +1,5 @@
 @php
-    $workspace = ['overview', 'members', 'communities', 'posts', 'articles'];
+    $workspace = ['overview', 'members', 'communities', 'posts', 'articles', 'sermons'];
     $labels = ['articles' => 'Learning'];
     $manage = ['moderation', 'analytics', 'settings'];
 @endphp

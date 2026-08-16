@@ -85,6 +85,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/articles', [AdminController::class, 'storeArticle'])->name('admin.articles.store');
     Route::patch('/admin/articles/{article}', [AdminController::class, 'updateArticle'])->name('admin.articles.update');
     Route::delete('/admin/articles/{article}', [AdminController::class, 'destroyArticle'])->name('admin.articles.destroy');
+    Route::post('/admin/sermon-categories', [AdminController::class, 'storeSermonCategory'])->name('admin.sermon-categories.store');
+    Route::patch('/admin/sermon-categories/{sermonCategory}', [AdminController::class, 'updateSermonCategory'])->name('admin.sermon-categories.update');
+    Route::delete('/admin/sermon-categories/{sermonCategory}', [AdminController::class, 'destroySermonCategory'])->name('admin.sermon-categories.destroy');
+    Route::post('/admin/sermons', [AdminController::class, 'storeSermon'])->name('admin.sermons.store');
+    Route::patch('/admin/sermons/{sermon}', [AdminController::class, 'updateSermon'])->name('admin.sermons.update');
+    Route::delete('/admin/sermons/{sermon}', [AdminController::class, 'destroySermon'])->name('admin.sermons.destroy');
     Route::patch('/admin/support-requests/{supportRequest}', [AdminController::class, 'updateSupportRequest'])->name('admin.support.update');
     Route::patch('/admin/content-reports/{contentReport}', [AdminController::class, 'updateContentReport'])->name('admin.reports.update');
     Route::patch('/admin/settings/profile', [AdminController::class, 'updateAdminProfile'])->name('admin.settings.profile');

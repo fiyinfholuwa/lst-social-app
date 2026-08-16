@@ -111,6 +111,7 @@ const apiService = {
   },
   getNotifications: (page = 1) => httpClient.get(`/notifications?page=${page}`),
   getFeedBanner: () => httpClient.get('/feed-banner'),
+  getSermons: (query = '', category = '', page = 1) => httpClient.get(`/sermons?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&page=${page}`),
   markNotificationRead: id => httpClient.post(`/notifications/${id}/read`),
   markAllNotificationsRead: () => httpClient.post('/notifications/read-all'),
   registerPushToken: payload => httpClient.post('/push-tokens', payload),

@@ -19,6 +19,8 @@ use App\Repositories\NotificationRepository;
 use App\Services\CacheService;
 use App\Services\SocialService;
 use App\Services\FeedBannerService;
+use App\Models\Sermon;
+use App\Models\SermonCategory;
 use App\Services\UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -646,6 +648,40 @@ class SocialController extends Controller
         $this->cache->invalidate("user:{$r->user()->id}", 'posts');
 
         return new UserResource($r->user()->load('communities'));
+    }
+
+    public function sermons(Request $request)
+    {
+        $data = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'category' => 'nullable|integer|exists:sermon_categories,id',
+            'page' => 'nullable|integer|min:1',
+        ]);
+        $search = trim($data['q'] ?? '');
+        $page = Sermon::query()
+            ->where('is_published', true)
+            ->when($data['category'] ?? null, fn ($query, $category) => $query->where('sermon_category_id', $category))
+            ->when($search !== '', fn ($query) => $query->where(fn ($match) => $match
+                ->where('title', 'like', "%{$search}%")
+                ->orWhere('speaker', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%")))
+            ->with('category:id,name')
+            ->latest()
+            ->paginate(20);
+
+        return response()->json([
+            'categories' => SermonCategory::orderBy('position')->orderBy('name')->get(['id', 'name']),
+            'data' => $page->getCollection()->map(fn (Sermon $sermon) => [
+                'id' => (string) $sermon->id,
+                'title' => $sermon->title,
+                'description' => $sermon->description,
+                'speaker' => $sermon->speaker,
+                'url' => $sermon->url,
+                'category' => ['id' => (string) $sermon->category->id, 'name' => $sermon->category->name],
+            ])->values(),
+            'currentPage' => $page->currentPage(),
+            'hasMorePages' => $page->hasMorePages(),
+        ]);
     }
 
     public function notifications(Request $r)

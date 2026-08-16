@@ -10,6 +10,8 @@ use App\Models\LearningArticle;
 use App\Models\PlatformSetting;
 use App\Models\Quiz;
 use App\Models\SupportRequest;
+use App\Models\Sermon;
+use App\Models\SermonCategory;
 use App\Models\User;
 use App\Services\CacheService;
 use App\Services\AccountDeletionService;
@@ -22,7 +24,7 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
-    private const SECTIONS = ['overview', 'members', 'communities', 'posts', 'quizzes', 'articles', 'moderation', 'analytics', 'settings'];
+    private const SECTIONS = ['overview', 'members', 'communities', 'posts', 'quizzes', 'articles', 'sermons', 'moderation', 'analytics', 'settings'];
 
     public function loginForm()
     {
@@ -158,6 +160,10 @@ class AdminController extends Controller
         if ($section === 'articles') {
             $data['articles'] = LearningArticle::with('community:id,name')->withCount('questions')->orderBy('community_id')->orderBy('position')->paginate(25);
             $data['articleCommunities'] = Community::withCount('learningArticles')->orderBy('name')->get(['id', 'name']);
+        }
+        if ($section === 'sermons') {
+            $data['sermonCategories'] = SermonCategory::withCount('sermons')->orderBy('position')->orderBy('name')->get();
+            $data['sermons'] = Sermon::with('category:id,name')->latest()->paginate(25);
         }
 
         if ($section === 'moderation') {
@@ -643,6 +649,53 @@ class AdminController extends Controller
         PlatformSetting::put('announcement_action_url', trim($data['announcement_action_url'] ?? ''));
 
         return back()->with('status', $data['feed_banner_mode'] === 'announcement' ? 'Feed announcement published.' : 'Daily encouragement restored.');
+    }
+
+    public function storeSermonCategory(Request $request)
+    {
+        SermonCategory::create($request->validate(['name' => 'required|string|max:100|unique:sermon_categories,name', 'position' => 'nullable|integer|min:0|max:10000']));
+        return back()->with('status', 'Sermon category created.');
+    }
+
+    public function updateSermonCategory(Request $request, SermonCategory $sermonCategory)
+    {
+        $sermonCategory->update($request->validate(['name' => ['required','string','max:100',Rule::unique('sermon_categories','name')->ignore($sermonCategory->id)], 'position' => 'nullable|integer|min:0|max:10000']));
+        return back()->with('status', 'Sermon category updated.');
+    }
+
+    public function destroySermonCategory(SermonCategory $sermonCategory)
+    {
+        $sermonCategory->delete();
+        return back()->with('status', 'Sermon category and its sermons deleted.');
+    }
+
+    public function storeSermon(Request $request)
+    {
+        Sermon::create($this->sermonData($request));
+        return back()->with('status', 'Sermon added.');
+    }
+
+    public function updateSermon(Request $request, Sermon $sermon)
+    {
+        $sermon->update($this->sermonData($request));
+        return back()->with('status', 'Sermon updated.');
+    }
+
+    public function destroySermon(Sermon $sermon)
+    {
+        $sermon->delete();
+        return back()->with('status', 'Sermon deleted.');
+    }
+
+    private function sermonData(Request $request): array
+    {
+        $data = $request->validate([
+            'sermon_category_id' => 'required|exists:sermon_categories,id', 'title' => 'required|string|max:255',
+            'speaker' => 'nullable|string|max:150', 'description' => 'nullable|string|max:2000',
+            'url' => 'required|url:http,https|max:2000', 'is_published' => 'nullable|boolean',
+        ]);
+        $data['is_published'] = (bool) ($data['is_published'] ?? false);
+        return $data;
     }
 
     private function quizData(Request $request): array

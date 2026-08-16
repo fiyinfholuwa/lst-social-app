@@ -5,6 +5,7 @@ import React from 'react';
         import HomeScreen from '../screens/main/HomeScreen';
         import CommunitiesScreen from '../screens/main/CommunitiesScreen';
         import ChatsScreen from '../screens/main/ChatsScreen';
+import SermonsScreen from '../screens/main/SermonsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +48,7 @@ import { useChatUnread } from '../context/ChatUnreadContext';
                   if (route.name === 'Home') iconName = 'leaf-outline';
                   else if (route.name === 'Communities') iconName = 'people-outline';
                   else if (route.name === 'Chats') iconName = 'chatbubbles-outline';
+                  else if (route.name === 'Sermons') iconName = 'play-circle-outline';
                   else if (route.name === 'Profile') iconName = 'person-outline';
                   return (
                     <View style={styles.iconWrap}>
@@ -59,6 +61,7 @@ import { useChatUnread } from '../context/ChatUnreadContext';
               <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Today' }} />
               <Tab.Screen name="Communities" component={CommunitiesScreen} options={{ title: 'Circles' }} />
               <Tab.Screen name="Chats" component={ChatsScreen} options={{ title: 'Messages', tabBarBadge: unreadChatCount || undefined, tabBarBadgeStyle: { backgroundColor: theme.accent, color: '#FFFFFF', fontSize: 9 } }} />
+              <Tab.Screen name="Sermons" component={SermonsScreen} options={{ title: 'Sermons' }} />
               <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'You' }} />
             </Tab.Navigator>
           );

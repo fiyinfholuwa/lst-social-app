@@ -395,7 +395,7 @@ export default function ChatDetailScreen({ route, navigation }) {
 
       {recording ? (
         <View
-          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10), marginBottom: keyboardOverlap }]}
+          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14), marginBottom: keyboardOverlap }]}
         >
           <View style={[styles.recordingBar, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <TouchableOpacity style={styles.recordingAction} onPress={() => finishRecording(false)} accessibilityLabel="Cancel voice note">
@@ -411,7 +411,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         </View>
       ) : (
         <View
-          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10), marginBottom: keyboardOverlap }]}
+          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14), marginBottom: keyboardOverlap }]}
         >
           <View style={styles.inputRow}>
             <View style={[styles.inputPill, { backgroundColor: theme.card, borderColor: theme.border }]}>

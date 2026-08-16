@@ -36,6 +36,7 @@ const fallbackFeedBanner = {
           const [hasMorePosts, setHasMorePosts] = useState(true);
           const [loadError, setLoadError] = useState('');
           const [feedBanner, setFeedBanner] = useState(fallbackFeedBanner);
+          const [bannerExpanded, setBannerExpanded] = useState(false);
           const loadingMoreRef = useRef(false);
           const { theme } = useTheme();
           const { user, refreshUser } = useAuth();
@@ -192,7 +193,15 @@ const fallbackFeedBanner = {
                     >
                       <Text style={styles.verseLabel}>{feedBanner.label}</Text>
                       {feedBanner.title ? <Text style={styles.announcementTitle}>{feedBanner.title}</Text> : null}
-                      <Text style={styles.verse}>{feedBanner.mode === 'encouragement' ? `“${feedBanner.text}”` : feedBanner.text}</Text>
+                      <TouchableOpacity
+                        activeOpacity={feedBanner.text.length > 90 ? 0.75 : 1}
+                        onPress={() => feedBanner.text.length > 90 && setBannerExpanded(current => !current)}
+                        accessibilityRole={feedBanner.text.length > 90 ? 'button' : undefined}
+                        accessibilityLabel={feedBanner.text.length > 90 ? `${bannerExpanded ? 'Collapse' : 'Expand'} banner message` : undefined}
+                      >
+                        <Text style={styles.verse} numberOfLines={bannerExpanded ? undefined : 2}>{feedBanner.mode === 'encouragement' ? `“${feedBanner.text}”` : feedBanner.text}</Text>
+                        {feedBanner.text.length > 90 ? <Text style={styles.expandText}>{bannerExpanded ? 'Show less' : 'Read more'}</Text> : null}
+                      </TouchableOpacity>
                       {feedBanner.reference ? <Text style={styles.reference}>{feedBanner.reference}</Text> : null}
                       {feedBanner.mode === 'announcement' && feedBanner.actionUrl ? (
                         <TouchableOpacity
@@ -203,7 +212,7 @@ const fallbackFeedBanner = {
                           accessibilityLabel={`${feedBanner.actionLabel}: ${feedBanner.title || 'announcement'}`}
                         >
                           <Text style={styles.announcementActionText}>{feedBanner.actionLabel}</Text>
-                          <Icon name="arrow-forward" size={15} color="#FFFFFF" />
+                          <Icon name="arrow-forward" size={13} color="#FFFFFF" />
                         </TouchableOpacity>
                       ) : null}
                     </LinearGradient> : null}
@@ -230,13 +239,14 @@ const fallbackFeedBanner = {
         const styles = StyleSheet.create({
           container: { flex: 1 },
           loadingFooter: { paddingVertical: 20, alignItems: 'center' },
-          verseCard: { marginHorizontal: 14, padding: 20, borderRadius: 22, marginBottom: 12 },
-          verseLabel: { color: 'rgba(255,255,255,.82)', fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
-          announcementTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', marginTop: 11 },
-          verse: { color: '#fff', fontSize: 21, fontWeight: '700', lineHeight: 29, marginTop: 11 },
-          reference: { color: 'rgba(255,255,255,.76)', fontSize: 13, marginTop: 8 },
-          announcementAction: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16, paddingHorizontal: 13, minHeight: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.16)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,.45)' },
-          announcementActionText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+          verseCard: { marginHorizontal: 14, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 16, marginBottom: 9 },
+          verseLabel: { color: 'rgba(255,255,255,.8)', fontSize: 9, lineHeight: 13, fontWeight: '800', letterSpacing: 1.2 },
+          announcementTitle: { color: '#FFFFFF', fontSize: 13, lineHeight: 17, fontWeight: '800', marginTop: 5 },
+          verse: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', lineHeight: 19, marginTop: 5 },
+          expandText: { color: 'rgba(255,255,255,.82)', fontSize: 10, lineHeight: 14, fontWeight: '800', marginTop: 3 },
+          reference: { color: 'rgba(255,255,255,.76)', fontSize: 11, lineHeight: 16, marginTop: 5 },
+          announcementAction: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 7, paddingHorizontal: 10, minHeight: 29, borderRadius: 9, backgroundColor: 'rgba(255,255,255,.16)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,.4)' },
+          announcementActionText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
           composer: { marginHorizontal: 14, marginBottom: 16, padding: 12, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
           composerIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
           composerText: { flex: 1, fontSize: 13 },

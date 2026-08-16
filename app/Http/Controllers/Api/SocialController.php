@@ -650,8 +650,11 @@ class SocialController extends Controller
 
     public function notifications(Request $r)
     {
+        $visibleNotifications = fn () => $r->user()->notifications()
+            ->where(fn ($query) => $query->whereNull('screen')->orWhere('screen', '!=', 'ChatDetail'));
+
         if ($r->has('page')) {
-            $page = $r->user()->notifications()->latest()->paginate(20);
+            $page = $visibleNotifications()->latest()->paginate(20);
 
             return response()->json([
                 'data' => $page->getCollection()->map(fn ($n) => $this->notificationData($n))->values(),
@@ -659,12 +662,13 @@ class SocialController extends Controller
                 'lastPage' => $page->lastPage(),
                 'hasMorePages' => $page->hasMorePages(),
                 'total' => $page->total(),
-                'unreadTotal' => $r->user()->notifications()->whereNull('read_at')->count(),
+                'unreadTotal' => $visibleNotifications()->whereNull('read_at')->count(),
+                'includesChatNotifications' => false,
             ]);
         }
 
         return response()->json($this->cache->remember("notifications:{$r->user()->id}", 'list', CacheService::SHORT,
-            fn () => $r->user()->notifications()->latest()->get()->map(fn ($n) => $this->notificationData($n))->all()));
+            fn () => $visibleNotifications()->latest()->get()->map(fn ($n) => $this->notificationData($n))->all()));
     }
 
     private function notificationData(Notification $notification): array

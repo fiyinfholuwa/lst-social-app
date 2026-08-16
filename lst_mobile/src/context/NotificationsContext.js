@@ -19,8 +19,12 @@ export function NotificationsProvider({ children }) {
     if (!silent) setLoading(true);
     try {
       const response = await apiService.getNotifications(requestedPage);
-      setNotifications(current => requestedPage === 1 ? response.data : [...current, ...response.data]);
-      setUnreadCount(Number(response.unreadTotal || 0));
+      const visibleNotifications = (response.data || []).filter(notification => notification.screen !== 'ChatDetail');
+      setNotifications(current => requestedPage === 1 ? visibleNotifications : [...current, ...visibleNotifications]);
+      const visibleUnreadOnPage = visibleNotifications.filter(notification => notification.unread).length;
+      setUnreadCount(current => response.includesChatNotifications === false
+        ? Number(response.unreadTotal || 0)
+        : requestedPage === 1 ? visibleUnreadOnPage : current + visibleUnreadOnPage);
       setPage(response.currentPage);
       setHasMore(Boolean(response.hasMorePages));
     } catch (error) {

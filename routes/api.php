@@ -71,6 +71,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chats/{chat}', [ConnectionController::class, 'chat']);
     Route::get('/chats/{chat}/messages', [ConnectionController::class, 'messages']);
     Route::post('/chats/{chat}/messages', [ConnectionController::class, 'send'])->middleware('throttle:message-sends');
+    Route::patch('/chats/{chat}/messages/{message}', [ConnectionController::class, 'updateMessage'])->middleware('throttle:social-writes');
+    Route::delete('/chats/{chat}/messages/{message}', [ConnectionController::class, 'deleteMessage'])->middleware('throttle:social-writes');
+    Route::post('/chats/{chat}/messages/{message}/reaction', [ConnectionController::class, 'reactToMessage'])->middleware('throttle:social-writes');
     Route::get('/notifications', [SocialController::class, 'notifications']);
     Route::post('/notifications/read-all', [SocialController::class, 'readAll']);
     Route::post('/notifications/{notification}/read', [SocialController::class, 'readNotification']);

@@ -98,6 +98,9 @@ const apiService = {
   getOrCreateChat: otherUser => httpClient.post(`/chats/with/${otherUser.id}`),
   getMessages: (chatId, page = 1) => httpClient.get(`/chats/${chatId}/messages?page=${page}`),
   sendMessage: (chatId, text) => httpClient.post(`/chats/${chatId}/messages`, { text }),
+  editMessage: (chatId, messageId, text) => httpClient.patch(`/chats/${chatId}/messages/${messageId}`, { text }),
+  deleteMessage: (chatId, messageId, scope) => httpClient.delete(`/chats/${chatId}/messages/${messageId}`, { body: { scope } }),
+  reactToMessage: (chatId, messageId, emoji) => httpClient.post(`/chats/${chatId}/messages/${messageId}/reaction`, { emoji }),
   sendVoiceMessage: (chatId, audioUri, duration) => {
     const form = new FormData();
     const extension = audioUri.split('?')[0].split('.').pop()?.toLowerCase();

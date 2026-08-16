@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\Message;
+use App\Models\MessageReaction;
+use App\Models\MessageDeletion;
 use App\Models\User;
 use App\Http\Resources\UserResource;
 use App\Repositories\ConnectionRepository;
@@ -164,8 +166,66 @@ class ConnectionController extends Controller
         return response()->json($this->messageData($m), 201);
     }
 
+    public function updateMessage(Request $r, Chat $chat, Message $message)
+    {
+        $this->authorizeMessageEdit($r, $chat, $message);
+        abort_unless($message->type === 'text', 422, 'Only text messages can be edited.');
+        $data = $r->validate(['text' => 'required|string|max:5000']);
+        $message->update(['text' => trim($data['text']), 'edited_at' => now()]);
+        $this->service->invalidateChat($chat);
+
+        return response()->json($this->messageData($message->load('reactions')));
+    }
+
+    public function deleteMessage(Request $r, Chat $chat, Message $message)
+    {
+        $this->repo->chat($r->user(), $chat);
+        abort_unless($message->chat_id === $chat->id, 404);
+        $data = $r->validate(['scope' => 'required|in:me,everyone']);
+
+        if ($data['scope'] === 'everyone') {
+            abort_unless($message->sender_id === $r->user()->id, 403, 'You can only delete your own messages for everyone.');
+            $message->delete();
+            $chat->touch();
+        } else {
+            MessageDeletion::firstOrCreate(['message_id' => $message->id, 'user_id' => $r->user()->id]);
+        }
+        $this->service->invalidateChat($chat);
+
+        return response()->json(['message' => $data['scope'] === 'everyone' ? 'Message deleted for everyone.' : 'Message deleted for you.']);
+    }
+
+    public function reactToMessage(Request $r, Chat $chat, Message $message)
+    {
+        $this->repo->chat($r->user(), $chat);
+        abort_unless($message->chat_id === $chat->id, 404);
+        $data = $r->validate(['emoji' => 'nullable|in:❤️,👍,😂,😮,😢,🙏']);
+        $emoji = $data['emoji'] ?? null;
+
+        if ($emoji === null) {
+            MessageReaction::where(['message_id' => $message->id, 'user_id' => $r->user()->id])->delete();
+        } else {
+            MessageReaction::updateOrCreate(
+                ['message_id' => $message->id, 'user_id' => $r->user()->id],
+                ['emoji' => $emoji],
+            );
+        }
+
+        return response()->json($this->messageData($message->load('reactions')));
+    }
+
+    private function authorizeMessageEdit(Request $request, Chat $chat, Message $message): void
+    {
+        $this->repo->chat($request->user(), $chat);
+        abort_unless($message->chat_id === $chat->id, 404);
+        abort_unless($message->sender_id === $request->user()->id, 403, 'You can only change your own messages.');
+        abort_if($message->created_at->lte(now()->subMinutes(15)), 422, 'Messages can only be edited or deleted within 15 minutes.');
+    }
+
     private function messageData(Message $message): array
     {
+        $reactions = $message->relationLoaded('reactions') ? $message->reactions : $message->reactions()->get();
+
         return [
             'id' => (string) $message->id,
             'senderId' => (string) $message->sender_id,
@@ -177,6 +237,13 @@ class ConnectionController extends Controller
             'duration' => $message->duration,
             'read' => $message->read_at !== null,
             'timestamp' => $message->created_at->diffForHumans(),
+            'createdAt' => $message->created_at->toIso8601String(),
+            'edited' => $message->edited_at !== null,
+            'reactions' => $reactions->groupBy('emoji')->map(fn ($items, $emoji) => [
+                'emoji' => $emoji,
+                'count' => $items->count(),
+                'reactedByCurrentUser' => $items->contains('user_id', request()->user()?->id),
+            ])->values()->all(),
         ];
     }
 

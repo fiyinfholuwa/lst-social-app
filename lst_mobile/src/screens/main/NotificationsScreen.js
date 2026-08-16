@@ -45,7 +45,7 @@ export default function NotificationsScreen({ navigation }) {
           {unreadCount ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : 'You’re all caught up'}
         </Text>
         {unreadCount ? (
-          <TouchableOpacity onPress={markEverythingRead}>
+          <TouchableOpacity style={styles.markAllButton} onPress={markEverythingRead}>
             <Text style={[styles.markAll, { color: theme.primary }]}>Mark all as read</Text>
           </TouchableOpacity>
         ) : null}
@@ -98,18 +98,19 @@ export default function NotificationsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  summary: { minHeight: 52, paddingHorizontal: 18, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  summaryText: { fontSize: 12, fontWeight: '600' },
-  markAll: { fontSize: 12, fontWeight: '700' },
+  summary: { minHeight: 52, paddingHorizontal: 16, paddingVertical: 9, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  summaryText: { flex: 1, minWidth: 0, marginRight: 10, fontSize: 12, lineHeight: 17, fontWeight: '600', flexShrink: 1 },
+  markAllButton: { flexShrink: 0, paddingVertical: 7, paddingLeft: 6 },
+  markAll: { fontSize: 12, lineHeight: 17, fontWeight: '700' },
   list: { padding: 14, paddingBottom: 40 },
-  notification: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderWidth: 1, borderRadius: 17, marginBottom: 10 },
-  icon: { width: 39, height: 39, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  copy: { flex: 1 },
-  titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { flex: 1, fontSize: 13, fontWeight: '700' },
+  notification: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderWidth: 1, borderRadius: 17, marginBottom: 10, overflow: 'visible' },
+  icon: { width: 39, height: 39, flexShrink: 0, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  copy: { flex: 1, minWidth: 0 },
+  titleRow: { width: '100%', flexDirection: 'row', alignItems: 'flex-start' },
+  title: { flex: 1, minWidth: 0, fontSize: 13, lineHeight: 18, fontWeight: '700', flexShrink: 1 },
   unreadDot: { width: 7, height: 7, borderRadius: 4, marginLeft: 8 },
-  message: { fontSize: 12, lineHeight: 18, marginTop: 4 },
-  time: { fontSize: 10, fontWeight: '700', marginTop: 7 },
+  message: { width: '100%', flexShrink: 1, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  time: { alignSelf: 'flex-start', fontSize: 10, lineHeight: 15, fontWeight: '700', marginTop: 7 },
   empty: { alignItems: 'center', paddingHorizontal: 35, paddingTop: 80 },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 6 },

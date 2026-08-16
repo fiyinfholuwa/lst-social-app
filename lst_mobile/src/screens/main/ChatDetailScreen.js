@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, FlatList, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import {
   AudioModule,
   RecordingPresets,
@@ -26,6 +27,19 @@ const formatDuration = milliseconds => {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = String(totalSeconds % 60).padStart(2, '0');
   return `${minutes}:${seconds}`;
+};
+
+const MESSAGE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
+
+const canModifyMessage = message => {
+  if (!message) return false;
+  const createdAt = new Date(message.createdAt).getTime();
+  if (Number.isFinite(createdAt)) return Date.now() - createdAt < 15 * 60 * 1000;
+
+  const relativeTime = String(message.timestamp || '').toLowerCase();
+  if (relativeTime.includes('just now') || relativeTime.includes('second ago') || relativeTime.includes('seconds ago')) return true;
+  const minutes = relativeTime.match(/^(\d+)\s+minutes?\s+ago$/);
+  return minutes ? Number(minutes[1]) < 15 : false;
 };
 
 function VoiceNote({ message, mine, theme, activeVoiceId, onActivate }) {
@@ -115,7 +129,13 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [sending, setSending] = useState(false);
   const [reportingMessage, setReportingMessage] = useState(null);
+  const [keyboardOverlap, setKeyboardOverlap] = useState(0);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [messageActionPending, setMessageActionPending] = useState(false);
   const inputRef = useRef(null);
+  const listRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder, 250);
   const recording = recorderState.isRecording;
@@ -124,6 +144,23 @@ export default function ChatDetailScreen({ route, navigation }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { refreshUnreadChats } = useChatUnread();
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', event => {
+      if (Platform.OS === 'android') {
+        const windowHeight = Dimensions.get('window').height;
+        const keyboardTop = event.endCoordinates?.screenY ?? windowHeight;
+        setKeyboardOverlap(Math.max(0, windowHeight - keyboardTop));
+      }
+      requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardOverlap(0));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -189,6 +226,66 @@ export default function ChatDetailScreen({ route, navigation }) {
     setTimeout(() => inputRef.current?.focus(), 250);
   };
 
+  const replaceMessage = updated => setMessages(current => current.map(message => String(message.id) === String(updated.id) ? updated : message));
+
+  const reactToMessage = async emoji => {
+    if (!selectedMessage || messageActionPending) return;
+    const currentReaction = selectedMessage.reactions?.find(reaction => reaction.reactedByCurrentUser)?.emoji;
+    setMessageActionPending(true);
+    try {
+      const updated = await apiService.reactToMessage(chatId, selectedMessage.id, currentReaction === emoji ? null : emoji);
+      replaceMessage(updated);
+      setSelectedMessage(updated);
+    } catch (error) {
+      Alert.alert('Reaction not saved', error.message || 'Please try again.');
+    } finally { setMessageActionPending(false); }
+  };
+
+  const copyMessage = async () => {
+    if (!selectedMessage?.text) return;
+    await Clipboard.setStringAsync(selectedMessage.text);
+    setSelectedMessage(null);
+  };
+
+  const beginEditMessage = () => {
+    setEditText(selectedMessage?.text || '');
+    setEditingMessage(selectedMessage);
+    setSelectedMessage(null);
+  };
+
+  const saveEditedMessage = async () => {
+    if (!editingMessage || !editText.trim() || messageActionPending) return;
+    setMessageActionPending(true);
+    try {
+      const updated = await apiService.editMessage(chatId, editingMessage.id, editText.trim());
+      replaceMessage(updated);
+      setEditingMessage(null);
+      setEditText('');
+    } catch (error) {
+      Alert.alert('Message not edited', error.message || 'Please try again.');
+    } finally { setMessageActionPending(false); }
+  };
+
+  const deleteSelectedMessage = async (message, scope) => {
+    try {
+      await apiService.deleteMessage(chatId, message.id, scope);
+      setMessages(current => current.filter(item => String(item.id) !== String(message.id)));
+    } catch (error) {
+      Alert.alert('Message not deleted', error.message || 'Please try again.');
+    }
+  };
+
+  const requestDeleteMessage = () => {
+    const message = selectedMessage;
+    setSelectedMessage(null);
+    const mine = String(message?.senderId) === String(user.id);
+    Alert.alert('Delete message?', mine ? 'Choose who this message should be deleted for.' : 'This message will only be removed from your chat.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete for me', onPress: () => deleteSelectedMessage(message, 'me') },
+      ...(mine ? [{ text: 'Delete for everyone', style: 'destructive', onPress: () => deleteSelectedMessage(message, 'everyone') }] : []),
+    ]);
+  };
+
   const startRecording = async () => {
     try {
       setActiveVoiceId(null);
@@ -232,7 +329,11 @@ export default function ChatDetailScreen({ route, navigation }) {
   };
 
   return (
-    <KeyboardSafeView style={{ backgroundColor: theme.background }} keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
+    <KeyboardSafeView
+      style={{ backgroundColor: theme.background }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      androidBehavior="none"
+    >
       {chat?.withUser ? (
         <TouchableOpacity
           style={[styles.profileHeader, { backgroundColor: theme.card, borderColor: theme.border }]}
@@ -249,6 +350,7 @@ export default function ChatDetailScreen({ route, navigation }) {
       ) : null}
 
       <FlatList
+        ref={listRef}
         data={messages}
         keyExtractor={item => item.id}
         inverted
@@ -264,9 +366,8 @@ export default function ChatDetailScreen({ route, navigation }) {
             <View style={[styles.messageRow, mine ? styles.myMessage : styles.otherMessage]}>
               <TouchableOpacity
                 activeOpacity={mine ? 1 : 0.82}
-                delayLongPress={450}
-                onLongPress={!mine ? () => setReportingMessage(item) : undefined}
-                accessibilityHint={!mine ? 'Long press to report this message' : undefined}
+                onPress={() => setSelectedMessage(item)}
+                accessibilityHint="Opens message options"
                 style={[styles.bubble, item.type === 'voice' && styles.voiceBubble, { backgroundColor: mine ? theme.primary : theme.card }]}
               >
                 {item.type === 'voice' ? (
@@ -280,19 +381,22 @@ export default function ChatDetailScreen({ route, navigation }) {
                 ) : (
                   <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>
                 )}
+                {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><Text style={styles.reactionEmoji}>{reaction.emoji}</Text>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}
                 <View style={styles.messageMeta}>
+                  {item.edited ? <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>edited</Text> : null}
                   <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{item.timestamp}</Text>
                   {mine ? <AppIcon name={item.read ? 'checkmark-done' : 'check'} size={14} color={item.read ? '#22A06B' : 'rgba(255,255,255,0.72)'} /> : null}
                 </View>
               </TouchableOpacity>
-              {!mine ? <TouchableOpacity style={styles.reportMessageButton} onPress={() => setReportingMessage(item)} accessibilityLabel="Report this message"><AppIcon name="flag" size={14} color={theme.secondaryText} /></TouchableOpacity> : null}
             </View>
           );
         }}
       />
 
       {recording ? (
-        <View style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10) }]}>
+        <View
+          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10), marginBottom: keyboardOverlap }]}
+        >
           <View style={[styles.recordingBar, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <TouchableOpacity style={styles.recordingAction} onPress={() => finishRecording(false)} accessibilityLabel="Cancel voice note">
               <AppIcon name="trash" size={16} color={theme.danger} />
@@ -306,7 +410,9 @@ export default function ChatDetailScreen({ route, navigation }) {
           </View>
         </View>
       ) : (
-        <View style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10) }]}>
+        <View
+          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10), marginBottom: keyboardOverlap }]}
+        >
           <View style={styles.inputRow}>
             <View style={[styles.inputPill, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <TouchableOpacity
@@ -350,6 +456,32 @@ export default function ChatDetailScreen({ route, navigation }) {
       )}
       {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
       <ReportModal visible={Boolean(reportingMessage)} targetType="message" targetId={reportingMessage?.id} targetName="message" onClose={result => { setReportingMessage(null); if (result?.submitted) Alert.alert('Report received', 'Thank you. The moderation team will review this message.'); }} />
+
+      <Modal visible={Boolean(selectedMessage)} transparent animationType="fade" onRequestClose={() => setSelectedMessage(null)}>
+        <Pressable style={styles.actionBackdrop} onPress={() => setSelectedMessage(null)}>
+          <Pressable style={[styles.actionSheet, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
+            <View style={[styles.actionHandle, { backgroundColor: theme.border }]} />
+            <Text style={[styles.actionTitle, { color: theme.text }]}>Message options</Text>
+            <View style={styles.reactionPicker}>{MESSAGE_REACTIONS.map(emoji => <TouchableOpacity key={emoji} style={[styles.reactionChoice, selectedMessage?.reactions?.some(reaction => reaction.emoji === emoji && reaction.reactedByCurrentUser) && { backgroundColor: theme.primarySoft, borderColor: theme.primary }]} onPress={() => reactToMessage(emoji)} disabled={messageActionPending}><Text style={styles.reactionChoiceText}>{emoji}</Text></TouchableOpacity>)}</View>
+            {selectedMessage?.text ? <TouchableOpacity style={styles.actionRow} onPress={copyMessage}><AppIcon name="copy-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Copy message</Text></TouchableOpacity> : null}
+            {selectedMessage && String(selectedMessage.senderId) === String(user.id) && selectedMessage.type === 'text' && canModifyMessage(selectedMessage) ? <TouchableOpacity style={styles.actionRow} onPress={beginEditMessage}><AppIcon name="create-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Edit message</Text></TouchableOpacity> : null}
+            {selectedMessage ? <TouchableOpacity style={styles.actionRow} onPress={requestDeleteMessage}><AppIcon name="trash" size={19} color={theme.danger} /><Text style={[styles.actionText, { color: theme.danger }]}>Delete message</Text></TouchableOpacity> : null}
+            {selectedMessage && String(selectedMessage.senderId) !== String(user.id) ? <TouchableOpacity style={styles.actionRow} onPress={() => { setReportingMessage(selectedMessage); setSelectedMessage(null); }}><AppIcon name="flag" size={19} color={theme.danger} /><Text style={[styles.actionText, { color: theme.danger }]}>Report message</Text></TouchableOpacity> : null}
+            <TouchableOpacity style={[styles.actionCancel, { borderColor: theme.border }]} onPress={() => setSelectedMessage(null)}><Text style={[styles.actionCancelText, { color: theme.text }]}>Cancel</Text></TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={Boolean(editingMessage)} transparent animationType="fade" onRequestClose={() => !messageActionPending && setEditingMessage(null)}>
+        <Pressable style={styles.editBackdrop} onPress={() => !messageActionPending && setEditingMessage(null)}>
+          <Pressable style={[styles.editDialog, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
+            <Text style={[styles.editTitle, { color: theme.text }]}>Edit message</Text>
+            <TextInput autoFocus multiline value={editText} onChangeText={setEditText} maxLength={5000} style={[styles.editInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]} />
+            <Text style={[styles.editHint, { color: theme.secondaryText }]}>Messages can be edited for 15 minutes after sending.</Text>
+            <View style={styles.editActions}><TouchableOpacity style={[styles.editCancel, { borderColor: theme.border }]} onPress={() => setEditingMessage(null)} disabled={messageActionPending}><Text style={[styles.editCancelText, { color: theme.text }]}>Cancel</Text></TouchableOpacity><TouchableOpacity style={[styles.editSave, { backgroundColor: theme.primary }]} onPress={saveEditedMessage} disabled={!editText.trim() || messageActionPending}>{messageActionPending ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.editSaveText}>Save</Text>}</TouchableOpacity></View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardSafeView>
   );
 }
@@ -371,7 +503,6 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 13, lineHeight: 19 },
   messageMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 5 },
   messageTime: { fontSize: 10 },
-  reportMessageButton: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginLeft: 3 },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -12, paddingHorizontal: 12, paddingTop: 9 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   inputPill: { flex: 1, minHeight: 46, maxHeight: 108, borderWidth: StyleSheet.hairlineWidth, borderRadius: 23, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },
@@ -395,4 +526,29 @@ const styles = StyleSheet.create({
   voiceProgress: { height: 3, borderRadius: 2 },
   voiceMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   voiceDuration: { fontSize: 10, fontVariant: ['tabular-nums'] },
+  reactionSummary: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 7 },
+  reactionBadge: { minHeight: 24, borderRadius: 12, paddingHorizontal: 7, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  reactionEmoji: { fontSize: 13 },
+  reactionCount: { fontSize: 10, fontWeight: '800' },
+  actionBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(28,17,24,0.56)' },
+  actionSheet: { padding: 20, paddingBottom: 30, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1 },
+  actionHandle: { width: 42, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 15 },
+  actionTitle: { fontSize: 19, fontWeight: '800', marginBottom: 14 },
+  reactionPicker: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  reactionChoice: { width: 43, height: 43, borderRadius: 14, borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  reactionChoiceText: { fontSize: 23 },
+  actionRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 5 },
+  actionText: { fontSize: 14, fontWeight: '700' },
+  actionCancel: { height: 49, borderWidth: 1, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  actionCancelText: { fontSize: 13, fontWeight: '800' },
+  editBackdrop: { flex: 1, backgroundColor: 'rgba(28,17,24,0.56)', alignItems: 'center', justifyContent: 'center', padding: 22 },
+  editDialog: { width: '100%', maxWidth: 380, borderWidth: 1, borderRadius: 24, padding: 20 },
+  editTitle: { fontSize: 19, fontWeight: '800', marginBottom: 14 },
+  editInput: { minHeight: 110, maxHeight: 220, borderWidth: 1, borderRadius: 15, padding: 13, fontSize: 14, textAlignVertical: 'top' },
+  editHint: { fontSize: 11, lineHeight: 16, marginTop: 8 },
+  editActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  editCancel: { flex: 1, height: 49, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  editCancelText: { fontSize: 13, fontWeight: '800' },
+  editSave: { flex: 1, height: 49, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  editSaveText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
 });

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -7,6 +7,7 @@ import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
 import KeyboardSafeView from '../../components/KeyboardSafeView';
+import AppToggle from '../../components/AppToggle';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -156,7 +157,7 @@ export default function EditProfileScreen({ navigation }) {
     </View>
     {field('Occupation', 'occupation', { placeholder: 'What do you do?' })}
     {field('Place of work', 'workplace', { placeholder: 'Where do you work?' })}
-    <View style={[styles.privacy, { backgroundColor: theme.card, borderColor: theme.border }]}><View style={styles.privacyCopy}><Text style={[styles.privacyTitle, { color: theme.text }]}>Private profile</Text><Text style={[styles.privacyText, { color: theme.secondaryText }]}>Hide your bio, hobbies, relationship status, birth date and work information from visitors.</Text></View><Switch value={form.is_profile_private} onValueChange={value => update('is_profile_private', value)} trackColor={{ true: theme.primary }} /></View>
+    <View style={[styles.privacy, { backgroundColor: theme.card, borderColor: theme.border }]}><View style={styles.privacyCopy}><Text style={[styles.privacyTitle, { color: theme.text }]}>Private profile</Text><Text style={[styles.privacyText, { color: theme.secondaryText }]}>Hide your bio, hobbies, relationship status, birth date and work information from visitors.</Text></View><AppToggle value={form.is_profile_private} onChange={value => update('is_profile_private', value)} theme={theme} accessibilityLabel="Private profile" offIcon="people-outline" onIcon="lock" /></View>
     <TouchableOpacity style={[styles.save, { backgroundColor: theme.primary }]} onPress={save} disabled={saving}>{saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>Save profile</Text>}</TouchableOpacity>
   </ScrollView>
   </KeyboardSafeView>;

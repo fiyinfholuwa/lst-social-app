@@ -111,7 +111,10 @@ const apiService = {
   },
   getNotifications: (page = 1) => httpClient.get(`/notifications?page=${page}`),
   getFeedBanner: () => httpClient.get('/feed-banner'),
-  getSermons: (query = '', category = '', page = 1) => httpClient.get(`/sermons?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&page=${page}`),
+  getSermons: (filters = {}, page = 1) => {
+    const params = new URLSearchParams({ q: filters.query || '', title: filters.title || '', speaker: filters.speaker || '', category: filters.category || '', page: String(page) });
+    return httpClient.get(`/sermons?${params.toString()}`);
+  },
   getSermon: sermonId => httpClient.get(`/sermons/${sermonId}`),
   likeSermon: sermonId => httpClient.post(`/sermons/${sermonId}/like`),
   getSermonComments: (sermonId, page = 1) => httpClient.get(`/sermons/${sermonId}/comments?page=${page}`),

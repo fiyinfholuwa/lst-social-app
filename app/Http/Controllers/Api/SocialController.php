@@ -655,18 +655,25 @@ class SocialController extends Controller
     {
         $data = $request->validate([
             'q' => 'nullable|string|max:100',
+            'title' => 'nullable|string|max:100',
+            'speaker' => 'nullable|string|max:100',
             'category' => 'nullable|integer|exists:sermon_categories,id',
             'page' => 'nullable|integer|min:1',
         ]);
         $search = trim($data['q'] ?? '');
+        $title = trim($data['title'] ?? '');
+        $speaker = trim($data['speaker'] ?? '');
         $page = Sermon::query()
             ->where('is_published', true)
             ->when($data['category'] ?? null, fn ($query, $category) => $query->where('sermon_category_id', $category))
+            ->when($title !== '', fn ($query) => $query->where('title', 'like', "%{$title}%"))
+            ->when($speaker !== '', fn ($query) => $query->where('speaker', 'like', "%{$speaker}%"))
             ->when($search !== '', fn ($query) => $query->where(fn ($match) => $match
                 ->where('title', 'like', "%{$search}%")
                 ->orWhere('speaker', 'like', "%{$search}%")
                 ->orWhere('description', 'like', "%{$search}%")))
             ->with('category:id,name')
+            ->withCount(['likes', 'comments'])
             ->latest()
             ->paginate(20);
 
@@ -679,6 +686,8 @@ class SocialController extends Controller
                 'speaker' => $sermon->speaker,
                 'url' => $sermon->url,
                 'category' => ['id' => (string) $sermon->category->id, 'name' => $sermon->category->name],
+                'likes' => $sermon->likes_count,
+                'commentsCount' => $sermon->comments_count,
             ])->values(),
             'currentPage' => $page->currentPage(),
             'hasMorePages' => $page->hasMorePages(),
@@ -737,7 +746,7 @@ class SocialController extends Controller
 
     private function sermonCommentData(SermonComment $comment, Request $request): array
     {
-        return ['id' => (string) $comment->id, 'text' => $comment->text, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'userAvatar' => $comment->user->avatar, 'mine' => $comment->user_id === $request->user()->id, 'time' => $comment->created_at->diffForHumans(), 'edited' => $comment->updated_at->gt($comment->created_at)];
+        return ['id' => (string) $comment->id, 'text' => $comment->text, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'userAvatar' => $this->uploads->url($comment->user->avatar), 'mine' => $comment->user_id === $request->user()->id, 'time' => $comment->created_at->diffForHumans(), 'edited' => $comment->updated_at->gt($comment->created_at)];
     }
 
     public function notifications(Request $r)

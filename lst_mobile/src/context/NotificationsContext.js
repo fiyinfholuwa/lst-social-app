@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import apiService from '../api/apiService';
 import { useAuth } from './AuthContext';
 
@@ -11,10 +11,12 @@ export function NotificationsProvider({ children }) {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
-  const loadNotifications = useCallback(async (requestedPage = 1) => {
-    if (!user || loading) return;
-    setLoading(true);
+  const loadNotifications = useCallback(async (requestedPage = 1, { silent = false } = {}) => {
+    if (!user || loadingRef.current) return;
+    loadingRef.current = true;
+    if (!silent) setLoading(true);
     try {
       const response = await apiService.getNotifications(requestedPage);
       setNotifications(current => requestedPage === 1 ? response.data : [...current, ...response.data]);
@@ -24,9 +26,10 @@ export function NotificationsProvider({ children }) {
     } catch (error) {
       console.error('Unable to load notifications:', error);
     } finally {
-      setLoading(false);
+      loadingRef.current = false;
+      if (!silent) setLoading(false);
     }
-  }, [user?.id, loading]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -50,8 +53,9 @@ export function NotificationsProvider({ children }) {
   const loadMore = useCallback(() => {
     if (hasMore && !loading) loadNotifications(page + 1);
   }, [hasMore, loading, loadNotifications, page]);
+  const refreshNotifications = useCallback(() => loadNotifications(1, { silent: true }), [loadNotifications]);
 
-  const value = useMemo(() => ({ notifications, unreadCount, markAsRead, markAllRead, loadMore, loading, hasMore }), [notifications, unreadCount, loadMore, loading, hasMore]);
+  const value = useMemo(() => ({ notifications, unreadCount, markAsRead, markAllRead, loadMore, refreshNotifications, loading, hasMore }), [notifications, unreadCount, loadMore, refreshNotifications, loading, hasMore]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

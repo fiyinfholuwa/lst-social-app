@@ -26,7 +26,7 @@ export function FriendshipsProvider({ children }) {
   const [friendshipsLoading, setLoading] = useState(true);
   const requestSequence = useRef(0);
 
-  const refreshFriendships = useCallback(async () => {
+  const refreshFriendships = useCallback(async ({ silent = false } = {}) => {
     const sequence = ++requestSequence.current;
 
     if (!user) {
@@ -35,14 +35,14 @@ export function FriendshipsProvider({ children }) {
       return;
     }
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const response = await apiService.getFriendships();
       if (sequence === requestSequence.current) setState(normalizeState(response));
     } catch (error) {
       console.error('Unable to load friendships:', error);
     } finally {
-      if (sequence === requestSequence.current) setLoading(false);
+      if (sequence === requestSequence.current && !silent) setLoading(false);
     }
   }, [user?.id]);
 

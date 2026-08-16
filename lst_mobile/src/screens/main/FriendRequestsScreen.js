@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
@@ -9,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 export default function FriendRequestsScreen({ navigation }) {
   const { theme } = useTheme();
-  const { acceptFriendRequest, declineFriendRequest, friendshipsLoading } = useFriendships();
+  const { acceptFriendRequest, declineFriendRequest, friendshipsLoading, refreshFriendships } = useFriendships();
   const [people, setPeople] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -17,7 +18,7 @@ export default function FriendRequestsScreen({ navigation }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState('');
 
-  const loadPeople = async (requestedPage = 1) => {
+  const loadPeople = React.useCallback(async (requestedPage = 1) => {
     if (requestedPage === 1) setLoading(true); else setLoadingMore(true);
     setLoadError('');
     try {
@@ -30,9 +31,12 @@ export default function FriendRequestsScreen({ navigation }) {
     } finally {
       setLoading(false); setLoadingMore(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { loadPeople(1); }, []);
+  useFocusEffect(React.useCallback(() => {
+    refreshFriendships({ silent: true });
+    loadPeople(1);
+  }, [loadPeople, refreshFriendships]));
 
   if (friendshipsLoading || loading) return <Loader />;
 

@@ -1,7 +1,7 @@
 @php
     $brandName = \App\Models\PlatformSetting::valueFor('brand_name', config('branding.name'));
     $productName = \App\Models\PlatformSetting::valueFor('product_name', config('branding.product_name'));
-    $supportEmail = \App\Models\PlatformSetting::valueFor('support_email', config('branding.support_email'));
+    $deletionEmail = 'fiyinfholuwa@gmail.com';
 @endphp
 <!doctype html>
 <html lang="en">
@@ -32,7 +32,7 @@
 
         <h2>Request deletion by email</h2>
         <p>If you cannot access the app, email us from the address registered to your account. Use the subject “Delete my {{ $productName }} account” and include your full name. We may ask you to verify ownership before processing the request.</p>
-        <a class="button" href="mailto:{{ $supportEmail }}?subject={{ rawurlencode('Delete my '.$productName.' account') }}">Request account deletion</a>
+        <a class="button" href="mailto:{{ $deletionEmail }}?subject={{ rawurlencode('Delete my '.$productName.' account') }}">Request account deletion</a>
 
         <h2>What will be deleted</h2>
         <p>Your account, profile details, authentication tokens, posts, comments, messages, uploaded media and other data associated with your account will be deleted or de-identified from active systems.</p>

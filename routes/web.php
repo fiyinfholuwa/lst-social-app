@@ -13,6 +13,7 @@ Route::get('/', function () {
 Route::view('/privacy-policy', 'legal', ['document' => 'privacy'])->name('privacy');
 Route::view('/terms-and-conditions', 'legal', ['document' => 'terms'])->name('terms');
 Route::view('/delete-account', 'delete-account')->name('account-deletion');
+Route::view('/child-safety-standards', 'child-safety-standards')->name('child-safety-standards');
 
 Route::get('/system/run-queue', function () {
     abort_unless(config('queue.web_runner_enabled'), 404);

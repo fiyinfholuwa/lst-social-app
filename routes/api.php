@@ -36,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sermons/{sermon}/like', [SocialController::class, 'likeSermon'])->middleware('throttle:social-interactions');
     Route::get('/sermons/{sermon}/comments', [SocialController::class, 'sermonComments']);
     Route::post('/sermons/{sermon}/comments', [SocialController::class, 'createSermonComment'])->middleware('throttle:social-interactions');
+    Route::get('/sermons/{sermon}/comments/{sermonComment}/replies', [SocialController::class, 'sermonCommentReplies']);
+    Route::post('/sermon-comments/{sermonComment}/like', [SocialController::class, 'likeSermonComment'])->middleware('throttle:social-interactions');
     Route::patch('/sermon-comments/{sermonComment}', [SocialController::class, 'updateSermonComment'])->middleware('throttle:social-writes');
     Route::delete('/sermon-comments/{sermonComment}', [SocialController::class, 'deleteSermonComment'])->middleware('throttle:social-writes');
     Route::post('/reports', [SocialController::class, 'reportContent'])->middleware('throttle:10,1');

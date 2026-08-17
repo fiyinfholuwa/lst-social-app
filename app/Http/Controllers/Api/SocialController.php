@@ -719,16 +719,41 @@ class SocialController extends Controller
     public function sermonComments(Request $request, Sermon $sermon)
     {
         abort_unless($sermon->is_published, 404);
-        $page = $sermon->comments()->with('user:id,name,avatar')->latest()->paginate(30);
+        $page = $sermon->comments()->whereNull('parent_id')
+            ->with(['user:id,name,avatar', 'likes' => fn ($query) => $query->whereKey($request->user()->id)])
+            ->withExists(['replies as replied_by_current_user' => fn ($query) => $query->where('user_id', $request->user()->id)])
+            ->withCount(['likes', 'replies'])->latest()->paginate(30);
         return response()->json(['data' => $page->getCollection()->map(fn ($comment) => $this->sermonCommentData($comment, $request))->values(), 'currentPage' => $page->currentPage(), 'hasMorePages' => $page->hasMorePages()]);
     }
 
     public function createSermonComment(Request $request, Sermon $sermon)
     {
         abort_unless($sermon->is_published, 404);
-        $data = $request->validate(['text' => 'required|string|max:2000']);
-        $comment = $sermon->comments()->create(['user_id' => $request->user()->id, 'text' => trim($data['text'])]);
-        return response()->json($this->sermonCommentData($comment->load('user:id,name,avatar'), $request), 201);
+        $data = $request->validate(['text' => 'required|string|max:2000', 'parent_id' => 'nullable|integer']);
+        if (! empty($data['parent_id'])) {
+            $parent = $sermon->comments()->whereNull('parent_id')->findOrFail($data['parent_id']);
+            abort_if($parent->replies()->where('user_id', $request->user()->id)->exists(), 422, 'You have already replied to this comment.');
+        }
+        $comment = $sermon->comments()->create(['user_id' => $request->user()->id, 'parent_id' => $data['parent_id'] ?? null, 'text' => trim($data['text'])]);
+        $comment->load(['user:id,name,avatar', 'likes'])->loadCount(['likes', 'replies']);
+        return response()->json($this->sermonCommentData($comment, $request), 201);
+    }
+
+    public function sermonCommentReplies(Request $request, Sermon $sermon, SermonComment $sermonComment)
+    {
+        abort_unless($sermon->is_published && $sermonComment->sermon_id === $sermon->id && $sermonComment->parent_id === null, 404);
+        $page = $sermonComment->replies()
+            ->with(['user:id,name,avatar', 'likes' => fn ($query) => $query->whereKey($request->user()->id)])
+            ->withCount(['likes', 'replies'])->oldest()->paginate(20);
+        return response()->json(['data' => $page->getCollection()->map(fn ($comment) => $this->sermonCommentData($comment, $request))->values(), 'currentPage' => $page->currentPage(), 'hasMorePages' => $page->hasMorePages()]);
+    }
+
+    public function likeSermonComment(Request $request, SermonComment $sermonComment)
+    {
+        abort_unless($sermonComment->sermon?->is_published, 404);
+        $sermonComment->likes()->toggle($request->user()->id);
+        $sermonComment->load(['user:id,name,avatar', 'likes' => fn ($query) => $query->whereKey($request->user()->id)])->loadCount(['likes', 'replies']);
+        return response()->json($this->sermonCommentData($sermonComment, $request));
     }
 
     public function updateSermonComment(Request $request, SermonComment $sermonComment)
@@ -736,7 +761,8 @@ class SocialController extends Controller
         abort_unless($sermonComment->user_id === $request->user()->id, 403, 'You can only edit your own comment.');
         $data = $request->validate(['text' => 'required|string|max:2000']);
         $sermonComment->update(['text' => trim($data['text'])]);
-        return response()->json($this->sermonCommentData($sermonComment->load('user:id,name,avatar'), $request));
+        $sermonComment->load(['user:id,name,avatar', 'likes' => fn ($query) => $query->whereKey($request->user()->id)])->loadCount(['likes', 'replies']);
+        return response()->json($this->sermonCommentData($sermonComment, $request));
     }
 
     public function deleteSermonComment(Request $request, SermonComment $sermonComment)
@@ -754,7 +780,7 @@ class SocialController extends Controller
 
     private function sermonCommentData(SermonComment $comment, Request $request): array
     {
-        return ['id' => (string) $comment->id, 'text' => $comment->text, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'userAvatar' => $this->uploads->url($comment->user->avatar), 'mine' => $comment->user_id === $request->user()->id, 'time' => $comment->created_at->diffForHumans(), 'edited' => $comment->updated_at->gt($comment->created_at)];
+        return ['id' => (string) $comment->id, 'parentId' => $comment->parent_id ? (string) $comment->parent_id : null, 'text' => $comment->text, 'userId' => (string) $comment->user_id, 'userName' => $comment->user->name, 'userAvatar' => $this->uploads->url($comment->user->avatar), 'mine' => $comment->user_id === $request->user()->id, 'time' => $comment->created_at->diffForHumans(), 'edited' => $comment->updated_at->gt($comment->created_at), 'likes' => $comment->likes_count ?? $comment->likes()->count(), 'likedByCurrentUser' => $comment->relationLoaded('likes') && $comment->likes->isNotEmpty(), 'repliesCount' => $comment->replies_count ?? $comment->replies()->count(), 'repliedByCurrentUser' => (bool) ($comment->replied_by_current_user ?? false)];
     }
 
     public function notifications(Request $r)

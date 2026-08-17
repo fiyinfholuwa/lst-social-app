@@ -33,6 +33,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF",
           "dark": {
+            "image": "./assets/brand-logo-transparent.png",
+            "imageWidth": 220,
             "backgroundColor": "#1C1118"
           }
         }

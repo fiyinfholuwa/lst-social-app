@@ -8,7 +8,8 @@
   "scripts": {
     "postinstall": "patch-package",
     "start": "expo start",
-    "dev": "expo start --dev-client",
+    "dev": "expo start --go",
+    "dev-client": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo start --clear --ios --go",
     "web": "expo start --web"

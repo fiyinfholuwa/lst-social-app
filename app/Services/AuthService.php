@@ -24,7 +24,7 @@ class AuthService
             'password' => Hash::make($data['password']),
         ]);
 
-        SendWelcomeNotificationJob::dispatch($user);
+        SendWelcomeNotificationJob::dispatchSync($user);
 
         return [
             'user' => $user,

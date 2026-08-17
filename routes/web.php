@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Models\User;
 use App\Models\Post;
 
@@ -11,6 +12,24 @@ Route::get('/', function () {
 
 Route::view('/privacy-policy', 'legal', ['document' => 'privacy'])->name('privacy');
 Route::view('/terms-and-conditions', 'legal', ['document' => 'terms'])->name('terms');
+
+Route::get('/system/run-queue', function () {
+    abort_unless(config('queue.web_runner_enabled'), 404);
+
+    $exitCode = Artisan::call('queue:work', [
+        '--stop-when-empty' => true,
+        '--max-jobs' => 50,
+        '--max-time' => 50,
+        '--tries' => 3,
+        '--no-interaction' => true,
+    ]);
+
+    return response()->json([
+        'success' => $exitCode === 0,
+        'exitCode' => $exitCode,
+        'message' => $exitCode === 0 ? 'The queued jobs were processed.' : 'The queue worker exited with an error.',
+    ], $exitCode === 0 ? 200 : 500);
+})->middleware('throttle:1,1')->name('system.queue.run');
 
 Route::get('/.well-known/apple-app-site-association', function () {
     $teamId = config('deep_links.apple.team_id');

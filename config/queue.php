@@ -2,6 +2,8 @@
 
 return [
 
+    'web_runner_enabled' => (bool) env('QUEUE_WEB_RUNNER_ENABLED', true),
+
     /*
     |--------------------------------------------------------------------------
     | Default Queue Connection Name

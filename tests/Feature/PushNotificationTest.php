@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\PushToken;
 use App\Models\User;
-use App\Services\PushNotificationService;
+use App\Repositories\NotificationRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -34,14 +34,28 @@ class PushNotificationTest extends TestCase
         $user = User::factory()->create();
         PushToken::create(['user_id' => $user->id, 'token' => 'ExponentPushToken[test-push]', 'platform' => 'ios']);
 
-        $notification = $user->notifications()->create([
+        $notification = app(NotificationRepository::class)->createFor($user, [
             'title' => 'New comment', 'message' => 'Someone commented on your post.',
             'screen' => 'PostDetail', 'route_params' => ['postId' => '42'],
         ]);
-        app(PushNotificationService::class)->send($user, $notification);
 
         Http::assertSent(fn ($request) => $request->url() === config('services.expo.push_url')
             && $request[0]['to'] === 'ExponentPushToken[test-push]'
             && $request[0]['data']['routeParams']['postId'] === '42');
+    }
+
+    public function test_accepting_a_friend_request_immediately_pushes_the_requester(): void
+    {
+        Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok']]])]);
+        $requester = User::factory()->create(['name' => 'Ada']);
+        $recipient = User::factory()->create(['name' => 'Grace']);
+        PushToken::create(['user_id' => $requester->id, 'token' => 'ExponentPushToken[requester-device]', 'platform' => 'android']);
+
+        $this->actingAs($requester)->postJson("/api/users/{$recipient->id}/friend-request")->assertOk();
+        $this->actingAs($recipient)->postJson("/api/users/{$requester->id}/relationship", ['action' => 'accept'])->assertOk();
+
+        $this->assertDatabaseHas('notifications', ['user_id' => $requester->id, 'title' => 'Friend request accepted']);
+        Http::assertSent(fn ($request) => $request[0]['to'] === 'ExponentPushToken[requester-device]'
+            && $request[0]['title'] === 'Friend request accepted');
     }
 }

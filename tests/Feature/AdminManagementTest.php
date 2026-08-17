@@ -119,5 +119,18 @@ class AdminManagementTest extends TestCase
 
         $this->assertDatabaseHas('community_applications', ['id' => $application->id, 'status' => 'approved']);
         $this->assertDatabaseHas('community_user', ['community_id' => $community->id, 'user_id' => $member->id]);
+        $this->assertDatabaseHas('notifications', ['user_id' => $member->id, 'title' => 'Community application approved']);
+    }
+
+    public function test_web_admin_post_approval_notifies_the_author(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $author = User::factory()->create();
+        $community = Community::create(['name' => 'Review Circle']);
+        $post = Post::create(['user_id' => $author->id, 'community_id' => $community->id, 'content' => 'Please review', 'status' => 'pending']);
+
+        $this->actingAs($admin)->post("/admin/posts/{$post->id}/review", ['action' => 'approve'])->assertRedirect();
+
+        $this->assertDatabaseHas('notifications', ['user_id' => $author->id, 'title' => 'Community post approved']);
     }
 }

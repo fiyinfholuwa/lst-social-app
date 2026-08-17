@@ -15,7 +15,10 @@ class NotificationRepository
     {
         $notification = $user->notifications()->create($data);
         $this->cache->invalidate("notifications:{$user->id}");
-        SendPushNotificationJob::dispatch($notification)->afterCommit();
+        // Push delivery must not depend on a separately managed queue worker.
+        // The push service catches provider/network failures, so notification
+        // creation remains successful even when Expo is temporarily unavailable.
+        SendPushNotificationJob::dispatchSync($notification);
 
         return $notification;
     }

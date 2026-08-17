@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\CacheService;
 use App\Services\AccountDeletionService;
 use App\Services\UploadService;
+use App\Repositories\NotificationRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -448,30 +449,47 @@ class AdminController extends Controller
         return back()->with('status', 'Community updated successfully.');
     }
 
-    public function reviewApplication(Request $request, CommunityApplication $application, CacheService $cache)
+    public function reviewApplication(Request $request, CommunityApplication $application, CacheService $cache, NotificationRepository $notifications)
     {
         $data = $request->validate(['action' => ['required', Rule::in(['approve', 'reject'])]]);
         $status = $data['action'] === 'approve' ? 'approved' : 'rejected';
         $application->update(['status' => $status]);
 
+        $community = $application->community()->firstOrFail();
         if ($status === 'approved') {
-            $application->community()->firstOrFail()->members()->syncWithoutDetaching([$application->user_id]);
+            $community->members()->syncWithoutDetaching([$application->user_id]);
         } else {
             DB::table('community_user')->where(['community_id' => $application->community_id, 'user_id' => $application->user_id])->delete();
         }
 
         $cache->invalidate('communities', "community:{$application->community_id}", "applications:{$application->user_id}", "user:{$application->user_id}");
+        $notifications->createFor($application->user, [
+            'icon' => $status === 'approved' ? 'checkmark-circle' : 'close-circle',
+            'title' => $status === 'approved' ? 'Community application approved' : 'Community application rejected',
+            'message' => 'Your application to join '.$community->name.' was '.$status.'.',
+            'screen' => 'CommunityDetail',
+            'route_params' => ['communityId' => (string) $community->id],
+        ]);
 
         return back()->with('status', "Application {$status}.");
     }
 
-    public function reviewPost(Request $request, Post $post, CacheService $cache)
+    public function reviewPost(Request $request, Post $post, CacheService $cache, NotificationRepository $notifications)
     {
         $data = $request->validate(['action' => ['required', Rule::in(['approve', 'reject'])]]);
         abort_unless($post->community_id, 422, 'Only community posts require moderation.');
         $status = $data['action'] === 'approve' ? 'approved' : 'rejected';
         $post->update(['status' => $status]);
         $cache->invalidate('posts', "post:{$post->id}", "user:{$post->user_id}", "community:{$post->community_id}");
+        $notifications->createFor($post->user, [
+            'icon' => $status === 'approved' ? 'checkmark-circle' : 'close-circle',
+            'title' => $status === 'approved' ? 'Community post approved' : 'Community post rejected',
+            'message' => 'Your post in '.$post->community->name.' was '.$status.'.',
+            'screen' => $status === 'approved' ? 'PostDetail' : 'CommunityDetail',
+            'route_params' => $status === 'approved'
+                ? ['postId' => (string) $post->id]
+                : ['communityId' => (string) $post->community_id],
+        ]);
 
         return back()->with('status', "Post {$status}.");
     }

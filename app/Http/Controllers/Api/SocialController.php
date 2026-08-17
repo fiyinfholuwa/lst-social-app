@@ -203,6 +203,7 @@ class SocialController extends Controller
 
     public function like(Request $r, Post $post)
     {
+        $post = $this->repo->post($post->id, $r->user());
         $this->repo->toggleLike($r->user(), $post);
         $this->service->invalidatePost($post);
         if (! $post->user->is($r->user()) && $post->likes()->whereKey($r->user()->id)->exists()) {
@@ -236,6 +237,7 @@ class SocialController extends Controller
 
     public function comment(Request $r, Post $post)
     {
+        $post = $this->repo->post($post->id, $r->user());
         $d = $r->validate(['text' => 'required|string|max:2000', 'parent_id' => 'nullable|integer']);
         if (!empty($d['parent_id'])) {
             abort_unless($post->comments()->whereNull('parent_id')->whereKey($d['parent_id'])->exists(), 422, 'Replies can only be added to a main comment.');
@@ -260,6 +262,7 @@ class SocialController extends Controller
 
     public function comments(Request $r, Post $post)
     {
+        $post = $this->repo->post($post->id, $r->user());
         $page = $this->repo->commentsPage($post, $r->user());
 
         return response()->json($this->commentPageData($page));
@@ -267,6 +270,7 @@ class SocialController extends Controller
 
     public function replies(Request $r, Post $post, Comment $comment)
     {
+        $post = $this->repo->post($post->id, $r->user());
         $page = $this->repo->repliesPage($post, $comment, $r->user());
 
         return response()->json($this->commentPageData($page));
@@ -274,6 +278,7 @@ class SocialController extends Controller
 
     public function likeComment(Request $r, Comment $comment)
     {
+        $this->repo->post($comment->post_id, $r->user());
         $this->repo->toggleCommentLike($r->user(), $comment);
         $this->service->invalidatePost($comment->post);
 
@@ -282,6 +287,7 @@ class SocialController extends Controller
 
     public function updateComment(Request $r, Comment $comment)
     {
+        $this->repo->post($comment->post_id, $r->user());
         abort_unless((int) $comment->user_id === (int) $r->user()->id, 403, 'You can only edit your own comment.');
         $data = $r->validate(['text' => 'required|string|max:2000']);
         $comment->update(['text' => trim($data['text'])]);
@@ -292,6 +298,7 @@ class SocialController extends Controller
 
     public function deleteComment(Request $r, Comment $comment)
     {
+        $this->repo->post($comment->post_id, $r->user());
         abort_unless((int) $comment->user_id === (int) $r->user()->id, 403, 'You can only delete your own comment.');
         $post = $comment->post;
         $comment->delete();
@@ -316,6 +323,7 @@ class SocialController extends Controller
 
     public function toggleSaved(Request $r, Post $post)
     {
+        $post = $this->repo->post($post->id, $r->user());
         $saved = $this->repo->toggleSave($r->user(), $post);
         $this->cache->invalidate("saved:{$r->user()->id}");
 

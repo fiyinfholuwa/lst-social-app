@@ -1,24 +1,19 @@
 <!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#54233D">
-    <title>Open post in LST Social</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #fcf8fa; color: #281923; font-family: system-ui, sans-serif; }
-        main { width: min(100%, 430px); padding: 32px 24px; border: 1px solid #eadde3; border-radius: 24px; background: #fff; text-align: center; box-shadow: 0 18px 50px rgba(84, 35, 61, .12); }
-        h1 { margin: 0; font-size: 25px; }
-        p { margin: 12px 0 24px; color: #74616d; line-height: 1.55; }
-        a { display: block; padding: 15px 18px; border-radius: 14px; background: #ed002b; color: #fff; text-decoration: none; font-weight: 800; }
-    </style>
-</head>
-<body>
-<main>
-    <h1>LST Social</h1>
-    <p>Open this post in the LST Social app.</p>
-    <a href="lstsocial://posts/{{ $postId }}">Open post in app</a>
-</main>
-</body>
-</html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#4f2039"><meta name="robots" content="noindex,nofollow">
+<title>{{ $available ? 'Open post' : 'Post unavailable' }} · LST Social</title>
+<style>
+:root{--wine:#54233d;--dark:#351326;--rose:#ed002b;--ink:#281923;--muted:#796873;--line:#eadde3}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:28px 18px;overflow-x:hidden;background:radial-gradient(circle at 18% 12%,#f8dfe8 0,transparent 30%),radial-gradient(circle at 88% 85%,#eadce8 0,transparent 32%),#fcf9fb;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}body:before,body:after{content:"";position:fixed;border-radius:999px;pointer-events:none}body:before{width:210px;height:210px;top:-80px;right:-60px;background:rgba(84,35,61,.08)}body:after{width:160px;height:160px;bottom:-65px;left:-45px;background:rgba(237,0,43,.07)}main{position:relative;width:min(100%,470px);padding:42px 32px 30px;border:1px solid rgba(234,221,227,.9);border-radius:32px;background:rgba(255,255,255,.92);text-align:center;box-shadow:0 28px 80px rgba(67,25,48,.15);backdrop-filter:blur(18px)}.brand{display:inline-flex;align-items:center;gap:9px;margin-bottom:30px;color:var(--wine);font-size:13px;font-weight:900;letter-spacing:.04em}.mark{width:31px;height:31px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(145deg,var(--wine),var(--dark));color:#fff;font:16px Georgia,serif;box-shadow:0 7px 18px rgba(84,35,61,.22)}.art{width:116px;height:116px;display:grid;place-items:center;margin:0 auto 25px;border-radius:58px;background:#fae9ef}.card-icon{width:72px;height:72px;display:grid;place-items:center;border:1px solid var(--line);border-radius:24px;background:#fff;box-shadow:0 12px 28px rgba(84,35,61,.11);transform:rotate(-4deg)}.card-icon svg{width:31px;color:var(--rose)}.eyebrow{margin:0 0 10px;color:var(--rose);font-size:10px;font-weight:900;letter-spacing:.18em}h1{margin:0;color:var(--dark);font-size:clamp(27px,7vw,34px);line-height:1.12;letter-spacing:-.035em}p{max-width:350px;margin:13px auto 26px;color:var(--muted);font-size:14px;line-height:1.65}.button{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:54px;padding:15px 20px;border-radius:17px;background:linear-gradient(135deg,#f00b38,var(--rose));color:#fff;text-decoration:none;font-size:14px;font-weight:900;box-shadow:0 13px 28px rgba(237,0,43,.22);transition:.18s}.button:hover{transform:translateY(-2px);box-shadow:0 17px 34px rgba(237,0,43,.28)}.button svg{width:18px}.hint{margin:17px 0 0;color:#a1919b;font-size:11px;line-height:1.5}.home{display:inline-block;margin-top:4px;color:var(--wine);font-size:13px;font-weight:800;text-decoration:none}@media(max-width:420px){main{padding:34px 22px 25px;border-radius:27px}.brand{margin-bottom:24px}}
+</style></head><body><main>
+<div class="brand"><span class="mark">L</span><span>LOVE STRAIGHT TALKS</span></div>
+<div class="art"><div class="card-icon">
+@if($available)<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3.8h7l4 4V20H7z"/><path d="M14 3.8V8h4M10 12h5M10 15.5h5"/></svg>
+@else<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3.8h7l4 4V20H7z"/><path d="M14 3.8V8h4M9.5 15.5l5-5m-5 0 5 5"/></svg>@endif
+</div></div>
+@if($available)
+<div class="eyebrow">SHARED WITH YOU</div><h1>A meaningful moment is waiting</h1><p>Open this post in LST Social to view it with the right audience permissions and join the conversation.</p>
+<a class="button" href="lstsocial://posts/{{ $postToken }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>Open in LST Social</a><div class="hint">You may be asked to sign in. Post privacy is always respected.</div>
+@else
+<div class="eyebrow">POST UNAVAILABLE</div><h1>This moment isn’t here</h1><p>The post may have been deleted, or the link may no longer be valid. Nothing private has been revealed.</p><a class="home" href="/">Return to LST Social</a>
+@endif
+</main></body></html>

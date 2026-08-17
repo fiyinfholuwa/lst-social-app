@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
+use App\Models\Post;
 
 Route::get('/', function () {
     return view('welcome');
@@ -42,9 +43,16 @@ Route::get('/.well-known/assetlinks.json', function () {
     ]] : [], options: JSON_UNESCAPED_SLASHES)->header('Content-Type', 'application/json');
 })->name('deep-links.android');
 
-Route::get('/posts/{postId}', function (string $postId) {
-    return view('post-link', ['postId' => $postId]);
-})->whereNumber('postId')->name('posts.link');
+Route::get('/posts/{postToken}', function (string $postToken) {
+    $post = Post::where('public_id', $postToken)
+        ->when(ctype_digit($postToken), fn ($query) => $query->orWhere('id', (int) $postToken))
+        ->first();
+
+    return response()->view('post-link', [
+        'available' => (bool) $post,
+        'postToken' => $post?->public_id ?: $postToken,
+    ], $post ? 200 : 404);
+})->where('postToken', '[A-Za-z0-9]+')->name('posts.link');
 
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     $user = User::findOrFail($id);

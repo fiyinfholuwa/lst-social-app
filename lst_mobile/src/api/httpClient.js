@@ -89,7 +89,9 @@ async function request(path, { method = 'GET', body, auth = true, formData = fal
     const message = data?.errors
       ? Object.values(data.errors).flat()[0]
       : data?.message || fallbackMessage;
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

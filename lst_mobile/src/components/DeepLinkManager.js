@@ -3,7 +3,7 @@ import { Linking } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { openPushDestination } from '../navigation/navigationRef';
 
-const postIdFromUrl = url => url?.match(/\/posts\/(\d+)(?:[/?#]|$)/)?.[1] || null;
+const postIdFromUrl = url => url?.match(/\/posts\/([A-Za-z0-9]+)(?:[/?#]|$)/)?.[1] || null;
 
 export default function DeepLinkManager() {
   const { user } = useAuth();

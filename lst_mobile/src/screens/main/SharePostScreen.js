@@ -46,8 +46,8 @@ export default function SharePostScreen({ route, navigation }) {
     }
   };
 
-  const copyLink = () => copyPostLink(postId);
-  const shareLink = () => sharePostLink(postId);
+  const copyLink = () => copyPostLink(post?.publicId || postId);
+  const shareLink = () => sharePostLink(post?.publicId || postId);
 
   if (!post) return <Loader />;
   const images = post.images?.length ? post.images : post.image ? [post.image] : [];

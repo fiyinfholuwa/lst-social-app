@@ -3,10 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Post extends Model
 {
     protected $fillable = ['user_id', 'community_id', 'original_post_id', 'content', 'image', 'images', 'type', 'audience', 'status'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Post $post) {
+            $post->public_id ??= (string) Str::ulid();
+        });
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('public_id', $value)
+            ->when(ctype_digit((string) $value), fn ($query) => $query->orWhere($this->getKeyName(), (int) $value))
+            ->first();
+    }
 
     protected function casts(): array
     {

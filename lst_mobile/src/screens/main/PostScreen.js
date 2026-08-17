@@ -99,6 +99,7 @@ const PostSkeleton = ({ theme }) => {
 export default function PostScreen({ route, navigation }) {
   const { postId } = route.params;
   const [post, setPost] = useState(null);
+  const [unavailable, setUnavailable] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentPage, setCommentPage] = useState(1);
   const [hasMoreComments, setHasMoreComments] = useState(false);
@@ -123,19 +124,18 @@ export default function PostScreen({ route, navigation }) {
 
   const loadPost = useCallback(async () => {
     try {
+      setUnavailable(false);
       const [postData, commentData] = await Promise.all([apiService.getPost(postId), apiService.getComments(postId, 1)]);
       setPost(postData);
       setComments(commentData.data);
       setCommentPage(commentData.currentPage);
       setHasMoreComments(commentData.hasMorePages);
     } catch (error) {
-      const missing = error.message?.includes('No query results for model [App\\Models\\Post]');
+      const missing = error.status === 404 || error.message?.includes('No query results for model [App\\Models\\Post]');
       if (missing && !missingPostHandled.current) {
         missingPostHandled.current = true;
         forgetDeletedPost(postId);
-        Alert.alert('Post unavailable', 'This post has been deleted or is no longer available.', [
-          { text: 'Go back', onPress: () => navigation.goBack() },
-        ]);
+        setUnavailable(true);
         return;
       }
       if (!missing) Alert.alert('Couldn’t load post', error.message || 'Please try again.');
@@ -312,6 +312,17 @@ export default function PostScreen({ route, navigation }) {
     }
   };
 
+  if (unavailable) return <View style={[styles.unavailableScreen, { backgroundColor: theme.background }]}>
+    <View style={[styles.unavailableGlow, { backgroundColor: theme.primarySoft }]}>
+      <View style={[styles.unavailableIcon, { backgroundColor: theme.card, borderColor: theme.border }]}><AppIcon name="document-outline" size={34} color={theme.primary} /></View>
+    </View>
+    <Text style={[styles.unavailableCode, { color: theme.primary }]}>POST UNAVAILABLE</Text>
+    <Text style={[styles.unavailableTitle, { color: theme.text }]}>This moment isn’t here</Text>
+    <Text style={[styles.unavailableText, { color: theme.secondaryText }]}>It may have been deleted, or it may only be visible to a different audience.</Text>
+    <TouchableOpacity style={[styles.unavailableButton, { backgroundColor: theme.primary }]} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MainTabs')}>
+      <AppIcon name="arrow-back" size={16} color="#FFFFFF" /><Text style={styles.unavailableButtonText}>Back to LST Social</Text>
+    </TouchableOpacity>
+  </View>;
   if (!post) return <PostSkeleton theme={theme} />;
 
   const postType = post.type || (post.communityId ? 'Community' : 'Encouragement');
@@ -334,7 +345,7 @@ export default function PostScreen({ route, navigation }) {
             {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
           </TouchableOpacity>
           <PostOptionsMenu
-            onCopyLink={() => copyPostLink(post.id)}
+            onCopyLink={() => copyPostLink(post.publicId || post.id)}
             onEdit={String(post.userId) === String(user?.id) ? () => navigation.navigate('EditPost', { postId: post.id }) : undefined}
             onDelete={String(post.userId) === String(user?.id) ? deletePost : undefined}
             onReport={String(post.userId) !== String(user?.id) ? () => setReportingPost(true) : undefined}
@@ -497,6 +508,14 @@ export default function PostScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  unavailableScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34 },
+  unavailableGlow: { width: 132, height: 132, borderRadius: 66, alignItems: 'center', justifyContent: 'center', marginBottom: 26 },
+  unavailableIcon: { width: 84, height: 84, borderRadius: 28, borderWidth: 1, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-4deg' }] },
+  unavailableCode: { fontSize: 10, fontWeight: '900', letterSpacing: 1.8 },
+  unavailableTitle: { fontSize: 25, lineHeight: 32, fontWeight: '900', textAlign: 'center', marginTop: 9 },
+  unavailableText: { maxWidth: 310, fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 9 },
+  unavailableButton: { height: 50, borderRadius: 16, paddingHorizontal: 20, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 25 },
+  unavailableButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900' },
   listContent: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 40 },
   postCard: { paddingBottom: 8, overflow: 'visible' },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, position: 'relative', zIndex: 100, elevation: 20 },

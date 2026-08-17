@@ -39,7 +39,7 @@ function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare
             </Text>
             {post.status === 'pending' ? <Text style={[styles.pending, { backgroundColor: theme.accentSoft, color: theme.accentDark }]}>Pending approval</Text> : null}
           </TouchableOpacity>
-          <PostOptionsMenu onCopyLink={() => copyPostLink(post.id)} onEdit={onEdit} onDelete={onDelete} onReport={String(post.userId) !== String(user?.id) ? () => setReporting(true) : undefined} />
+          <PostOptionsMenu onCopyLink={() => copyPostLink(post.publicId || post.id)} onEdit={onEdit} onDelete={onDelete} onReport={String(post.userId) !== String(user?.id) ? () => setReporting(true) : undefined} />
         </View>
 
         <View style={styles.contextRow}>

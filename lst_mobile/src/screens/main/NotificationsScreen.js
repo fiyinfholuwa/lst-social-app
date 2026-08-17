@@ -20,6 +20,7 @@ export default function NotificationsScreen({ navigation }) {
       PostDetail: 'postId', UserProfile: 'userId', ChatDetail: 'chatId',
       CommunityDetail: 'communityId', CommunityMembers: 'communityId',
       CommunityApplication: 'communityId', CommunityModeration: 'communityId',
+      SermonDetail: 'sermonId',
     };
     const routesWithoutParams = new Set(['MainTabs', 'SavedPosts', 'Friends', 'FriendRequests', 'BlockedAccounts', 'Notifications', 'HelpCenter', 'Feedback']);
     const requiredParam = parameterRequirements[notification.screen];

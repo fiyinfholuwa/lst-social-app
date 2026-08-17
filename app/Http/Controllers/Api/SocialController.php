@@ -225,22 +225,33 @@ class SocialController extends Controller
         $data = $r->validate(['note' => 'nullable|string|max:5000']);
         $original = $post->originalPost ?: $post;
 
-        return response()->json($this->service->create($r->user(), [
+        $sharedPost = $this->service->create($r->user(), [
             'content' => trim($data['note'] ?? ''),
             'original_post_id' => $original->id,
             'community_id' => null,
             'type' => 'Shared post',
             'audience' => 'Friends',
             'status' => 'approved',
-        ]), 201);
+        ]);
+        if (! $original->user->is($r->user())) {
+            $this->notifications->createFor($original->user, [
+                'icon' => 'share', 'title' => 'Your post was shared',
+                'message' => $r->user()->name.' shared your post.',
+                'screen' => 'PostDetail', 'route_params' => ['postId' => (string) $original->id],
+            ]);
+        }
+
+        return response()->json($sharedPost, 201);
     }
 
     public function comment(Request $r, Post $post)
     {
         $post = $this->repo->post($post->id, $r->user());
         $d = $r->validate(['text' => 'required|string|max:2000', 'parent_id' => 'nullable|integer']);
+        $parent = null;
         if (!empty($d['parent_id'])) {
-            abort_unless($post->comments()->whereNull('parent_id')->whereKey($d['parent_id'])->exists(), 422, 'Replies can only be added to a main comment.');
+            $parent = $post->comments()->whereNull('parent_id')->find($d['parent_id']);
+            abort_unless($parent, 422, 'Replies can only be added to a main comment.');
             abort_if(
                 $post->comments()->where('parent_id', $d['parent_id'])->where('user_id', $r->user()->id)->exists(),
                 422,
@@ -253,6 +264,13 @@ class SocialController extends Controller
             $this->notifications->createFor($post->user, [
                 'icon' => 'chatbubble', 'title' => 'New comment',
                 'message' => $r->user()->name.' commented on your post.',
+                'screen' => 'PostDetail', 'route_params' => ['postId' => (string) $post->id],
+            ]);
+        }
+        if ($parent && ! $parent->user->is($r->user()) && ! $parent->user->is($post->user)) {
+            $this->notifications->createFor($parent->user, [
+                'icon' => 'chatbubble', 'title' => 'New reply',
+                'message' => $r->user()->name.' replied to your comment.',
                 'screen' => 'PostDetail', 'route_params' => ['postId' => (string) $post->id],
             ]);
         }
@@ -281,8 +299,16 @@ class SocialController extends Controller
         $this->repo->post($comment->post_id, $r->user());
         $this->repo->toggleCommentLike($r->user(), $comment);
         $this->service->invalidatePost($comment->post);
+        $liked = $comment->likes()->whereKey($r->user()->id)->exists();
+        if ($liked && ! $comment->user->is($r->user())) {
+            $this->notifications->createFor($comment->user, [
+                'icon' => 'heart', 'title' => 'Comment liked',
+                'message' => $r->user()->name.' liked your comment.',
+                'screen' => 'PostDetail', 'route_params' => ['postId' => (string) $comment->post_id],
+            ]);
+        }
 
-        return response()->json(['liked' => $comment->likes()->whereKey($r->user()->id)->exists(), 'likes' => $comment->likes()->count()]);
+        return response()->json(['liked' => $liked, 'likes' => $comment->likes()->count()]);
     }
 
     public function updateComment(Request $r, Comment $comment)
@@ -735,6 +761,13 @@ class SocialController extends Controller
             abort_if($parent->replies()->where('user_id', $request->user()->id)->exists(), 422, 'You have already replied to this comment.');
         }
         $comment = $sermon->comments()->create(['user_id' => $request->user()->id, 'parent_id' => $data['parent_id'] ?? null, 'text' => trim($data['text'])]);
+        if (isset($parent) && ! $parent->user->is($request->user())) {
+            $this->notifications->createFor($parent->user, [
+                'icon' => 'chatbubble', 'title' => 'New sermon reply',
+                'message' => $request->user()->name.' replied to your sermon comment.',
+                'screen' => 'SermonDetail', 'route_params' => ['sermonId' => (string) $sermon->id],
+            ]);
+        }
         $comment->load(['user:id,name,avatar', 'likes'])->loadCount(['likes', 'replies']);
         return response()->json($this->sermonCommentData($comment, $request), 201);
     }
@@ -753,6 +786,15 @@ class SocialController extends Controller
         abort_unless($sermonComment->sermon?->is_published, 404);
         $sermonComment->likes()->toggle($request->user()->id);
         $sermonComment->load(['user:id,name,avatar', 'likes' => fn ($query) => $query->whereKey($request->user()->id)])->loadCount(['likes', 'replies']);
+        if ($sermonComment->likes->isNotEmpty()) {
+            if (! $sermonComment->user->is($request->user())) {
+                $this->notifications->createFor($sermonComment->user, [
+                    'icon' => 'heart', 'title' => 'Sermon comment liked',
+                    'message' => $request->user()->name.' liked your sermon comment.',
+                    'screen' => 'SermonDetail', 'route_params' => ['sermonId' => (string) $sermonComment->sermon_id],
+                ]);
+            }
+        }
         return response()->json($this->sermonCommentData($sermonComment, $request));
     }
 

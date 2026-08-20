@@ -9,5 +9,5 @@ return [
     ),
     'support_email' => env('BRAND_SUPPORT_EMAIL', 'support@lovestraighttalks.com'),
     'ios_app_url' => env('BRAND_IOS_APP_URL', 'https://apps.apple.com/us/search?term=LST%20Social'),
-    'android_app_url' => env('BRAND_ANDROID_APP_URL', 'https://play.google.com/store/search?q=LST%20Social&c=apps'),
+    'android_app_url' => 'https://play.google.com/store/apps/details?id=com.lstsocial.com',
 ];

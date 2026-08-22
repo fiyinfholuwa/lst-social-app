@@ -10,6 +10,20 @@ class RegistrationEmailAvailabilityTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_new_registration_is_email_verified_by_default(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'first_name' => 'New',
+            'last_name' => 'Member',
+            'email' => 'verified-on-registration@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertCreated();
+        $this->assertNotNull(User::where('email', 'verified-on-registration@example.com')->firstOrFail()->email_verified_at);
+    }
+
     public function test_it_reports_an_unused_email_as_available(): void
     {
         $this->postJson('/api/register/check-email', ['email' => 'new@example.com'])

@@ -21,6 +21,7 @@ class AuthService
             'last_name' => trim($data['last_name']),
             'name' => trim($data['first_name'].' '.$data['last_name']),
             'email' => $data['email'],
+            'email_verified_at' => now(),
             'password' => Hash::make($data['password']),
         ]);
 

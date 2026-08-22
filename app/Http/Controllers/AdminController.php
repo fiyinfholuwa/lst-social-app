@@ -317,6 +317,7 @@ class AdminController extends Controller
                 'suspension' => route('admin.members.suspension', $user),
                 'verification' => route('admin.members.verification', $user),
                 'password' => route('admin.members.password', $user),
+                'destroy' => route('admin.members.destroy', $user),
             ],
         ];
 
@@ -401,14 +402,18 @@ class AdminController extends Controller
         return view('admin', ['section' => 'posts', 'postPage' => true, 'post' => $post]);
     }
 
-    public function destroyMember(User $user, AccountDeletionService $accountDeletion)
+    public function destroyMember(Request $request, User $user, AccountDeletionService $accountDeletion)
     {
-        abort_if(request()->user()->is($user), 422, 'You cannot remove your own account.');
-        abort_if(request()->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can remove an administrator.');
+        abort_if($request->user()->is($user), 422, 'You cannot remove your own account.');
+        abort_if($request->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can remove an administrator.');
         $name = $user->name;
         $accountDeletion->delete($user);
 
-        return back()->with('status', "{$name} was removed.");
+        if ($request->expectsJson()) {
+            return response()->json(['message' => "{$name} and all associated data were permanently removed."]);
+        }
+
+        return redirect('/admin/members')->with('status', "{$name} and all associated data were permanently removed.");
     }
 
     public function storeMember(Request $request)

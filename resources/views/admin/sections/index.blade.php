@@ -52,7 +52,7 @@
                     <td><span class="account-status {{ $member->suspended_at ? 'suspended' : 'active' }}"><i></i>{{ $member->suspended_at ? 'Suspended' : 'Active' }}</span></td>
                     <td><span class="admin-pill">{{ ucfirst(str_replace('_', ' ', $member->role ?: 'member')) }}</span></td>
                     <td>{{ $member->communities_count }}</td><td>{{ $member->created_at->format('d M Y') }}</td>
-                    <td><a class="member-view-btn" href="{{ route('admin.members.show', $member) }}">View details <span>→</span></a></td>
+                    <td><div class="application-actions"><a class="member-view-btn" href="{{ route('admin.members.show', $member) }}">View details <span>→</span></a>@if(!auth()->user()->is($member) && (auth()->user()->role === 'super_admin' || !in_array($member->role, ['admin','super_admin'], true)))<form method="POST" action="{{ route('admin.members.destroy',$member) }}" onsubmit="return confirm('Permanently delete this member and all associated data? This cannot be undone.')">@csrf @method('DELETE')<button class="mini-btn danger">Delete</button></form>@endif</div></td>
                 </tr>
             @empty<tr><td colspan="6" class="empty-cell">No members match your search and filters.</td></tr>@endforelse
             </tbody>

@@ -14,16 +14,24 @@ class AccountDeletionService
         $userId = $user->id;
         $avatar = $user->avatar;
         $posts = $user->posts()->get(['id', 'community_id', 'image', 'images']);
-        $voiceNotes = $user->messages()->whereNotNull('audio_uri')->pluck('audio_uri');
         $friendIds = DB::table('friendships')->where('sender_id', $userId)->pluck('receiver_id')
             ->merge(DB::table('friendships')->where('receiver_id', $userId)->pluck('sender_id'))->unique();
         $chatIds = DB::table('chat_user')->where('user_id', $userId)->pluck('chat_id');
         $chatParticipantIds = DB::table('chat_user')->whereIn('chat_id', $chatIds)->where('user_id', '!=', $userId)->pluck('user_id')->unique();
+        $messageIds = DB::table('messages')->whereIn('chat_id', $chatIds)->pluck('id');
+        $voiceNotes = DB::table('messages')->whereIn('chat_id', $chatIds)->whereNotNull('audio_uri')->pluck('audio_uri');
         $savedByUserIds = DB::table('saved_posts')->whereIn('post_id', $posts->pluck('id'))->pluck('user_id')->unique();
 
-        DB::transaction(function () use ($user, $userId) {
+        DB::transaction(function () use ($user, $userId, $chatIds, $messageIds, $posts) {
             $user->tokens()->delete();
             DB::table('sessions')->where('user_id', $userId)->delete();
+            DB::table('content_reports')->where(function ($reports) use ($userId, $messageIds, $posts) {
+                $reports->where(fn ($query) => $query->where('target_type', 'user')->where('target_id', $userId))
+                    ->orWhere(fn ($query) => $query->where('target_type', 'post')->whereIn('target_id', $posts->pluck('id')))
+                    ->orWhere(fn ($query) => $query->where('target_type', 'message')->whereIn('target_id', $messageIds));
+            })->delete();
+            DB::table('content_reports')->where('reported_user_id', $userId)->delete();
+            DB::table('chats')->whereIn('id', $chatIds)->delete();
             $user->delete();
         });
 

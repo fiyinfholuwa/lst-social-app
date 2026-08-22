@@ -12,7 +12,7 @@ class ProfilePrivacyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_update_details_and_private_visitors_cannot_receive_them(): void
+    public function test_private_profile_hides_only_date_of_birth_from_visitors(): void
     {
         $owner = User::factory()->create();
         $visitor = User::factory()->create();
@@ -45,13 +45,13 @@ class ProfilePrivacyTest extends TestCase
             ->assertJsonPath('isProfilePrivate', true)
             ->assertJsonPath('canSeePrivateDetails', false)
             ->assertJsonMissingPath('email')
-            ->assertJsonMissingPath('phoneNumber')
-            ->assertJsonMissingPath('bio')
-            ->assertJsonMissingPath('hobbies')
             ->assertJsonMissingPath('dateOfBirth')
-            ->assertJsonMissingPath('workplace')
-            ->assertJsonMissingPath('occupation')
-            ->assertJsonMissingPath('joinedCommunities');
+            ->assertJsonMissingPath('maritalStatus')
+            ->assertJsonPath('phoneNumber', '+234 801 234 5678')
+            ->assertJsonPath('bio', 'A detailed private biography.')
+            ->assertJsonPath('hobbies', 'Reading and music')
+            ->assertJsonPath('workplace', 'Example Company')
+            ->assertJsonPath('occupation', 'Designer');
     }
 
     public function test_unverified_user_can_request_verification_and_submit_support(): void

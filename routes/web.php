@@ -95,6 +95,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/admin/members/{user}', [AdminController::class, 'updateMember'])->name('admin.members.update');
     Route::patch('/admin/members/{user}/details', [AdminController::class, 'updateMemberDetails'])->name('admin.members.details');
     Route::patch('/admin/members/{user}/suspension', [AdminController::class, 'updateMemberSuspension'])->name('admin.members.suspension');
+    Route::patch('/admin/members/{user}/verification', [AdminController::class, 'updateMemberVerification'])->name('admin.members.verification');
     Route::patch('/admin/members/{user}/password', [AdminController::class, 'updateMemberPassword'])->name('admin.members.password');
     Route::delete('/admin/members/{user}', [AdminController::class, 'destroyMember'])->name('admin.members.destroy');
     Route::post('/admin/communities', [AdminController::class, 'storeCommunity'])->name('admin.communities.store');

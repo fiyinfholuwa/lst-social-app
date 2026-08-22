@@ -77,6 +77,22 @@ class AdminManagementTest extends TestCase
         $this->assertNull($member->fresh()->suspended_at);
     }
 
+    public function test_admin_can_verify_and_unverify_a_member(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create();
+
+        $this->actingAs($admin)->patch("/admin/members/{$member->id}/verification", ['verified' => true])
+            ->assertRedirect();
+        $this->assertNotNull($member->fresh()->email_verified_at);
+
+        $this->get('/admin/members?verification=verified')->assertOk()->assertSee($member->email);
+
+        $this->patch("/admin/members/{$member->id}/verification", ['verified' => false])
+            ->assertRedirect();
+        $this->assertNull($member->fresh()->email_verified_at);
+    }
+
     public function test_admin_can_view_full_post_details(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

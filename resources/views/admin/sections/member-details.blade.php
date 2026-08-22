@@ -5,7 +5,7 @@
 
 <section class="member-page-hero card">
     <div class="avatar">{{ strtoupper(substr($member->name, 0, 2)) }}</div>
-    <div><h2>{{ $member->name }}</h2><p>{{ $member->email }}</p><span class="account-status {{ $member->suspended_at ? 'suspended' : 'active' }}"><i></i>{{ $member->suspended_at ? 'Suspended' : 'Active account' }}</span></div>
+    <div><h2>{{ $member->name }} @if($member->email_verified_at)<span title="Verified member">✓</span>@endif</h2><p>{{ $member->email }}</p><span class="account-status {{ $member->suspended_at ? 'suspended' : 'active' }}"><i></i>{{ $member->suspended_at ? 'Suspended' : 'Active account' }}</span></div>
     <div class="member-summary"><div><strong>{{ $member->posts_count }}</strong><span>Posts</span></div><div><strong>{{ $member->comments_count }}</strong><span>Comments</span></div><div><strong>{{ $member->communities_count }}</strong><span>Communities</span></div></div>
 </section>
 
@@ -17,6 +17,7 @@
         </form>
     </section>
     <aside class="member-page-side">
+        <section class="card panel"><h2>Email verification</h2><p>{{ $member->email_verified_at ? 'This email was verified on '.$member->email_verified_at->format('d M Y, H:i').'.' : 'Manually confirm this member’s email address.' }}</p><form method="POST" action="{{ route('admin.members.verification',$member) }}">@csrf @method('PATCH')<input type="hidden" name="verified" value="{{ $member->email_verified_at ? 0 : 1 }}"><button class="mini-btn {{ $member->email_verified_at ? 'danger' : 'approve' }}">{{ $member->email_verified_at ? 'Remove verification' : 'Verify member' }}</button></form></section>
         <section class="card panel"><h2>Account access</h2><form class="admin-form" method="POST" action="{{ route('admin.members.update',$member) }}">@csrf @method('PATCH')<label>Role<select name="role">@foreach(['member','moderator','admin','super_admin'] as $role)<option value="{{ $role }}" @selected(($member->role ?: 'member')===$role)>{{ ucfirst(str_replace('_',' ',$role)) }}</option>@endforeach</select></label><button class="mini-btn">Update role</button></form></section>
         <section class="card panel"><h2>Change password</h2><form class="admin-form" method="POST" action="{{ route('admin.members.password',$member) }}">@csrf @method('PATCH')<label>New password<input type="password" name="password" minlength="8" required></label><label>Confirm password<input type="password" name="password_confirmation" minlength="8" required></label><button class="mini-btn">Change password</button></form></section>
         <section class="card panel danger-panel"><h2>{{ $member->suspended_at ? 'Reactivate account' : 'Suspend account' }}</h2><p>{{ $member->suspended_at ? 'Restore this member’s access.' : 'Sign this member out and prevent further access.' }}</p><form method="POST" action="{{ route('admin.members.suspension',$member) }}">@csrf @method('PATCH')<input type="hidden" name="suspended" value="{{ $member->suspended_at ? 0 : 1 }}"><button class="mini-btn {{ $member->suspended_at ? 'approve' : 'danger' }}">{{ $member->suspended_at ? 'Reactivate member' : 'Suspend member' }}</button></form></section>

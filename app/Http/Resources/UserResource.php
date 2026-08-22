@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'lastName' => $this->when($isOwner, $this->last_name),
             'email' => $this->when($isOwner, $this->email),
             'emailVerified' => $this->when($isOwner, $this->hasVerifiedEmail()),
+            'verified' => $this->email_verified_at !== null,
             'phoneNumber' => $this->when($canSeeDetails, $this->phone_number),
             'avatar' => $this->mediaUrl($request, $this->avatar),
             'bio' => $this->when($canSeeDetails, $this->bio),

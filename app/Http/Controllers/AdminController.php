@@ -94,22 +94,26 @@ class AdminController extends Controller
             $data['openSupportCount'] = SupportRequest::where('status', 'open')->count();
         }
         if ($section === 'members') {
-            $filters = $request->validate(['search' => 'nullable|string|max:100', 'role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])], 'account_status' => ['nullable', Rule::in(['active', 'suspended'])]]);
+            $filters = $request->validate(['search' => 'nullable|string|max:100', 'role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])], 'account_status' => ['nullable', Rule::in(['active', 'suspended'])], 'verification' => ['nullable', Rule::in(['verified', 'unverified'])]]);
             $search = trim($filters['search'] ?? '');
             $role = $filters['role'] ?? '';
             $accountStatus = $filters['account_status'] ?? '';
+            $verification = $filters['verification'] ?? '';
             $data['members'] = User::query()->withCount('communities')
                 ->when($search !== '', fn ($query) => $query->where(fn ($users) => $users->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))
                 ->when($role !== '', fn ($query) => $role === 'member' ? $query->where(fn ($roles) => $roles->whereNull('role')->orWhere('role', 'member')) : $query->where('role', $role))
                 ->when($accountStatus === 'active', fn ($query) => $query->whereNull('suspended_at'))
                 ->when($accountStatus === 'suspended', fn ($query) => $query->whereNotNull('suspended_at'))
+                ->when($verification === 'verified', fn ($query) => $query->whereNotNull('email_verified_at'))
+                ->when($verification === 'unverified', fn ($query) => $query->whereNull('email_verified_at'))
                 ->latest()->paginate(30)->withQueryString();
             $data['memberSearch'] = $search;
             $data['memberRole'] = $role;
             $data['memberAccountStatus'] = $accountStatus;
+            $data['memberVerification'] = $verification;
             $data['memberMetrics'] = [
                 'Total members' => User::count(),
-                'Community members' => User::has('communities')->count(),
+                'Verified members' => User::whereNotNull('email_verified_at')->count(),
                 'Administrators' => User::whereIn('role', ['admin', 'super_admin'])->count(),
                 'New this week' => User::where('created_at', '>=', now()->subWeek())->count(),
             ];
@@ -301,6 +305,7 @@ class AdminController extends Controller
                 'marital_status' => $user->marital_status, 'date_of_birth' => $user->date_of_birth?->format('Y-m-d'),
                 'workplace' => $user->workplace, 'occupation' => $user->occupation,
                 'is_profile_private' => $user->is_profile_private, 'email_verified' => $user->email_verified_at !== null,
+                'email_verified_at' => $user->email_verified_at?->format('d M Y, H:i'),
                 'suspended' => $user->suspended_at !== null, 'suspended_at' => $user->suspended_at?->format('d M Y, H:i'),
                 'joined_at' => $user->created_at->format('d M Y, H:i'), 'last_updated' => $user->updated_at->diffForHumans(),
                 'communities_count' => $user->communities_count, 'posts_count' => $user->posts_count,
@@ -310,6 +315,7 @@ class AdminController extends Controller
                 'role' => route('admin.members.update', $user),
                 'details' => route('admin.members.details', $user),
                 'suspension' => route('admin.members.suspension', $user),
+                'verification' => route('admin.members.verification', $user),
                 'password' => route('admin.members.password', $user),
             ],
         ];
@@ -356,6 +362,17 @@ class AdminController extends Controller
         }
 
         $message = $data['suspended'] ? "{$user->name} was suspended." : "{$user->name} was reactivated.";
+
+        return $request->expectsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+    }
+
+    public function updateMemberVerification(Request $request, User $user)
+    {
+        $data = $request->validate(['verified' => 'required|boolean']);
+        abort_if($request->user()->role !== 'super_admin' && in_array($user->role, ['admin', 'super_admin'], true), 403, 'Only a super administrator can verify an administrator account.');
+
+        $user->update(['email_verified_at' => $data['verified'] ? now() : null]);
+        $message = $data['verified'] ? "{$user->name} is now a verified member." : "{$user->name}'s member verification was removed.";
 
         return $request->expectsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
     }

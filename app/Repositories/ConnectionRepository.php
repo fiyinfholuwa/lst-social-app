@@ -15,6 +15,7 @@ class ConnectionRepository
         $term = trim($term);
 
         return User::query()
+            ->visibleInSocial()
             ->select(['id', 'name', 'avatar', 'bio'])
             ->whereKeyNot($user->id)
             ->where(function ($query) use ($term) {
@@ -43,6 +44,7 @@ class ConnectionRepository
         $otherColumn = $incoming ? 'sender_id' : 'receiver_id';
 
         return User::query()
+            ->visibleInSocial()
             ->whereExists(fn ($query) => $query->selectRaw('1')->from('friendships')
                 ->where('status', 'pending')
                 ->where("friendships.{$userColumn}", $user->id)
@@ -63,12 +65,19 @@ class ConnectionRepository
 
     public function friendshipState(User $user): array
     {
-        $accepted = Friendship::where('status', 'accepted')->where(fn ($q) => $q->where('sender_id', $user->id)->orWhere('receiver_id', $user->id))->get();
+        $hiddenUserIds = User::query()
+            ->whereIn(DB::raw('LOWER(email)'), config('social.hidden_account_emails', []))
+            ->pluck('id');
+        $accepted = Friendship::where('status', 'accepted')
+            ->whereNotIn('sender_id', $hiddenUserIds)
+            ->whereNotIn('receiver_id', $hiddenUserIds)
+            ->where(fn ($q) => $q->where('sender_id', $user->id)->orWhere('receiver_id', $user->id))
+            ->get();
 
         return [
             'friendIds' => $accepted->map(fn ($f) => (string) ($f->sender_id === $user->id ? $f->receiver_id : $f->sender_id))->values()->all(),
-            'outgoingRequestIds' => Friendship::where('sender_id', $user->id)->where('status', 'pending')->pluck('receiver_id')->map(fn ($id) => (string) $id)->values()->all(),
-            'incomingRequestIds' => Friendship::where('receiver_id', $user->id)->where('status', 'pending')->pluck('sender_id')->map(fn ($id) => (string) $id)->values()->all(),
+            'outgoingRequestIds' => Friendship::where('sender_id', $user->id)->whereNotIn('receiver_id', $hiddenUserIds)->where('status', 'pending')->pluck('receiver_id')->map(fn ($id) => (string) $id)->values()->all(),
+            'incomingRequestIds' => Friendship::where('receiver_id', $user->id)->whereNotIn('sender_id', $hiddenUserIds)->where('status', 'pending')->pluck('sender_id')->map(fn ($id) => (string) $id)->values()->all(),
             'blockedUserIds' => DB::table('user_blocks')->where('user_id', $user->id)->pluck('blocked_user_id')->map(fn ($id) => (string) $id)->values()->all(),
         ];
     }
@@ -76,6 +85,7 @@ class ConnectionRepository
     public function friendsPage(User $user, int $perPage = 30)
     {
         return User::query()
+            ->visibleInSocial()
             ->whereKeyNot($user->id)
             ->whereExists(fn ($query) => $query->selectRaw('1')
                 ->from('friendships')
@@ -93,6 +103,7 @@ class ConnectionRepository
 
     public function request(User $user, User $other): void
     {
+        abort_if($other->isHiddenFromSocial(), 404);
         Friendship::updateOrCreate(['sender_id' => $user->id, 'receiver_id' => $other->id], ['status' => 'pending']);
     }
 

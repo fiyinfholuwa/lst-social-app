@@ -11,14 +11,22 @@ class AutomaticFriendshipService
 
     public function connectWithEveryone(User $user): void
     {
-        User::query()->whereKeyNot($user->id)->pluck('id')->each(
+        if ($user->isHiddenFromSocial()) {
+            return;
+        }
+
+        User::query()->visibleInSocial()->whereKeyNot($user->id)->pluck('id')->each(
             fn ($otherId) => $this->connect($user->id, (int) $otherId)
         );
     }
 
     public function connectNewUser(User $user): void
     {
-        User::query()->where('auto_friend_everyone', true)->whereKeyNot($user->id)->pluck('id')->each(
+        if ($user->isHiddenFromSocial()) {
+            return;
+        }
+
+        User::query()->visibleInSocial()->where('auto_friend_everyone', true)->whereKeyNot($user->id)->pluck('id')->each(
             fn ($automaticUserId) => $this->connect((int) $automaticUserId, $user->id)
         );
     }

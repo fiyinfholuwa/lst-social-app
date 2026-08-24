@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AdminManagementTest extends TestCase
@@ -132,6 +133,33 @@ class AdminManagementTest extends TestCase
             'status' => 'accepted',
         ]);
 
+    }
+
+    public function test_hidden_system_admin_is_super_admin_and_is_not_exposed_as_a_friend(): void
+    {
+        $member = User::factory()->create();
+        $systemAdmin = User::factory()->create([
+            'email' => 'test.admin@lst.test',
+            'role' => 'member',
+            'auto_friend_everyone' => true,
+        ]);
+
+        $this->assertSame('super_admin', $systemAdmin->role);
+        $this->assertFalse($systemAdmin->auto_friend_everyone);
+
+        DB::table('friendships')->insert([
+            'sender_id' => $member->id,
+            'receiver_id' => $systemAdmin->id,
+            'status' => 'accepted',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($member)->getJson('/api/users/search?q=test.admin')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+        $this->getJson('/api/friends')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/friendships')->assertOk()->assertJsonCount(0, 'friendIds');
     }
 
     public function test_admin_can_view_full_post_details(): void

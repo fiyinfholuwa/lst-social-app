@@ -13,6 +13,17 @@ class SocialApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_community_api_returns_a_safe_admin_name_when_unassigned(): void
+    {
+        $user = User::factory()->create();
+        $community = Community::create(['name' => 'Unassigned circle', 'admin_id' => null]);
+
+        $this->actingAs($user)
+            ->getJson("/api/communities/{$community->id}")
+            ->assertOk()
+            ->assertJsonPath('admin', 'LST Team');
+    }
+
     public function test_unverified_user_cannot_post_or_join_a_community(): void
     {
         $user = User::factory()->unverified()->create();

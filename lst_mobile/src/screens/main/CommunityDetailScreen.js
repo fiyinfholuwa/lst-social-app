@@ -13,6 +13,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 
+const firstName = (name, fallback) => {
+  if (typeof name !== 'string' || !name.trim()) return fallback;
+  return name.trim().split(/\s+/)[0];
+};
+
 export default function CommunityDetailScreen({ route, navigation }) {
   const { communityId } = route.params;
   const [community, setCommunity] = useState(null);
@@ -147,7 +152,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
             <Text style={[styles.overviewLabel, { color: theme.secondaryText }]}>Posts</Text>
           </View>
           <View style={styles.overviewItem}>
-            <Text style={[styles.overviewValue, { color: theme.text }]} numberOfLines={1}>{community.admin.split(' ')[0]}</Text>
+            <Text style={[styles.overviewValue, { color: theme.text }]} numberOfLines={1}>{firstName(community.admin, 'Unassigned')}</Text>
             <Text style={[styles.overviewLabel, { color: theme.secondaryText }]}>Admin</Text>
           </View>
         </View>
@@ -214,7 +219,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
           {visibleMembers.map(member => (
             <TouchableOpacity key={member.id} style={styles.member} onPress={() => navigation.navigate('UserProfile', { userId: member.id })}>
               <Avatar uri={member.avatar} size={52} style={styles.memberAvatar} accessibilityLabel={`${member.name}'s profile avatar`} />
-              <Text style={[styles.memberName, { color: theme.text }]} numberOfLines={1}>{member.name.split(' ')[0]}</Text>
+              <Text style={[styles.memberName, { color: theme.text }]} numberOfLines={1}>{firstName(member.name, 'Member')}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>

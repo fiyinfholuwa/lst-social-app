@@ -6,7 +6,10 @@ use App\Jobs\SendPushNotificationJob;
 use App\Models\PushToken;
 use App\Models\User;
 use App\Repositories\NotificationRepository;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -56,5 +59,23 @@ class PushNotificationTest extends TestCase
         $this->assertDatabaseHas('notifications', ['user_id' => $requester->id, 'title' => 'Friend request accepted']);
         Queue::assertPushed(SendPushNotificationJob::class, fn ($job) => $job->notification->user_id === $requester->id
             && $job->notification->title === 'Friend request accepted');
+    }
+
+    public function test_expo_ticket_errors_are_logged(): void
+    {
+        Log::spy();
+        Http::fake(['exp.host/*' => Http::response(['data' => [[
+            'status' => 'error',
+            'message' => 'Unable to retrieve the FCM server key.',
+            'details' => ['error' => 'InvalidCredentials'],
+        ]]])]);
+        $user = User::factory()->create();
+        PushToken::create(['user_id' => $user->id, 'token' => 'ExponentPushToken[test-error]', 'platform' => 'android']);
+        $notification = $user->notifications()->create(['title' => 'Test', 'message' => 'Test push']);
+
+        app(PushNotificationService::class)->send($user, $notification);
+
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) => $message === 'Expo rejected a push notification.'
+            && $context['error'] === 'InvalidCredentials');
     }
 }

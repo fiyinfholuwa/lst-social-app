@@ -36,9 +36,21 @@ class PushNotificationService
                 return;
             }
 
-            collect($response->json('data', []))->each(function (array $receipt, int $index) use ($tokens) {
-                if (($receipt['details']['error'] ?? null) === 'DeviceNotRegistered') {
-                    PushToken::where('token', $tokens->values()->get($index))->delete();
+            collect($response->json('data', []))->each(function (array $ticket, int $index) use ($tokens, $notification) {
+                $token = $tokens->values()->get($index);
+                $error = $ticket['details']['error'] ?? null;
+
+                if (($ticket['status'] ?? null) === 'error') {
+                    Log::warning('Expo rejected a push notification.', [
+                        'notification_id' => $notification->id,
+                        'token_suffix' => $token ? substr($token, -10) : null,
+                        'error' => $error,
+                        'message' => $ticket['message'] ?? null,
+                    ]);
+                }
+
+                if ($error === 'DeviceNotRegistered') {
+                    PushToken::where('token', $token)->delete();
                 }
             });
         } catch (\Throwable $exception) {

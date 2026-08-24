@@ -121,13 +121,23 @@ class SocialRepository
 
     public function savedPostsPage(User $user, User $viewer, int $perPage = 10)
     {
-        $query = $user->belongsToMany(Post::class, 'saved_posts')
+        $query = Post::query()
             ->with(['user', 'likes' => fn ($query) => $query->whereKey($viewer->id), 'originalPost.user'])
             ->withCount(['likes', 'comments', 'shares'])
+            ->whereExists(fn ($saved) => $saved
+                ->selectRaw('1')
+                ->from('saved_posts')
+                ->whereColumn('saved_posts.post_id', 'posts.id')
+                ->where('saved_posts.user_id', $user->id))
             ->where(fn ($posts) => $posts->where('posts.status', 'approved')->orWhere('posts.user_id', $viewer->id))
             ->where(fn ($scope) => $scope->whereNull('posts.community_id')
                 ->orWhereHas('community.members', fn ($members) => $members->whereKey($viewer->id)))
-            ->orderByPivot('created_at', 'desc');
+            ->orderByDesc(fn ($saved) => $saved
+                ->select('saved_posts.created_at')
+                ->from('saved_posts')
+                ->whereColumn('saved_posts.post_id', 'posts.id')
+                ->where('saved_posts.user_id', $user->id)
+                ->limit(1));
 
         return $this->visibleTo($query, $viewer)->paginate($perPage);
     }

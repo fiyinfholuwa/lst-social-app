@@ -112,6 +112,28 @@ class AdminManagementTest extends TestCase
         $this->assertDatabaseHas('friendships', ['sender_id' => min($automaticAccount->id, $newMember->id), 'receiver_id' => max($automaticAccount->id, $newMember->id), 'status' => 'accepted']);
     }
 
+    public function test_admin_can_enable_automatic_friendships_and_assign_the_admin_role(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $managedAccount = User::factory()->create();
+        $existingMember = User::factory()->create();
+
+        $this->actingAs($admin)->patch("/admin/members/{$managedAccount->id}", [
+            'role' => 'admin',
+            'auto_friend_everyone' => true,
+        ])->assertRedirect();
+
+        $managedAccount->refresh();
+        $this->assertSame('admin', $managedAccount->role);
+        $this->assertTrue($managedAccount->auto_friend_everyone);
+        $this->assertDatabaseHas('friendships', [
+            'sender_id' => min($managedAccount->id, $existingMember->id),
+            'receiver_id' => max($managedAccount->id, $existingMember->id),
+            'status' => 'accepted',
+        ]);
+
+    }
+
     public function test_admin_can_view_full_post_details(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

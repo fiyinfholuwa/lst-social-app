@@ -286,13 +286,10 @@ class AdminController extends Controller
 
             return $request->expectsJson() ? response()->json(['message' => $message], 422) : back()->withErrors(['member' => $message]);
         }
-        if ($request->user()->role !== 'super_admin' && (in_array($user->role, ['admin', 'super_admin'], true) || in_array($nextRole, ['admin', 'super_admin'], true))) {
-            $message = 'Only a super administrator can manage administrator roles.';
+        if ($request->user()->role !== 'super_admin' && ($user->role === 'super_admin' || $nextRole === 'super_admin')) {
+            $message = 'Only a super administrator can manage super administrator roles.';
 
             return $request->expectsJson() ? response()->json(['message' => $message], 403) : back()->withErrors(['member' => $message]);
-        }
-        if ($request->user()->role !== 'super_admin' && $autoFriendEveryone !== $user->auto_friend_everyone) {
-            abort(403, 'Only a super administrator can manage automatic friendships.');
         }
         $user->update(['role' => $nextRole, 'auto_friend_everyone' => $autoFriendEveryone]);
         if ($autoFriendEveryone) {

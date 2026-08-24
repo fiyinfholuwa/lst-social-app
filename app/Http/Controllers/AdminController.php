@@ -15,6 +15,7 @@ use App\Models\SermonCategory;
 use App\Models\User;
 use App\Services\CacheService;
 use App\Services\AccountDeletionService;
+use App\Services\AutomaticFriendshipService;
 use App\Services\UploadService;
 use App\Repositories\NotificationRepository;
 use Illuminate\Http\Request;
@@ -270,10 +271,16 @@ class AdminController extends Controller
         ]);
     }
 
-    public function updateMember(Request $request, User $user)
+    public function updateMember(Request $request, User $user, AutomaticFriendshipService $automaticFriendships)
     {
-        $data = $request->validate(['role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])]]);
+        $data = $request->validate([
+            'role' => ['nullable', Rule::in(['member', 'moderator', 'admin', 'super_admin'])],
+            'auto_friend_everyone' => 'nullable|boolean',
+        ]);
         $nextRole = $data['role'] ?: 'member';
+        $autoFriendEveryone = $request->has('auto_friend_everyone')
+            ? $request->boolean('auto_friend_everyone')
+            : $user->auto_friend_everyone;
         if ($request->user()->is($user) && $nextRole !== ($user->role ?: 'member')) {
             $message = 'You cannot change your own administrator role.';
 
@@ -284,7 +291,13 @@ class AdminController extends Controller
 
             return $request->expectsJson() ? response()->json(['message' => $message], 403) : back()->withErrors(['member' => $message]);
         }
-        $user->update(['role' => $nextRole]);
+        if ($request->user()->role !== 'super_admin' && $autoFriendEveryone !== $user->auto_friend_everyone) {
+            abort(403, 'Only a super administrator can manage automatic friendships.');
+        }
+        $user->update(['role' => $nextRole, 'auto_friend_everyone' => $autoFriendEveryone]);
+        if ($autoFriendEveryone) {
+            $automaticFriendships->connectWithEveryone($user);
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['message' => "{$user->name}'s role was updated."]);
@@ -305,6 +318,7 @@ class AdminController extends Controller
                 'marital_status' => $user->marital_status, 'date_of_birth' => $user->date_of_birth?->format('Y-m-d'),
                 'workplace' => $user->workplace, 'occupation' => $user->occupation,
                 'is_profile_private' => $user->is_profile_private, 'email_verified' => $user->email_verified_at !== null,
+                'auto_friend_everyone' => $user->auto_friend_everyone,
                 'email_verified_at' => $user->email_verified_at?->format('d M Y, H:i'),
                 'suspended' => $user->suspended_at !== null, 'suspended_at' => $user->suspended_at?->format('d M Y, H:i'),
                 'joined_at' => $user->created_at->format('d M Y, H:i'), 'last_updated' => $user->updated_at->diffForHumans(),

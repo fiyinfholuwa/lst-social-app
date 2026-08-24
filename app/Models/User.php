@@ -13,8 +13,9 @@ use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Services\AutomaticFriendshipService;
 
-#[Fillable(['name', 'first_name', 'last_name', 'email', 'phone_number', 'password', 'avatar', 'bio', 'hobbies', 'marital_status', 'date_of_birth', 'workplace', 'occupation', 'is_profile_private', 'role', 'suspended_at', 'email_verified_at'])]
+#[Fillable(['name', 'first_name', 'last_name', 'email', 'phone_number', 'password', 'avatar', 'bio', 'hobbies', 'marital_status', 'date_of_birth', 'workplace', 'occupation', 'is_profile_private', 'role', 'auto_friend_everyone', 'suspended_at', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -23,6 +24,8 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
     protected static function booted(): void
     {
+        static::created(fn (User $user) => app(AutomaticFriendshipService::class)->connectNewUser($user));
+
         static::saved(function (User $user) {
             if (in_array($user->role, ['admin', 'super_admin'], true)) {
                 $user->communities()->syncWithoutDetaching(Community::query()->pluck('id'));
@@ -42,6 +45,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'password' => 'hashed',
             'date_of_birth' => 'date',
             'is_profile_private' => 'boolean',
+            'auto_friend_everyone' => 'boolean',
             'suspended_at' => 'datetime',
         ];
     }

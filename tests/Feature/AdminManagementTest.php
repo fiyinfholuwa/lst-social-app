@@ -93,6 +93,25 @@ class AdminManagementTest extends TestCase
         $this->assertNull($member->fresh()->email_verified_at);
     }
 
+    public function test_super_admin_can_make_an_account_automatically_friends_with_everyone(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $automaticAccount = User::factory()->create();
+        $existingMember = User::factory()->create();
+
+        $this->actingAs($superAdmin)->patch("/admin/members/{$automaticAccount->id}", [
+            'role' => 'admin',
+            'auto_friend_everyone' => true,
+        ])->assertRedirect();
+
+        $this->assertTrue($automaticAccount->fresh()->auto_friend_everyone);
+        $this->assertDatabaseHas('friendships', ['sender_id' => min($automaticAccount->id, $existingMember->id), 'receiver_id' => max($automaticAccount->id, $existingMember->id), 'status' => 'accepted']);
+
+        $newMember = User::factory()->create();
+
+        $this->assertDatabaseHas('friendships', ['sender_id' => min($automaticAccount->id, $newMember->id), 'receiver_id' => max($automaticAccount->id, $newMember->id), 'status' => 'accepted']);
+    }
+
     public function test_admin_can_view_full_post_details(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

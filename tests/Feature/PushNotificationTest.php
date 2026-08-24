@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendPushNotificationJob;
 use App\Models\PushToken;
 use App\Models\User;
 use App\Repositories\NotificationRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class PushNotificationTest extends TestCase
@@ -28,9 +29,9 @@ class PushNotificationTest extends TestCase
         $this->assertDatabaseMissing('push_tokens', ['token' => $token]);
     }
 
-    public function test_creating_an_in_app_notification_sends_an_expo_push(): void
+    public function test_creating_an_in_app_notification_queues_an_expo_push(): void
     {
-        Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok']]])]);
+        Queue::fake();
         $user = User::factory()->create();
         PushToken::create(['user_id' => $user->id, 'token' => 'ExponentPushToken[test-push]', 'platform' => 'ios']);
 
@@ -39,14 +40,12 @@ class PushNotificationTest extends TestCase
             'screen' => 'PostDetail', 'route_params' => ['postId' => '42'],
         ]);
 
-        Http::assertSent(fn ($request) => $request->url() === config('services.expo.push_url')
-            && $request[0]['to'] === 'ExponentPushToken[test-push]'
-            && $request[0]['data']['routeParams']['postId'] === '42');
+        Queue::assertPushed(SendPushNotificationJob::class, fn ($job) => $job->notification->is($notification));
     }
 
-    public function test_accepting_a_friend_request_immediately_pushes_the_requester(): void
+    public function test_accepting_a_friend_request_queues_a_push_for_the_requester(): void
     {
-        Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok']]])]);
+        Queue::fake();
         $requester = User::factory()->create(['name' => 'Ada']);
         $recipient = User::factory()->create(['name' => 'Grace']);
         PushToken::create(['user_id' => $requester->id, 'token' => 'ExponentPushToken[requester-device]', 'platform' => 'android']);
@@ -55,7 +54,7 @@ class PushNotificationTest extends TestCase
         $this->actingAs($recipient)->postJson("/api/users/{$requester->id}/relationship", ['action' => 'accept'])->assertOk();
 
         $this->assertDatabaseHas('notifications', ['user_id' => $requester->id, 'title' => 'Friend request accepted']);
-        Http::assertSent(fn ($request) => $request[0]['to'] === 'ExponentPushToken[requester-device]'
-            && $request[0]['title'] === 'Friend request accepted');
+        Queue::assertPushed(SendPushNotificationJob::class, fn ($job) => $job->notification->user_id === $requester->id
+            && $job->notification->title === 'Friend request accepted');
     }
 }

@@ -42,6 +42,25 @@ const canModifyMessage = message => {
   return minutes ? Number(minutes[1]) < 15 : false;
 };
 
+function MessageReceipt({ pending, read }) {
+  if (pending) {
+    return <View style={styles.receipt} accessibilityLabel="Sending"><AppIcon name="time-outline" size={13} color="#FFFFFF" /></View>;
+  }
+
+  if (!read) {
+    return <View style={styles.receipt} accessibilityLabel="Sent"><AppIcon name="check" size={15} color="#FFFFFF" /></View>;
+  }
+
+  return (
+    <View style={styles.receipt} accessibilityLabel="Read">
+      <View style={styles.doubleCheck}>
+        <AppIcon name="check" size={15} color="#00E5FF" style={styles.readCheck} />
+        <AppIcon name="check" size={15} color="#00E5FF" style={[styles.readCheck, styles.secondCheck]} />
+      </View>
+    </View>
+  );
+}
+
 function VoiceNote({ message, mine, theme, activeVoiceId, onActivate }) {
   const player = useAudioPlayer(message.audioUri ? { uri: message.audioUri } : null, {
     updateInterval: 250,
@@ -118,6 +137,7 @@ function VoiceNote({ message, mine, theme, activeVoiceId, onActivate }) {
 
 export default function ChatDetailScreen({ route, navigation }) {
   const { chatId } = route.params;
+  const [occasion, setOccasion] = useState(route.params?.occasion || null);
   const [messages, setMessages] = useState([]);
   const [messagesPage, setMessagesPage] = useState(1);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
@@ -206,15 +226,17 @@ export default function ChatDetailScreen({ route, navigation }) {
     if (!inputText.trim() || sending) return;
     const text = inputText.trim();
     const temporaryId = `pending-${Date.now()}`;
-    const optimisticMessage = { id: temporaryId, senderId: user.id, text, type: 'text', timestamp: 'Sending…', reactions: [], pending: true };
+    const optimisticMessage = { id: temporaryId, senderId: user.id, text, type: 'text', occasion, timestamp: 'Sending…', reactions: [], pending: true };
     setSending(true);
     setMessages(current => [optimisticMessage, ...current]);
     setInputText('');
     setSelection({ start: 0, end: 0 });
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
     try {
-      const sentMessage = await apiService.sendMessage(chatId, text);
+      const sentMessage = await apiService.sendMessage(chatId, text, occasion);
       setMessages(current => current.map(message => message.id === temporaryId ? sentMessage : message));
+      setOccasion(null);
+      navigation.setParams({ occasion: undefined });
     } catch (error) {
       setMessages(current => current.filter(message => message.id !== temporaryId));
       setInputText(current => current || text);
@@ -391,35 +413,26 @@ export default function ChatDetailScreen({ route, navigation }) {
             <View style={[styles.messageRow, sameAsNewer ? styles.groupedRow : styles.groupEndRow, mine ? styles.myMessage : styles.otherMessage]}>
               {!mine ? (showAvatar ? <Avatar uri={chat?.withUser?.avatar} size={28} style={styles.messageAvatar} accessibilityLabel={`${chat?.withUser?.name || 'Friend'}'s avatar`} /> : <View style={styles.avatarSpacer} />) : null}
               <TouchableOpacity
-                activeOpacity={0.82}
-                onLongPress={() => !item.pending && setSelectedMessage(item)}
-                delayLongPress={260}
-                accessibilityHint="Long press for message options"
-                style={[
-                  styles.bubble,
-                  mine ? styles.mineBubble : styles.otherBubble,
-                  sameAsOlder && (mine ? styles.mineJoinedTop : styles.otherJoinedTop),
-                  sameAsNewer && (mine ? styles.mineJoinedBottom : styles.otherJoinedBottom),
-                  item.type === 'voice' && styles.voiceBubble,
-                  { backgroundColor: mine ? theme.primary : theme.card, borderColor: mine ? theme.primary : theme.border },
-                ]}
-              >
-                {item.type === 'voice' ? (
-                  <VoiceNote
-                    message={item}
-                    mine={mine}
-                    theme={theme}
-                    activeVoiceId={activeVoiceId}
-                    onActivate={setActiveVoiceId}
-                  />
-                ) : (
-                  <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>
-                )}
-                {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><Text style={styles.reactionEmoji}>{reaction.emoji}</Text>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}
-                {showMeta ? <View style={styles.messageMeta}>
+                  activeOpacity={0.82}
+                  onLongPress={() => !item.pending && setSelectedMessage(item)}
+                  delayLongPress={260}
+                  accessibilityHint="Long press for message options"
+                  style={[
+                    styles.bubble,
+                    mine ? styles.mineBubble : styles.otherBubble,
+                    sameAsOlder && (mine ? styles.mineJoinedTop : styles.otherJoinedTop),
+                    sameAsNewer && (mine ? styles.mineJoinedBottom : styles.otherJoinedBottom),
+                    item.type === 'voice' && styles.voiceBubble,
+                    { backgroundColor: mine ? theme.primary : theme.card, borderColor: mine ? theme.primary : theme.border },
+                  ]}
+                >
+                  {item.occasion === 'birthday_wish' ? <View style={styles.occasionLabel}><AppIcon name="gift-outline" size={11} color={mine ? '#FFFFFF' : theme.primary} /><Text style={[styles.occasionText, { color: mine ? '#FFFFFF' : theme.primary }]}>Birthday wish</Text></View> : null}
+                  {item.type === 'voice' ? <VoiceNote message={item} mine={mine} theme={theme} activeVoiceId={activeVoiceId} onActivate={setActiveVoiceId} /> : <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>}
+                  {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><Text style={styles.reactionEmoji}>{reaction.emoji}</Text>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}
+                  {showMeta ? <View style={styles.messageMeta}>
                   {item.edited ? <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>edited</Text> : null}
                   <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{item.timestamp}</Text>
-                  {mine ? <AppIcon name={item.pending ? 'time-outline' : item.read ? 'checkmark-done' : 'check'} size={13} color={item.read ? '#22A06B' : 'rgba(255,255,255,0.72)'} /> : null}
+                  {mine ? <MessageReceipt pending={item.pending} read={item.read} /> : null}
                 </View> : null}
               </TouchableOpacity>
             </View>
@@ -449,6 +462,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         <View
           style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14), marginBottom: keyboardOverlap }]}
         >
+          {occasion === 'birthday_wish' ? <View style={[styles.occasionComposer, { backgroundColor: theme.primarySoft }]}><AppIcon name="gift-outline" size={14} color={theme.primary} /><Text style={[styles.occasionComposerText, { color: theme.primary }]}>Write your birthday wish</Text><TouchableOpacity onPress={() => setOccasion(null)} accessibilityLabel="Cancel birthday wish"><AppIcon name="close" size={16} color={theme.primary} /></TouchableOpacity></View> : null}
           <View style={styles.inputRow}>
             <View style={[styles.inputPill, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <TouchableOpacity
@@ -461,7 +475,7 @@ export default function ChatDetailScreen({ route, navigation }) {
               <TextInput
                 ref={inputRef}
                 style={[styles.input, { color: theme.text }]}
-                placeholder="Message..."
+                placeholder={occasion === 'birthday_wish' ? 'Write a birthday message...' : 'Message...'}
                 placeholderTextColor={theme.secondaryText}
                 value={inputText}
                 onChangeText={setInputText}
@@ -551,10 +565,18 @@ const styles = StyleSheet.create({
   otherJoinedBottom: { borderBottomLeftRadius: 7 },
   voiceBubble: { width: 225 },
   messageText: { fontSize: 14, lineHeight: 20 },
-  messageMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 5 },
+  occasionLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
+  occasionText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+  messageMeta: { minHeight: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 3 },
   messageTime: { fontSize: 10 },
+  receipt: { minWidth: 16, height: 15, alignItems: 'center', justifyContent: 'center' },
+  doubleCheck: { width: 21, height: 15, flexDirection: 'row', alignItems: 'center' },
+  readCheck: { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 },
+  secondCheck: { marginLeft: -6 },
   latestButton: { position: 'absolute', right: 15, zIndex: 5, width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4 },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -14, paddingHorizontal: 12, paddingTop: 10 },
+  occasionComposer: { minHeight: 36, borderRadius: 12, paddingHorizontal: 11, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  occasionComposerText: { flex: 1, fontSize: 12, fontWeight: '800' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   inputPill: { flex: 1, minHeight: 48, maxHeight: 108, borderWidth: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },
   input: { flex: 1, minHeight: 45, maxHeight: 107, paddingRight: 14, paddingTop: 12, paddingBottom: 11, fontSize: 14 },

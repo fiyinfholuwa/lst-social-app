@@ -14,6 +14,12 @@ import { useFriendships } from '../../context/FriendshipsContext';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useTheme } from '../../context/ThemeContext';
 
+const displayBirthday = value => {
+  const match = String(value || '').match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (!match) return value;
+  return new Date(2000, Number(match[1]) - 1, Number(match[2])).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+};
+
 const Detail = ({ label, value, theme }) => value ? (
   <View style={styles.detail}>
     <Text style={[styles.detailLabel, { color: theme.secondaryText }]}>{label}</Text>
@@ -117,7 +123,7 @@ export default function ProfileScreen({ navigation }) {
     ['Occupation', profile.occupation],
     ['Workplace', profile.workplace],
     ['Status', profile.maritalStatus?.replaceAll('_', ' ')],
-    ['Birthday', profile.dateOfBirth],
+    ['Birthday', displayBirthday(profile.dateOfBirth)],
     ['Hobbies', profile.hobbies],
   ];
 

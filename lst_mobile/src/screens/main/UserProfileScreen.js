@@ -12,6 +12,12 @@ import { useFriendships } from '../../context/FriendshipsContext';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import { useTheme } from '../../context/ThemeContext';
 
+const displayBirthday = value => {
+  const match = String(value || '').match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (!match) return value;
+  return new Date(2000, Number(match[1]) - 1, Number(match[2])).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+};
+
 export default function UserProfileScreen({ route, navigation }) {
   const { userId } = route.params;
   const [profile, setProfile] = useState(null);
@@ -195,7 +201,7 @@ export default function UserProfileScreen({ route, navigation }) {
       {profile.canSeePrivateDetails ? <View style={styles.detailsSection}>
         <Text style={[styles.sectionLabel, { color: theme.secondaryText }]}>ABOUT</Text>
         <View style={[styles.personalDetails, { backgroundColor: theme.card, borderColor: theme.border }]}> 
-        {[['Phone number', profile.phoneNumber], ['Occupation', profile.occupation], ['Place of work', profile.workplace], ['Marital status', profile.maritalStatus?.replaceAll('_', ' ')], ['Date of birth', profile.dateOfBirth], ['Hobbies', profile.hobbies]].filter(([, value]) => value).map(([label, value]) => <View key={label} style={styles.personalRow}><Text style={[styles.personalLabel, { color: theme.secondaryText }]}>{label}</Text><Text style={[styles.personalValue, { color: theme.text }]}>{value}</Text></View>)}
+        {[['Phone number', profile.phoneNumber], ['Occupation', profile.occupation], ['Place of work', profile.workplace], ['Marital status', profile.maritalStatus?.replaceAll('_', ' ')], ['Birthday', displayBirthday(profile.dateOfBirth)], ['Hobbies', profile.hobbies]].filter(([, value]) => value).map(([label, value]) => <View key={label} style={styles.personalRow}><Text style={[styles.personalLabel, { color: theme.secondaryText }]}>{label}</Text><Text style={[styles.personalValue, { color: theme.text }]}>{value}</Text></View>)}
         </View>
       </View> : null}
 

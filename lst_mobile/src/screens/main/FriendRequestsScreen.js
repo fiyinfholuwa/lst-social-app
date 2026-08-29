@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
@@ -10,6 +11,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 export default function FriendRequestsScreen({ navigation }) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { acceptFriendRequest, declineFriendRequest, friendshipsLoading, refreshFriendships } = useFriendships();
   const [people, setPeople] = useState([]);
   const [page, setPage] = useState(1);
@@ -43,7 +45,7 @@ export default function FriendRequestsScreen({ navigation }) {
   return (
     <FlatList
       style={{ backgroundColor: theme.background }}
-      contentContainerStyle={[styles.content, people.length === 0 && styles.emptyContent]}
+      contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 12) + 28 }, people.length === 0 && styles.emptyContent]}
       data={people}
       keyExtractor={item => item.id}
       onEndReached={() => hasMore && !loadingMore && loadPeople(page + 1)}
@@ -79,7 +81,7 @@ export default function FriendRequestsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 14, paddingBottom: 36 },
+  content: { padding: 14 },
   emptyContent: { flexGrow: 1 },
   request: { flexDirection: 'row', padding: 14, borderRadius: 18, borderWidth: 1, marginBottom: 10 },
   avatar: { width: 58, height: 58, borderRadius: 29, marginRight: 12 },

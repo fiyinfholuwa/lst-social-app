@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
@@ -8,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 export default function BlockedAccountsScreen({ navigation }) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { unblockUser } = useFriendships();
   const [people, setPeople] = useState([]);
   const [page, setPage] = useState(1);
@@ -35,7 +37,7 @@ export default function BlockedAccountsScreen({ navigation }) {
   return (
     <FlatList
       style={{ backgroundColor: theme.background }}
-      contentContainerStyle={[styles.content, people.length === 0 && styles.emptyContent]}
+      contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 12) + 28 }, people.length === 0 && styles.emptyContent]}
       data={people}
       onEndReached={() => hasMore && !loadingMore && loadPeople(page + 1)}
       onEndReachedThreshold={0.4}
@@ -73,7 +75,7 @@ export default function BlockedAccountsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 14, paddingBottom: 36 },
+  content: { padding: 14 },
   emptyContent: { flexGrow: 1 },
   row: { flexDirection: 'row', alignItems: 'center', padding: 13, borderWidth: 1, borderRadius: 16, marginBottom: 10 },
   friendsLink: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 13, borderRadius: 14, marginBottom: 14 },

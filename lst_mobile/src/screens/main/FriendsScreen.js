@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
@@ -12,6 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 export default function FriendsScreen({ navigation }) {
   const { theme } = useTheme();
+  const tabBarHeight = useBottomTabBarHeight();
   const { friendIds, outgoingRequestIds, incomingRequestIds, blockedUserIds, blockUser, friendshipsLoading, refreshFriendships, getRelationship, sendFriendRequest, cancelFriendRequest, acceptFriendRequest } = useFriendships();
   const [friends, setFriends] = useState([]);
   const [friendPage, setFriendPage] = useState(1);
@@ -36,7 +38,6 @@ export default function FriendsScreen({ navigation }) {
   const [suggestionPage, setSuggestionPage] = useState(1);
   const [hasMoreSuggestions, setHasMoreSuggestions] = useState(false);
   const searchInput = useRef(null);
-  const suggestionSeed = useRef(Math.floor(Date.now() / 1000));
   const hasLoadedPeople = useRef(false);
 
   useFocusEffect(
@@ -152,7 +153,7 @@ export default function FriendsScreen({ navigation }) {
     if ((requestedPage === 1 && loadingSuggestions) || (requestedPage > 1 && loadingMoreSuggestions)) return;
     if (requestedPage === 1) setLoadingSuggestions(true); else setLoadingMoreSuggestions(true);
     try {
-      const response = await apiService.getPeopleSuggestions(requestedPage, suggestionSeed.current);
+      const response = await apiService.getBirthdayCelebrations(requestedPage);
       setSuggestions(current => {
         if (requestedPage === 1) return response.data || [];
         const known = new Set(current.map(person => String(person.id)));
@@ -161,15 +162,10 @@ export default function FriendsScreen({ navigation }) {
       setSuggestionPage(response.currentPage || requestedPage);
       setHasMoreSuggestions(Boolean(response.hasMorePages));
     } catch (error) {
-      console.error('Unable to load people suggestions:', error);
+      console.error('Unable to load birthday celebrations:', error);
     } finally {
       if (requestedPage === 1) setLoadingSuggestions(false); else setLoadingMoreSuggestions(false);
     }
-  };
-
-  const shuffleSuggestions = () => {
-    suggestionSeed.current = Math.floor(Date.now() / 1000);
-    loadSuggestions(1);
   };
 
   const selectTab = tab => {
@@ -177,7 +173,7 @@ export default function FriendsScreen({ navigation }) {
     if (tab === 'requests') return navigation.navigate('FriendRequests');
     if (tab === 'blocked') return navigation.navigate('BlockedAccounts');
     setActiveTab(tab);
-    if (tab === 'discover' && !suggestions.length) loadSuggestions();
+    if (tab === 'today' && !suggestions.length) loadSuggestions();
   };
 
   const addFriend = async (person, relationship) => {
@@ -214,6 +210,20 @@ export default function FriendsScreen({ navigation }) {
     navigation.navigate('ChatDetail', { chatId: chat.id, userName: friend.name });
   };
 
+  const wishBirthday = async friend => {
+    const personId = String(friend.id);
+    if (sendingId !== null) return;
+    setSendingId(personId);
+    try {
+      const response = await apiService.sendBirthdayWish(personId);
+      navigation.navigate('ChatDetail', { chatId: response.chat.id, userName: friend.name, occasion: 'birthday_wish' });
+    } catch (error) {
+      Alert.alert('Wish not sent', error.message || 'Please try again.');
+    } finally {
+      setSendingId(null);
+    }
+  };
+
   const confirmBlock = friend => Alert.alert(
     `Block ${friend.name}?`,
     'This will remove the friendship and hide their posts and messages.',
@@ -226,7 +236,7 @@ export default function FriendsScreen({ navigation }) {
   if (friendshipsLoading || loadingFriends) return <Loader />;
 
   const isSearching = query.trim().length >= 2;
-  const displayedPeople = isSearching ? results : activeTab === 'discover' ? suggestions : [
+  const displayedPeople = isSearching ? results : activeTab === 'today' ? suggestions : [
     ...(sentRequests.length ? [{ id: 'sent-requests-heading', rowType: 'heading', title: 'Sent requests' }, ...sentRequests] : []),
     ...(friends.length ? [{ id: 'friends-heading', rowType: 'heading', title: 'Friends' }, ...friends] : []),
   ];
@@ -251,7 +261,7 @@ export default function FriendsScreen({ navigation }) {
             <Text style={[styles.bio, { color: theme.secondaryText }]} numberOfLines={1}>{item.bio || 'LST community member'}</Text>
           </View>
         </TouchableOpacity>
-        {!isFriend && (isSearching || activeTab === 'discover' || requestSent) ? (
+        {!isFriend && (isSearching || requestSent) ? (
           <TouchableOpacity
             style={[styles.requestButton, { backgroundColor: requestSent ? theme.primarySoft : theme.primary }]}
             onPress={requestSent ? () => setCancelTarget(item) : () => addFriend(item, relationship)}
@@ -263,12 +273,24 @@ export default function FriendsScreen({ navigation }) {
               : <AppIcon name={requestSent ? 'times' : 'user-plus'} size={15} color={requestSent ? theme.primary : '#FFFFFF'} />}
             <Text style={[styles.requestText, { color: requestSent ? theme.primary : '#FFFFFF' }]}>{requestSent ? 'Cancel' : requestReceived ? 'Accept' : 'Add'}</Text>
           </TouchableOpacity>
+        ) : isFriend && activeTab === 'today' && !isSearching ? (
+          <TouchableOpacity
+            style={[styles.requestButton, { backgroundColor: theme.primary }]}
+            onPress={() => wishBirthday(item)}
+            disabled={sendingId !== null}
+            accessibilityLabel={`Wish ${item.name} a happy birthday`}
+          >
+            {sendingId === itemId
+              ? <ActivityIndicator size="small" color="#FFFFFF" />
+              : <AppIcon name="gift-outline" size={15} color="#FFFFFF" />}
+            <Text style={[styles.requestText, { color: '#FFFFFF' }]}>Wish</Text>
+          </TouchableOpacity>
         ) : isFriend ? (
           <TouchableOpacity style={[styles.iconButton, { backgroundColor: theme.primarySoft }]} onPress={() => openChat(item)} accessibilityLabel={`Message ${item.name}`}>
             <AppIcon name="comment" size={15} color={theme.primary} />
           </TouchableOpacity>
         ) : null}
-        {!isSearching && isFriend ? (
+        {!isSearching && isFriend && activeTab !== 'today' ? (
           <TouchableOpacity style={styles.iconButton} onPress={() => confirmBlock(item)} accessibilityLabel={`Block ${item.name}`}>
             <AppIcon name="ban" size={15} color={theme.danger} />
           </TouchableOpacity>
@@ -285,14 +307,14 @@ export default function FriendsScreen({ navigation }) {
           ['friends', 'Friends', 'users', friendIds.length],
           ['requests', 'Requests', 'user-plus', outgoingRequestIds.length + incomingRequestIds.length],
           ['blocked', 'Blocked', 'ban', blockedUserIds.length],
-          ['discover', 'Discover', 'sparkles-outline', 0],
+          ['today', 'Today', 'gift-outline', 0],
         ].map(([key, label, icon, count]) => {
           const active = activeTab === key;
           return <TouchableOpacity key={key} style={[styles.tab, active && { backgroundColor: theme.primarySoft }]} onPress={() => selectTab(key)}><View><AppIcon name={icon} size={16} color={active ? theme.primary : theme.secondaryText} />{count > 0 && key === 'requests' ? <View style={[styles.tabBadge, { backgroundColor: theme.primary }]} /> : null}</View><Text style={[styles.tabText, { color: active ? theme.primary : theme.secondaryText }]}>{label}</Text></TouchableOpacity>;
         })}
       </View>
 
-      {activeTab === 'discover' && !isSearching ? <View style={styles.discoverHeading}><View><Text style={[styles.discoverTitle, { color: theme.text }]}>People you may know</Text><Text style={[styles.discoverText, { color: theme.secondaryText }]}>Fresh suggestions from the LST community</Text></View><TouchableOpacity style={[styles.shuffleButton, { backgroundColor: theme.primarySoft }]} onPress={shuffleSuggestions} disabled={loadingSuggestions}>{loadingSuggestions ? <ActivityIndicator size="small" color={theme.primary} /> : <AppIcon name="refresh" size={16} color={theme.primary} />}</TouchableOpacity></View> : null}
+      {activeTab === 'today' && !isSearching ? <View style={styles.discoverHeading}><View><Text style={[styles.discoverTitle, { color: theme.text }]}>Today’s celebrations</Text><Text style={[styles.discoverText, { color: theme.secondaryText }]}>Wish your friends a happy birthday</Text></View><View style={[styles.shuffleButton, { backgroundColor: theme.primarySoft }]}>{loadingSuggestions ? <ActivityIndicator size="small" color={theme.primary} /> : <AppIcon name="gift-outline" size={17} color={theme.primary} />}</View></View> : null}
 
       <View style={[styles.searchBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <AppIcon name="search" size={18} color={theme.secondaryText} />
@@ -317,17 +339,17 @@ export default function FriendsScreen({ navigation }) {
       <FlatList
         data={displayedPeople}
         keyExtractor={item => String(item.id)}
-        contentContainerStyle={[styles.content, displayedPeople.length === 0 && styles.emptyContent]}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + 28 }, displayedPeople.length === 0 && styles.emptyContent]}
         renderItem={renderPerson}
         onEndReached={isSearching ? loadMoreSearch : activeTab === 'friends' ? loadMorePeople : () => hasMoreSuggestions && loadSuggestions(suggestionPage + 1)}
         onEndReachedThreshold={0.4}
         ListFooterComponent={loadingMoreFriends || loadingMoreSearch || loadingMoreSuggestions ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <AppIcon name={isSearching ? 'search' : activeTab === 'discover' ? 'sparkles-outline' : 'users'} size={31} color={theme.secondaryText} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>{isSearching ? 'No people found' : activeTab === 'discover' ? (loadingSuggestions ? 'Finding people…' : 'No suggestions right now') : 'No friends yet'}</Text>
+            <AppIcon name={isSearching ? 'search' : activeTab === 'today' ? 'gift-outline' : 'users'} size={31} color={theme.secondaryText} />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>{isSearching ? 'No people found' : activeTab === 'today' ? (loadingSuggestions ? 'Checking celebrations…' : 'No birthdays today') : 'No friends yet'}</Text>
             <Text style={[styles.emptyText, { color: theme.secondaryText }]}>
-              {isSearching ? 'Try another name.' : activeTab === 'discover' ? 'Check again later or search for someone by name.' : 'Search for someone you know and send them a friend request.'}
+              {isSearching ? 'Try another name.' : activeTab === 'today' ? 'There are no friend birthdays to celebrate today.' : 'Search for someone you know and send them a friend request.'}
             </Text>
             {!isSearching && activeTab === 'friends' ? (
               <TouchableOpacity style={[styles.findButton, { backgroundColor: theme.primary }]} onPress={() => searchInput.current?.focus()}>
@@ -368,7 +390,7 @@ const styles = StyleSheet.create({
   blockedCount: { fontSize: 12, fontWeight: '700' },
   searchBox: { minHeight: 48, marginHorizontal: 14, marginTop: 10, paddingHorizontal: 13, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 },
-  content: { padding: 14, paddingBottom: 36 },
+  content: { padding: 14 },
   moreLoader: { paddingVertical: 18 },
   sectionHeading: { marginTop: 5, marginBottom: 9, paddingHorizontal: 3, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
   emptyContent: { flexGrow: 1 },

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
+use App\Models\Friendship;
 use App\Models\Message;
 use App\Models\MessageReaction;
 use App\Models\MessageDeletion;
@@ -57,14 +58,32 @@ class ConnectionController extends Controller
         return response()->json($this->userPageData($this->repo->blockedUsersPage($r->user()), $r));
     }
 
-    public function suggestedUsers(Request $r)
+    public function birthdayCelebrations(Request $r)
     {
-        $data = $r->validate(['seed' => 'nullable|integer|min:1|max:2147483647']);
+        return response()->json($this->userPageData($this->repo->birthdayCelebrationsPage($r->user()), $r));
+    }
 
-        return response()->json($this->userPageData(
-            $this->repo->suggestedUsersPage($r->user(), (int) ($data['seed'] ?? now()->timestamp)),
-            $r,
-        ));
+    public function wishBirthday(Request $r, User $user)
+    {
+        $sender = $r->user();
+        abort_if($sender->is($user), 422, 'You cannot send a birthday wish to yourself.');
+        abort_unless(
+            $user->date_of_birth
+                && $user->date_of_birth->month === now()->month
+                && $user->date_of_birth->day === now()->day,
+            422,
+            'This user is not celebrating a birthday today.'
+        );
+        abort_unless(Friendship::query()
+            ->where('status', 'accepted')
+            ->where(fn ($query) => $query
+                ->where(['sender_id' => $sender->id, 'receiver_id' => $user->id])
+                ->orWhere(fn ($reverse) => $reverse->where(['sender_id' => $user->id, 'receiver_id' => $sender->id])))
+            ->exists(), 403, 'You can only send birthday wishes to friends.');
+
+        $chat = $this->repo->getOrCreateChat($sender, $user);
+
+        return response()->json(['chat' => $this->service->chat($sender, $chat)]);
     }
 
     public function request(Request $r, User $user)
@@ -148,9 +167,18 @@ class ConnectionController extends Controller
         $d = $r->validate([
             'text' => 'nullable|required_if:type,text|string|max:5000',
             'type' => 'nullable|in:text,voice',
+            'occasion' => 'nullable|in:birthday_wish',
             'audio' => 'nullable|required_if:type,voice|file|extensions:m4a,mp4,caf,wav,mp3,aac|max:15360',
             'duration' => 'nullable|required_if:type,voice|integer|min:500|max:600000',
         ]);
+
+        $recipient = $chat->users->first(fn (User $participant) => ! $participant->is($r->user()));
+        if (($d['occasion'] ?? null) === 'birthday_wish') {
+            abort_unless($recipient
+                && $recipient->date_of_birth
+                && $recipient->date_of_birth->month === now()->month
+                && $recipient->date_of_birth->day === now()->day, 422, 'Birthday wishes can only be sent on the recipient’s birthday.');
+        }
 
         $audioPath = $r->hasFile('audio')
             ? $this->uploads->store($r->file('audio'), 'voice-notes')
@@ -161,14 +189,17 @@ class ConnectionController extends Controller
             'type' => $d['type'] ?? 'text',
             'audio_uri' => $audioPath,
             'duration' => $d['duration'] ?? null,
+            'occasion' => $d['occasion'] ?? null,
         ]);
         $this->service->invalidateChat($chat);
-        $recipient = $chat->users->first(fn (User $participant) => ! $participant->is($r->user()));
         if ($recipient) {
             $preview = ($d['type'] ?? 'text') === 'voice' ? 'sent you a voice message.' : ': '.str($d['text'])->limit(100);
             $this->notifications->createFor($recipient, [
-                'icon' => 'chatbubble', 'title' => $r->user()->name,
-                'message' => ($d['type'] ?? 'text') === 'voice' ? $r->user()->name.' '.$preview : $r->user()->name.$preview,
+                'icon' => ($d['occasion'] ?? null) === 'birthday_wish' ? 'gift-outline' : 'chatbubble',
+                'title' => $r->user()->name,
+                'message' => ($d['occasion'] ?? null) === 'birthday_wish'
+                    ? $r->user()->name.' sent you a birthday wish: '.str($d['text'])->limit(100)
+                    : (($d['type'] ?? 'text') === 'voice' ? $r->user()->name.' '.$preview : $r->user()->name.$preview),
                 'screen' => 'ChatDetail', 'route_params' => ['chatId' => (string) $chat->id, 'userName' => $r->user()->name],
             ]);
         }
@@ -249,6 +280,7 @@ class ConnectionController extends Controller
             'timestamp' => $message->created_at->diffForHumans(),
             'createdAt' => $message->created_at->toIso8601String(),
             'edited' => $message->edited_at !== null,
+            'occasion' => $message->occasion,
             'reactions' => $reactions->groupBy('emoji')->map(fn ($items, $emoji) => [
                 'emoji' => $emoji,
                 'count' => $items->count(),

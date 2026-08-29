@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-        import { ActivityIndicator, View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+	        import { ActivityIndicator, View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
         import { useTheme } from '../../context/ThemeContext';
@@ -18,7 +18,8 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
           const [query, setQuery] = useState('');
           const [chatPage, setChatPage] = useState(1);
           const [hasMoreChats, setHasMoreChats] = useState(false);
-          const [loadingMoreChats, setLoadingMoreChats] = useState(false);
+	          const [loadingMoreChats, setLoadingMoreChats] = useState(false);
+	          const [refreshing, setRefreshing] = useState(false);
           const { theme } = useTheme();
           const { friendIds, incomingRequestIds, blockedUserIds } = useFriendships();
           const { refreshUnreadChats } = useChatUnread();
@@ -45,7 +46,7 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
             return () => clearTimeout(timer);
           }, [query]);
 
-          const loadMoreChats = async () => {
+	          const loadMoreChats = async () => {
             if (!hasMoreChats || loadingMoreChats) return;
             setLoadingMoreChats(true);
             try {
@@ -61,17 +62,28 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
             } finally {
               setLoadingMoreChats(false);
             }
-          };
+	          };
+
+	          const refreshChats = async () => {
+	            setRefreshing(true);
+	            await loadChats(1, query);
+	            setRefreshing(false);
+	          };
 
           if (loading) return <Loader />;
 
           const search = query.trim();
           const visibleChats = chats.filter(chat => friendIds.includes(chat.withUser.id) && !blockedUserIds.includes(chat.withUser.id));
-          const hasFriends = friendIds.length > 0;
+	          const hasFriends = friendIds.length > 0;
+	          const unreadConversations = visibleChats.filter(chat => Number(chat.unreadCount) > 0).length;
 
           return (
             <View style={[styles.container, { backgroundColor: theme.background }]}>
-              <ScreenHeader eyebrow="FRIENDS ONLY" title="Messages" actionIcon="user-plus" onAction={() => navigation.navigate('Friends')} />
+	              <ScreenHeader eyebrow="PRIVATE CONVERSATIONS" title="Messages" actionIcon="user-plus" onAction={() => navigation.navigate('Friends')} />
+	              <View style={styles.introRow}>
+	                <Text style={[styles.introText, { color: theme.secondaryText }]}>Stay close to the people who matter.</Text>
+	                {unreadConversations > 0 ? <View style={[styles.unreadSummary, { backgroundColor: theme.primarySoft }]}><Text style={[styles.unreadSummaryText, { color: theme.primary }]}>{unreadConversations} unread</Text></View> : null}
+	              </View>
               {incomingRequestIds.length > 0 ? (
                 <TouchableOpacity style={[styles.requestBanner, { backgroundColor: theme.primarySoft }]} onPress={() => navigation.navigate('FriendRequests')}>
                   <AppIcon name="user-plus" size={16} color={theme.primary} />
@@ -99,24 +111,31 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
                 contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + 24 }, visibleChats.length === 0 && styles.emptyList]}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={[styles.chatItem, { backgroundColor: theme.card, borderColor: theme.border }]}
-                    onPress={() => navigation.navigate('ChatDetail', { chatId: item.id, userName: item.withUser.name })}
-                  >
-                    <Avatar uri={item.withUser.avatar} size={50} style={styles.avatar} accessibilityLabel={`${item.withUser.name}'s profile avatar`} />
-                    <View style={styles.info}>
-                      <Text style={[styles.name, { color: theme.text }]}>{item.withUser.name}</Text>
-                      <EmojiText style={[styles.lastMsg, { color: theme.secondaryText }]} numberOfLines={1}>{item.lastMessage}</EmojiText>
-                    </View>
-                    <View style={styles.deliveryMeta}>
-                      <Text style={[styles.time, { color: theme.secondaryText }]}>{item.timestamp}</Text>
-                      {item.lastMessageMine ? <AppIcon name={item.lastMessageRead ? 'checkmark-done' : 'check'} size={14} color={item.lastMessageRead ? '#22A06B' : theme.secondaryText} /> : null}
-                    </View>
+	                    style={[styles.chatItem, { backgroundColor: item.unreadCount ? theme.primarySoft : theme.card, borderColor: item.unreadCount ? theme.primary : theme.border }]}
+	                    onPress={() => navigation.navigate('ChatDetail', { chatId: item.id, userName: item.withUser.name })}
+	                    activeOpacity={0.72}
+	                  >
+	                    <View style={styles.avatarWrap}>
+	                      <Avatar uri={item.withUser.avatar} size={52} style={styles.avatar} accessibilityLabel={`${item.withUser.name}'s profile avatar`} />
+	                      {item.unreadCount ? <View style={[styles.activityDot, { backgroundColor: theme.primary, borderColor: theme.primarySoft }]} /> : null}
+	                    </View>
+	                    <View style={styles.info}>
+	                      <View style={styles.nameRow}>
+	                        <Text style={[styles.name, item.unreadCount && styles.unreadName, { color: theme.text }]} numberOfLines={1}>{item.withUser.name}</Text>
+	                        <Text style={[styles.time, item.unreadCount && styles.unreadTime, { color: item.unreadCount ? theme.primary : theme.secondaryText }]}>{item.timestamp}</Text>
+	                      </View>
+	                      <View style={styles.previewRow}>
+	                        {item.lastMessageMine ? <AppIcon name={item.lastMessageRead ? 'checkmark-done' : 'check'} size={14} color={item.lastMessageRead ? '#22A06B' : theme.secondaryText} /> : null}
+	                        <EmojiText style={[styles.lastMsg, item.unreadCount && styles.unreadMessage, { color: item.unreadCount ? theme.text : theme.secondaryText }]} numberOfLines={1}>{item.lastMessage || 'Start a conversation'}</EmojiText>
+	                      </View>
+	                    </View>
                     {item.unreadCount ? <View style={[styles.unreadBadge, { backgroundColor: theme.accent }]}><Text style={styles.unreadBadgeText}>{item.unreadCount > 99 ? '99+' : item.unreadCount}</Text></View> : null}
                   </TouchableOpacity>
                 )}
                 onEndReached={loadMoreChats}
                 onEndReachedThreshold={0.4}
-                ListFooterComponent={loadingMoreChats ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
+	                ListFooterComponent={loadingMoreChats ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
+	                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshChats} tintColor={theme.primary} colors={[theme.primary]} />}
                 ListEmptyComponent={
                   <View style={styles.emptyState}>
                     <View style={[styles.emptyIcon, { backgroundColor: theme.primarySoft }]}>
@@ -142,21 +161,31 @@ import { useChatUnread } from '../../context/ChatUnreadContext';
         }
 
         const styles = StyleSheet.create({
-          container: { flex: 1 },
-          listContent: { paddingTop: 2 },
+	          container: { flex: 1 },
+	          introRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, marginTop: -8, marginBottom: 14 },
+	          introText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+	          unreadSummary: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+	          unreadSummaryText: { fontSize: 10.5, fontWeight: '800' },
+	          listContent: { paddingTop: 1 },
           emptyList: { flexGrow: 1 },
           requestBanner: { marginHorizontal: 14, marginBottom: 12, padding: 13, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
           requestText: { flex: 1, fontSize: 13, fontWeight: '700' },
-          searchBox: { minHeight: 46, marginHorizontal: 14, marginBottom: 12, paddingHorizontal: 13, borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, flexDirection: 'row', alignItems: 'center', gap: 9 },
-          searchInput: { flex: 1, fontSize: 13, paddingVertical: 10 },
-          chatItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, marginBottom: 9, marginHorizontal: 14 },
-          avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 12 },
-          info: { flex: 1 },
-          name: { fontWeight: '700', fontSize: 15 },
-          lastMsg: { fontSize: 12, lineHeight: 18, marginTop: 3 },
-          deliveryMeta: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3, marginLeft: 8 },
-          time: { fontSize: 10 },
-          unreadBadge: { position: 'absolute', right: 13, bottom: 12, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+	          searchBox: { minHeight: 48, marginHorizontal: 14, marginBottom: 14, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderRadius: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
+	          searchInput: { flex: 1, fontSize: 14, paddingVertical: 10 },
+	          chatItem: { flexDirection: 'row', alignItems: 'center', minHeight: 78, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 21, borderWidth: StyleSheet.hairlineWidth, marginBottom: 10, marginHorizontal: 14 },
+	          avatarWrap: { marginRight: 12 },
+	          avatar: { width: 52, height: 52, borderRadius: 26 },
+	          activityDot: { position: 'absolute', right: 0, bottom: 1, width: 13, height: 13, borderRadius: 7, borderWidth: 2.5 },
+	          info: { flex: 1 },
+	          nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+	          name: { flex: 1, fontWeight: '700', fontSize: 15 },
+	          unreadName: { fontWeight: '800' },
+	          previewRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5, paddingRight: 28 },
+	          lastMsg: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+	          unreadMessage: { fontWeight: '600' },
+	          time: { fontSize: 10.5 },
+	          unreadTime: { fontWeight: '800' },
+	          unreadBadge: { position: 'absolute', right: 14, bottom: 13, minWidth: 21, height: 21, paddingHorizontal: 6, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
           unreadBadgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '800' },
           emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, paddingBottom: 70 },
           emptyIcon: { width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },

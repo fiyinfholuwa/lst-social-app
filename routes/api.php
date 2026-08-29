@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/search', [ConnectionController::class, 'searchUsers']);
     Route::get('/friend-requests', [ConnectionController::class, 'friendRequests']);
     Route::get('/blocked-users', [ConnectionController::class, 'blockedUsers']);
+    Route::get('/people-suggestions', [ConnectionController::class, 'suggestedUsers']);
     Route::get('/users/{user}', [SocialController::class, 'user']);
     Route::get('/users/{user}/posts', [SocialController::class, 'userPosts']);
     Route::get('/posts', [SocialController::class, 'posts']);

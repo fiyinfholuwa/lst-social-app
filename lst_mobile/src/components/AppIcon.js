@@ -20,6 +20,7 @@ const OUTLINE_ICONS = {
   'chatbubbles-outline': 'chatbubbles-outline',
   check: 'checkmark',
   'check-circle': 'checkmark-circle-outline',
+  'chevron-left': 'chevron-back',
   'chevron-forward': 'chevron-forward',
   'chevron-right': 'chevron-forward',
   clock: 'time-outline',

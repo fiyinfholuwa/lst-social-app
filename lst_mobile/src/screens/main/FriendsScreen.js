@@ -6,12 +6,13 @@ import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
 import ConfirmModal from '../../components/ConfirmModal';
 import Loader from '../../components/Loader';
+import ScreenHeader from '../../components/ScreenHeader';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function FriendsScreen({ navigation }) {
   const { theme } = useTheme();
-  const { friendIds, outgoingRequestIds, blockedUserIds, blockUser, friendshipsLoading, refreshFriendships, getRelationship, sendFriendRequest, cancelFriendRequest, acceptFriendRequest } = useFriendships();
+  const { friendIds, outgoingRequestIds, incomingRequestIds, blockedUserIds, blockUser, friendshipsLoading, refreshFriendships, getRelationship, sendFriendRequest, cancelFriendRequest, acceptFriendRequest } = useFriendships();
   const [friends, setFriends] = useState([]);
   const [friendPage, setFriendPage] = useState(1);
   const [hasMoreFriends, setHasMoreFriends] = useState(false);
@@ -28,18 +29,26 @@ export default function FriendsScreen({ navigation }) {
   const [loadingMoreSearch, setLoadingMoreSearch] = useState(false);
   const [sendingId, setSendingId] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [activeTab, setActiveTab] = useState('friends');
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [loadingMoreSuggestions, setLoadingMoreSuggestions] = useState(false);
+  const [suggestionPage, setSuggestionPage] = useState(1);
+  const [hasMoreSuggestions, setHasMoreSuggestions] = useState(false);
   const searchInput = useRef(null);
+  const suggestionSeed = useRef(Math.floor(Date.now() / 1000));
+  const hasLoadedPeople = useRef(false);
 
   useFocusEffect(
     React.useCallback(() => {
-      refreshFriendships();
+      refreshFriendships({ silent: true });
     }, [refreshFriendships]),
   );
 
   useEffect(() => {
     let active = true;
 
-    setLoadingFriends(true);
+    if (!hasLoadedPeople.current) setLoadingFriends(true);
     Promise.all([
       apiService.getFriendsPage(1),
       apiService.getFriendRequestsPage('outgoing', 1),
@@ -55,7 +64,12 @@ export default function FriendsScreen({ navigation }) {
       if (active) {
         console.error('Unable to load friends:', error);
       }
-    }).finally(() => { if (active) setLoadingFriends(false); });
+    }).finally(() => {
+      if (active) {
+        hasLoadedPeople.current = true;
+        setLoadingFriends(false);
+      }
+    });
 
     return () => { active = false; };
   }, [friendIds, outgoingRequestIds]);
@@ -134,6 +148,38 @@ export default function FriendsScreen({ navigation }) {
     loadMoreFriends();
   };
 
+  const loadSuggestions = async (requestedPage = 1) => {
+    if ((requestedPage === 1 && loadingSuggestions) || (requestedPage > 1 && loadingMoreSuggestions)) return;
+    if (requestedPage === 1) setLoadingSuggestions(true); else setLoadingMoreSuggestions(true);
+    try {
+      const response = await apiService.getPeopleSuggestions(requestedPage, suggestionSeed.current);
+      setSuggestions(current => {
+        if (requestedPage === 1) return response.data || [];
+        const known = new Set(current.map(person => String(person.id)));
+        return [...current, ...(response.data || []).filter(person => !known.has(String(person.id)))];
+      });
+      setSuggestionPage(response.currentPage || requestedPage);
+      setHasMoreSuggestions(Boolean(response.hasMorePages));
+    } catch (error) {
+      console.error('Unable to load people suggestions:', error);
+    } finally {
+      if (requestedPage === 1) setLoadingSuggestions(false); else setLoadingMoreSuggestions(false);
+    }
+  };
+
+  const shuffleSuggestions = () => {
+    suggestionSeed.current = Math.floor(Date.now() / 1000);
+    loadSuggestions(1);
+  };
+
+  const selectTab = tab => {
+    setQuery('');
+    if (tab === 'requests') return navigation.navigate('FriendRequests');
+    if (tab === 'blocked') return navigation.navigate('BlockedAccounts');
+    setActiveTab(tab);
+    if (tab === 'discover' && !suggestions.length) loadSuggestions();
+  };
+
   const addFriend = async (person, relationship) => {
     const personId = String(person.id);
     if (sendingId !== null) return;
@@ -141,6 +187,7 @@ export default function FriendsScreen({ navigation }) {
     try {
       if (relationship === 'incoming') await acceptFriendRequest(personId);
       else await sendFriendRequest(personId);
+      setSuggestions(current => current.filter(item => String(item.id) !== personId));
     } catch (error) {
       Alert.alert('Request not sent', error.message || 'Please try again.');
     } finally {
@@ -179,7 +226,7 @@ export default function FriendsScreen({ navigation }) {
   if (friendshipsLoading || loadingFriends) return <Loader />;
 
   const isSearching = query.trim().length >= 2;
-  const displayedPeople = isSearching ? results : [
+  const displayedPeople = isSearching ? results : activeTab === 'discover' ? suggestions : [
     ...(sentRequests.length ? [{ id: 'sent-requests-heading', rowType: 'heading', title: 'Sent requests' }, ...sentRequests] : []),
     ...(friends.length ? [{ id: 'friends-heading', rowType: 'heading', title: 'Friends' }, ...friends] : []),
   ];
@@ -204,7 +251,7 @@ export default function FriendsScreen({ navigation }) {
             <Text style={[styles.bio, { color: theme.secondaryText }]} numberOfLines={1}>{item.bio || 'LST community member'}</Text>
           </View>
         </TouchableOpacity>
-        {!isFriend && (isSearching || requestSent) ? (
+        {!isFriend && (isSearching || activeTab === 'discover' || requestSent) ? (
           <TouchableOpacity
             style={[styles.requestButton, { backgroundColor: requestSent ? theme.primarySoft : theme.primary }]}
             onPress={requestSent ? () => setCancelTarget(item) : () => addFriend(item, relationship)}
@@ -232,12 +279,20 @@ export default function FriendsScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <TouchableOpacity style={[styles.blockedLink, { backgroundColor: theme.primarySoft }]} onPress={() => navigation.navigate('BlockedAccounts')}>
-        <AppIcon name="ban" size={15} color={theme.primary} />
-        <Text style={[styles.blockedText, { color: theme.primary }]}>Blocked accounts</Text>
-        <Text style={[styles.blockedCount, { color: theme.primary }]}>{blockedUserIds.length}</Text>
-        <AppIcon name="chevron-right" size={13} color={theme.primary} />
-      </TouchableOpacity>
+      <ScreenHeader eyebrow="YOUR COMMUNITY" title="People" />
+      <View style={[styles.tabs, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        {[
+          ['friends', 'Friends', 'users', friendIds.length],
+          ['requests', 'Requests', 'user-plus', outgoingRequestIds.length + incomingRequestIds.length],
+          ['blocked', 'Blocked', 'ban', blockedUserIds.length],
+          ['discover', 'Discover', 'sparkles-outline', 0],
+        ].map(([key, label, icon, count]) => {
+          const active = activeTab === key;
+          return <TouchableOpacity key={key} style={[styles.tab, active && { backgroundColor: theme.primarySoft }]} onPress={() => selectTab(key)}><View><AppIcon name={icon} size={16} color={active ? theme.primary : theme.secondaryText} />{count > 0 && key === 'requests' ? <View style={[styles.tabBadge, { backgroundColor: theme.primary }]} /> : null}</View><Text style={[styles.tabText, { color: active ? theme.primary : theme.secondaryText }]}>{label}</Text></TouchableOpacity>;
+        })}
+      </View>
+
+      {activeTab === 'discover' && !isSearching ? <View style={styles.discoverHeading}><View><Text style={[styles.discoverTitle, { color: theme.text }]}>People you may know</Text><Text style={[styles.discoverText, { color: theme.secondaryText }]}>Fresh suggestions from the LST community</Text></View><TouchableOpacity style={[styles.shuffleButton, { backgroundColor: theme.primarySoft }]} onPress={shuffleSuggestions} disabled={loadingSuggestions}>{loadingSuggestions ? <ActivityIndicator size="small" color={theme.primary} /> : <AppIcon name="refresh" size={16} color={theme.primary} />}</TouchableOpacity></View> : null}
 
       <View style={[styles.searchBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <AppIcon name="search" size={18} color={theme.secondaryText} />
@@ -264,17 +319,17 @@ export default function FriendsScreen({ navigation }) {
         keyExtractor={item => String(item.id)}
         contentContainerStyle={[styles.content, displayedPeople.length === 0 && styles.emptyContent]}
         renderItem={renderPerson}
-        onEndReached={isSearching ? loadMoreSearch : loadMorePeople}
+        onEndReached={isSearching ? loadMoreSearch : activeTab === 'friends' ? loadMorePeople : () => hasMoreSuggestions && loadSuggestions(suggestionPage + 1)}
         onEndReachedThreshold={0.4}
-        ListFooterComponent={loadingMoreFriends || loadingMoreSearch ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
+        ListFooterComponent={loadingMoreFriends || loadingMoreSearch || loadingMoreSuggestions ? <ActivityIndicator style={styles.moreLoader} color={theme.primary} /> : null}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <AppIcon name={isSearching ? 'search' : 'users'} size={31} color={theme.secondaryText} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>{isSearching ? 'No people found' : 'No friends yet'}</Text>
+            <AppIcon name={isSearching ? 'search' : activeTab === 'discover' ? 'sparkles-outline' : 'users'} size={31} color={theme.secondaryText} />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>{isSearching ? 'No people found' : activeTab === 'discover' ? (loadingSuggestions ? 'Finding people…' : 'No suggestions right now') : 'No friends yet'}</Text>
             <Text style={[styles.emptyText, { color: theme.secondaryText }]}>
-              {isSearching ? 'Try another name.' : 'Search for someone you know and send them a friend request.'}
+              {isSearching ? 'Try another name.' : activeTab === 'discover' ? 'Check again later or search for someone by name.' : 'Search for someone you know and send them a friend request.'}
             </Text>
-            {!isSearching ? (
+            {!isSearching && activeTab === 'friends' ? (
               <TouchableOpacity style={[styles.findButton, { backgroundColor: theme.primary }]} onPress={() => searchInput.current?.focus()}>
                 <AppIcon name="search" size={16} color="#FFFFFF" />
                 <Text style={styles.findButtonText}>Find friends</Text>
@@ -300,6 +355,14 @@ export default function FriendsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  tabs: { flexDirection: 'row', marginHorizontal: 14, marginTop: -5, padding: 5, borderWidth: StyleSheet.hairlineWidth, borderRadius: 18 },
+  tab: { flex: 1, minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  tabText: { fontSize: 8.5, fontWeight: '800' },
+  tabBadge: { position: 'absolute', top: -2, right: -4, width: 6, height: 6, borderRadius: 3 },
+  discoverHeading: { paddingHorizontal: 16, paddingTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  discoverTitle: { fontSize: 15, fontWeight: '900' },
+  discoverText: { fontSize: 10, marginTop: 2 },
+  shuffleButton: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   blockedLink: { margin: 14, marginBottom: 4, padding: 13, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
   blockedText: { flex: 1, fontSize: 13, fontWeight: '700' },
   blockedCount: { fontSize: 12, fontWeight: '700' },

@@ -63,6 +63,34 @@ class ConnectionRepository
             ->paginate($perPage);
     }
 
+    public function suggestedUsersPage(User $user, int $seed, int $perPage = 20)
+    {
+        return User::query()
+            ->visibleInSocial()
+            ->select(['id', 'name', 'avatar', 'bio'])
+            ->whereKeyNot($user->id)
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('friendships')
+                ->where(fn ($friendship) => $friendship
+                    ->where(fn ($pair) => $pair
+                        ->where('sender_id', $user->id)
+                        ->whereColumn('receiver_id', 'users.id'))
+                    ->orWhere(fn ($pair) => $pair
+                        ->where('receiver_id', $user->id)
+                        ->whereColumn('sender_id', 'users.id'))))
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('user_blocks')
+                ->where(fn ($blocks) => $blocks
+                    ->where(fn ($block) => $block
+                        ->where('user_blocks.user_id', $user->id)
+                        ->whereColumn('user_blocks.blocked_user_id', 'users.id'))
+                    ->orWhere(fn ($block) => $block
+                        ->where('user_blocks.blocked_user_id', $user->id)
+                        ->whereColumn('user_blocks.user_id', 'users.id'))))
+            ->inRandomOrder($seed)
+            ->paginate($perPage);
+    }
+
     public function friendshipState(User $user): array
     {
         $hiddenUserIds = User::query()

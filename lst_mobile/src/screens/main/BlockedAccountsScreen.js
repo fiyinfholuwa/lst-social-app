@@ -54,7 +54,7 @@ export default function BlockedAccountsScreen({ navigation }) {
         </View>
       )}
       ListHeaderComponent={
-        <TouchableOpacity style={[styles.friendsLink, { backgroundColor: theme.primarySoft }]} onPress={() => navigation.navigate('Friends')}>
+        <TouchableOpacity style={[styles.friendsLink, { backgroundColor: theme.primarySoft }]} onPress={() => navigation.navigate('MainTabs', { screen: 'Friends' })}>
           <AppIcon name="users" size={15} color={theme.primary} />
           <Text style={[styles.friendsText, { color: theme.primary }]}>View all friends</Text>
           <AppIcon name="chevron-right" size={13} color={theme.primary} />

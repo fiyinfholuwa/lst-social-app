@@ -57,6 +57,16 @@ class ConnectionController extends Controller
         return response()->json($this->userPageData($this->repo->blockedUsersPage($r->user()), $r));
     }
 
+    public function suggestedUsers(Request $r)
+    {
+        $data = $r->validate(['seed' => 'nullable|integer|min:1|max:2147483647']);
+
+        return response()->json($this->userPageData(
+            $this->repo->suggestedUsersPage($r->user(), (int) ($data['seed'] ?? now()->timestamp)),
+            $r,
+        ));
+    }
+
     public function request(Request $r, User $user)
     {
         abort_if($r->user()->is($user), 422, 'You cannot send a friend request to yourself.');

@@ -8,7 +8,11 @@ use App\Repositories\ConnectionRepository;
 
 class ConnectionService
 {
-    public function __construct(private ConnectionRepository $repo, private CacheService $cache) {}
+    public function __construct(
+        private ConnectionRepository $repo,
+        private CacheService $cache,
+        private UploadService $uploads,
+    ) {}
 
     public function friendshipState(User $user): array
     {
@@ -26,7 +30,7 @@ class ConnectionService
         $other = $chat->users->firstWhere('id', '!=', $me->id);
         $last = $chat->messages->first() ?? $chat->messages()->latest()->first();
 
-        return ['id' => (string) $chat->id, 'withUser' => ['id' => (string) $other->id, 'name' => $other->name, 'avatar' => $other->avatar], 'lastMessage' => $last?->text ?? ($last ? 'Voice message' : 'Start a conversation'), 'lastMessageMine' => $last && (int) $last->sender_id === (int) $me->id, 'lastMessageRead' => $last?->read_at !== null, 'timestamp' => $last?->created_at?->diffForHumans() ?? 'New', 'unreadCount' => $chat->messages()->where('sender_id', '!=', $me->id)->whereNull('read_at')->count()];
+        return ['id' => (string) $chat->id, 'withUser' => ['id' => (string) $other->id, 'name' => $other->name, 'avatar' => $this->uploads->url($other->avatar)], 'lastMessage' => $last?->text ?? ($last ? 'Voice message' : 'Start a conversation'), 'lastMessageMine' => $last && (int) $last->sender_id === (int) $me->id, 'lastMessageRead' => $last?->read_at !== null, 'timestamp' => $last?->created_at?->diffForHumans() ?? 'New', 'unreadCount' => $chat->messages()->where('sender_id', '!=', $me->id)->whereNull('read_at')->count()];
     }
 
     public function chatsPage(User $user, string $term = ''): array

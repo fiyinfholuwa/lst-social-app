@@ -134,6 +134,7 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState('');
   const [messageActionPending, setMessageActionPending] = useState(false);
+  const [showLatestButton, setShowLatestButton] = useState(false);
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -203,13 +204,20 @@ export default function ChatDetailScreen({ route, navigation }) {
 
   const sendMessage = async () => {
     if (!inputText.trim() || sending) return;
+    const text = inputText.trim();
+    const temporaryId = `pending-${Date.now()}`;
+    const optimisticMessage = { id: temporaryId, senderId: user.id, text, type: 'text', timestamp: 'Sending…', reactions: [], pending: true };
     setSending(true);
+    setMessages(current => [optimisticMessage, ...current]);
+    setInputText('');
+    setSelection({ start: 0, end: 0 });
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
     try {
-      await apiService.sendMessage(chatId, inputText.trim());
-      setInputText('');
-      setSelection({ start: 0, end: 0 });
-      await loadMessages();
+      const sentMessage = await apiService.sendMessage(chatId, text);
+      setMessages(current => current.map(message => message.id === temporaryId ? sentMessage : message));
     } catch (error) {
+      setMessages(current => current.filter(message => message.id !== temporaryId));
+      setInputText(current => current || text);
       Alert.alert('Message not sent', error.message || 'Please try again.');
     } finally {
       setSending(false);
@@ -331,44 +339,70 @@ export default function ChatDetailScreen({ route, navigation }) {
   return (
     <KeyboardSafeView
       style={{ backgroundColor: theme.background }}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      keyboardVerticalOffset={0}
       androidBehavior="none"
     >
-      {chat?.withUser ? (
-        <TouchableOpacity
-          style={[styles.profileHeader, { backgroundColor: theme.card, borderColor: theme.border }]}
-          onPress={() => navigation.navigate('UserProfile', { userId: chat.withUser.id })}
-          activeOpacity={0.8}
-        >
-          <Avatar uri={chat.withUser.avatar} size={42} style={styles.profileAvatar} accessibilityLabel={`${chat.withUser.name}'s profile avatar`} />
-          <View style={styles.profileCopy}>
-            <Text style={[styles.profileName, { color: theme.text }]}>{chat.withUser.name}</Text>
-            <Text style={[styles.profileHint, { color: theme.secondaryText }]}>Tap to view profile</Text>
-          </View>
-          <AppIcon name="chevron-right" size={14} color={theme.secondaryText} />
+      <View style={[styles.conversationHeader, { backgroundColor: theme.card, borderColor: theme.border, paddingTop: insets.top + 7 }]}>
+        <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.background }]} onPress={navigation.goBack} accessibilityLabel="Back to messages">
+          <AppIcon name="chevron-left" size={20} color={theme.text} />
         </TouchableOpacity>
-      ) : null}
+        <TouchableOpacity
+          style={styles.profileHeader}
+          onPress={() => chat?.withUser && navigation.navigate('UserProfile', { userId: chat.withUser.id })}
+          activeOpacity={0.75}
+          disabled={!chat?.withUser}
+        >
+          <Avatar uri={chat?.withUser?.avatar} size={42} style={styles.profileAvatar} accessibilityLabel={`${chat?.withUser?.name || route.params?.userName || 'Friend'}'s profile avatar`} />
+          <View style={styles.profileCopy}>
+            <Text style={[styles.profileName, { color: theme.text }]} numberOfLines={1}>{chat?.withUser?.name || route.params?.userName || 'Conversation'}</Text>
+            <View style={styles.privateRow}>
+              <AppIcon name="lock-closed" size={9} color={theme.secondaryText} />
+              <Text style={[styles.profileHint, { color: theme.secondaryText }]}>Private conversation</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.primarySoft }]} onPress={() => chat?.withUser && navigation.navigate('UserProfile', { userId: chat.withUser.id })} accessibilityLabel="View profile" disabled={!chat?.withUser}>
+          <AppIcon name="person-outline" size={18} color={theme.primary} />
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         ref={listRef}
         data={messages}
-        keyExtractor={item => item.id}
+        keyExtractor={item => String(item.id)}
         inverted
+        onScroll={({ nativeEvent }) => setShowLatestButton(nativeEvent.contentOffset.y > 220)}
+        scrollEventThrottle={100}
         onEndReached={() => hasMoreMessages && !loadingMoreMessages && loadMessages(messagesPage + 1)}
         onEndReachedThreshold={0.35}
         ListFooterComponent={loadingMoreMessages ? <ActivityIndicator style={styles.messagesFooter} color={theme.primary} /> : null}
         contentContainerStyle={styles.messages}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={<View style={styles.emptyConversation}><View style={[styles.emptyConversationIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="chatbubbles-outline" size={24} color={theme.primary} /></View><Text style={[styles.emptyConversationTitle, { color: theme.text }]}>Start the conversation</Text><Text style={[styles.emptyConversationText, { color: theme.secondaryText }]}>Send a kind message, an emoji, or a voice note.</Text></View>}
-        renderItem={({ item }) => {
-          const mine = item.senderId === user.id;
+        renderItem={({ item, index }) => {
+          const mine = String(item.senderId) === String(user.id);
+          const newerMessage = messages[index - 1];
+          const olderMessage = messages[index + 1];
+          const sameAsNewer = newerMessage && String(newerMessage.senderId) === String(item.senderId);
+          const sameAsOlder = olderMessage && String(olderMessage.senderId) === String(item.senderId);
+          const showAvatar = !mine && !sameAsNewer;
+          const showMeta = !sameAsNewer;
           return (
-            <View style={[styles.messageRow, mine ? styles.myMessage : styles.otherMessage]}>
+            <View style={[styles.messageRow, sameAsNewer ? styles.groupedRow : styles.groupEndRow, mine ? styles.myMessage : styles.otherMessage]}>
+              {!mine ? (showAvatar ? <Avatar uri={chat?.withUser?.avatar} size={28} style={styles.messageAvatar} accessibilityLabel={`${chat?.withUser?.name || 'Friend'}'s avatar`} /> : <View style={styles.avatarSpacer} />) : null}
               <TouchableOpacity
-                activeOpacity={mine ? 1 : 0.82}
-                onPress={() => setSelectedMessage(item)}
-                accessibilityHint="Opens message options"
-                style={[styles.bubble, item.type === 'voice' && styles.voiceBubble, { backgroundColor: mine ? theme.primary : theme.card }]}
+                activeOpacity={0.82}
+                onLongPress={() => !item.pending && setSelectedMessage(item)}
+                delayLongPress={260}
+                accessibilityHint="Long press for message options"
+                style={[
+                  styles.bubble,
+                  mine ? styles.mineBubble : styles.otherBubble,
+                  sameAsOlder && (mine ? styles.mineJoinedTop : styles.otherJoinedTop),
+                  sameAsNewer && (mine ? styles.mineJoinedBottom : styles.otherJoinedBottom),
+                  item.type === 'voice' && styles.voiceBubble,
+                  { backgroundColor: mine ? theme.primary : theme.card, borderColor: mine ? theme.primary : theme.border },
+                ]}
               >
                 {item.type === 'voice' ? (
                   <VoiceNote
@@ -382,16 +416,18 @@ export default function ChatDetailScreen({ route, navigation }) {
                   <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>
                 )}
                 {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><Text style={styles.reactionEmoji}>{reaction.emoji}</Text>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}
-                <View style={styles.messageMeta}>
+                {showMeta ? <View style={styles.messageMeta}>
                   {item.edited ? <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>edited</Text> : null}
                   <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{item.timestamp}</Text>
-                  {mine ? <AppIcon name={item.read ? 'checkmark-done' : 'check'} size={14} color={item.read ? '#22A06B' : 'rgba(255,255,255,0.72)'} /> : null}
-                </View>
+                  {mine ? <AppIcon name={item.pending ? 'time-outline' : item.read ? 'checkmark-done' : 'check'} size={13} color={item.read ? '#22A06B' : 'rgba(255,255,255,0.72)'} /> : null}
+                </View> : null}
               </TouchableOpacity>
             </View>
           );
         }}
       />
+
+      {showLatestButton ? <TouchableOpacity style={[styles.latestButton, { backgroundColor: theme.card, borderColor: theme.border, bottom: Math.max(insets.bottom, 10) + 72 + keyboardOverlap }]} onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })} accessibilityLabel="Jump to latest message"><AppIcon name="chevron-down" size={18} color={theme.primary} /></TouchableOpacity> : null}
 
       {recording ? (
         <View
@@ -431,16 +467,17 @@ export default function ChatDetailScreen({ route, navigation }) {
                 onChangeText={setInputText}
                 onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
                 multiline
+                maxLength={5000}
               />
             </View>
             {inputText.trim() ? (
               <TouchableOpacity
-                style={[styles.roundAction, { backgroundColor: theme.primary }]}
+                style={[styles.roundAction, { backgroundColor: theme.primary, opacity: sending ? 0.72 : 1 }]}
                 onPress={sendMessage}
                 disabled={sending}
                 accessibilityLabel="Send text message"
               >
-                <AppIcon name="paper-plane" size={16} color="#FFFFFF" />
+                {sending ? <ActivityIndicator size="small" color="#FFFFFF" /> : <AppIcon name="paper-plane" size={16} color="#FFFFFF" />}
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -487,28 +524,42 @@ export default function ChatDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 12 },
-  profileHeader: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, marginHorizontal: -12, paddingHorizontal: 16, paddingVertical: 11 },
+  container: { flex: 1, paddingHorizontal: 14 },
+  conversationHeader: { marginHorizontal: -14, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerButton: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  profileHeader: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center' },
   profileAvatar: { width: 42, height: 42, borderRadius: 21, marginRight: 10 },
   profileCopy: { flex: 1 },
-  profileName: { fontSize: 14, fontWeight: '700' },
-  profileHint: { fontSize: 11, marginTop: 2 },
-  messages: { flexGrow: 1, paddingVertical: 14 },
+  profileName: { fontSize: 15, fontWeight: '800' },
+  privateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  profileHint: { fontSize: 10.5 },
+  messages: { flexGrow: 1, paddingVertical: 16 },
   messagesFooter: { paddingVertical: 14 },
-  messageRow: { marginVertical: 4, flexDirection: 'row' },
+  messageRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  groupedRow: { marginTop: 1 },
+  groupEndRow: { marginTop: 7 },
   myMessage: { justifyContent: 'flex-end' },
   otherMessage: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '82%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 17 },
+  messageAvatar: { marginRight: 7, marginBottom: 2 },
+  avatarSpacer: { width: 35 },
+  bubble: { maxWidth: '80%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 19, borderWidth: StyleSheet.hairlineWidth },
+  mineBubble: { borderBottomRightRadius: 6 },
+  otherBubble: { borderBottomLeftRadius: 6 },
+  mineJoinedTop: { borderTopRightRadius: 7 },
+  mineJoinedBottom: { borderBottomRightRadius: 7 },
+  otherJoinedTop: { borderTopLeftRadius: 7 },
+  otherJoinedBottom: { borderBottomLeftRadius: 7 },
   voiceBubble: { width: 225 },
-  messageText: { fontSize: 13, lineHeight: 19 },
+  messageText: { fontSize: 14, lineHeight: 20 },
   messageMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 5 },
   messageTime: { fontSize: 10 },
-  composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -12, paddingHorizontal: 12, paddingTop: 9 },
+  latestButton: { position: 'absolute', right: 15, zIndex: 5, width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4 },
+  composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -14, paddingHorizontal: 12, paddingTop: 10 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  inputPill: { flex: 1, minHeight: 46, maxHeight: 108, borderWidth: StyleSheet.hairlineWidth, borderRadius: 23, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },
+  inputPill: { flex: 1, minHeight: 48, maxHeight: 108, borderWidth: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },
   input: { flex: 1, minHeight: 45, maxHeight: 107, paddingRight: 14, paddingTop: 12, paddingBottom: 11, fontSize: 14 },
   emojiButton: { width: 40, height: 45, alignItems: 'center', justifyContent: 'center' },
-  roundAction: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  roundAction: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   emptyConversation: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
   emptyConversationIcon: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   emptyConversationTitle: { fontSize: 16, fontWeight: '800', marginTop: 12 },

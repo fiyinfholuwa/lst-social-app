@@ -87,6 +87,7 @@ const apiService = {
   searchUsers: (query, page = 1) => httpClient.get(`/users/search?q=${encodeURIComponent(query)}&page=${page}`),
   getFriendRequestsPage: (direction = 'incoming', page = 1) => httpClient.get(`/friend-requests?direction=${direction}&page=${page}`),
   getBlockedUsersPage: (page = 1) => httpClient.get(`/blocked-users?page=${page}`),
+  getPeopleSuggestions: (page = 1, seed = 1) => httpClient.get(`/people-suggestions?page=${page}&seed=${seed}`),
   sendFriendRequest: userId => httpClient.post(`/users/${userId}/friend-request`),
   updateRelationship: (userId, action) => httpClient.post(`/users/${userId}/relationship`, { action }),
   getChatsPage: (page = 1, query = '') => httpClient.get(`/chats?page=${page}&q=${encodeURIComponent(query)}`),

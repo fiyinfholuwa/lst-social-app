@@ -7,6 +7,7 @@ import React from 'react';
         import ChatsScreen from '../screens/main/ChatsScreen';
 import SermonsScreen from '../screens/main/SermonsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
+import FriendsScreen from '../screens/main/FriendsScreen';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChatUnread } from '../context/ChatUnreadContext';
@@ -25,7 +26,7 @@ import { useChatUnread } from '../context/ChatUnreadContext';
                 tabBarActiveTintColor: theme.accent,
                 tabBarInactiveTintColor: theme.secondaryText,
                 tabBarShowLabel: true,
-                tabBarLabelStyle: { fontSize: 11, fontWeight: '600', paddingBottom: 3 },
+                tabBarLabelStyle: { fontSize: 9.5, fontWeight: '700', paddingBottom: 3 },
                 tabBarStyle: {
                   position: 'absolute',
                   left: 0,
@@ -48,11 +49,12 @@ import { useChatUnread } from '../context/ChatUnreadContext';
                   if (route.name === 'Home') iconName = 'leaf-outline';
                   else if (route.name === 'Communities') iconName = 'people-outline';
                   else if (route.name === 'Chats') iconName = 'chatbubbles-outline';
+                  else if (route.name === 'Friends') iconName = 'people-outline';
                   else if (route.name === 'Sermons') iconName = 'play-circle-outline';
                   else if (route.name === 'Profile') iconName = 'person-outline';
                   return (
                     <View style={styles.iconWrap}>
-                      <Icon name={iconName} size={21} strokeWidth={1.45} color={color} />
+                      <Icon name={iconName} size={20} strokeWidth={1.45} color={color} />
                     </View>
                   );
                 },
@@ -61,6 +63,7 @@ import { useChatUnread } from '../context/ChatUnreadContext';
               <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Today' }} />
               <Tab.Screen name="Communities" component={CommunitiesScreen} options={{ title: 'Circles' }} />
               <Tab.Screen name="Chats" component={ChatsScreen} options={{ title: 'Messages', tabBarBadge: unreadChatCount || undefined, tabBarBadgeStyle: { backgroundColor: theme.accent, color: '#FFFFFF', fontSize: 9 } }} />
+              <Tab.Screen name="Friends" component={FriendsScreen} options={{ title: 'Friends' }} />
               <Tab.Screen name="Sermons" component={SermonsScreen} options={{ title: 'Sermons' }} />
               <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'You' }} />
             </Tab.Navigator>
@@ -69,7 +72,7 @@ import { useChatUnread } from '../context/ChatUnreadContext';
 
         const styles = StyleSheet.create({
           iconWrap: {
-            width: 40,
+            width: 34,
             height: 28,
             alignItems: 'center',
             justifyContent: 'center',

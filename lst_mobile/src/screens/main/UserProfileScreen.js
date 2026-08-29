@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
@@ -24,6 +24,7 @@ export default function UserProfileScreen({ route, navigation }) {
   const [showCancelRequest, setShowCancelRequest] = useState(false);
   const [cancellingRequest, setCancellingRequest] = useState(false);
   const [reportingUser, setReportingUser] = useState(false);
+  const [imageVisible, setImageVisible] = useState(false);
   const { user } = useAuth();
   const { theme } = useTheme();
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
@@ -183,9 +184,10 @@ export default function UserProfileScreen({ route, navigation }) {
         <View style={[styles.heroAccent, { backgroundColor: theme.primary }]}>
           <View style={[styles.heroGlow, { backgroundColor: theme.accent }]} />
         </View>
-        <View style={styles.avatarFrame}>
+        <TouchableOpacity style={styles.avatarFrame} onPress={() => profile.avatar && setImageVisible(true)} disabled={!profile.avatar} accessibilityRole={profile.avatar ? 'button' : undefined} accessibilityLabel={profile.avatar ? `View ${profile.name}'s profile photo` : `${profile.name}'s profile avatar`}>
           <Avatar uri={profile.avatar} size={104} style={[styles.avatar, { borderColor: theme.card }]} accessibilityLabel={`${profile.name}'s profile avatar`} />
-        </View>
+          {profile.avatar ? <View style={[styles.avatarViewBadge, { backgroundColor: theme.card }]}><AppIcon name="expand-outline" size={13} color={theme.primary} /></View> : null}
+        </TouchableOpacity>
         <View style={styles.identity}>
           <Text style={[styles.name, { color: theme.text }]}>{profile.name}</Text>
           <View style={[styles.rolePill, { backgroundColor: theme.primarySoft }]}> 
@@ -279,6 +281,15 @@ export default function UserProfileScreen({ route, navigation }) {
         )}
         {loadingMorePosts ? <ActivityIndicator style={styles.postsFooter} color={theme.primary} /> : null}
       </View>
+      <Modal visible={imageVisible} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setImageVisible(false)}>
+        <Pressable style={styles.imageViewer} onPress={() => setImageVisible(false)} accessibilityLabel="Close profile photo">
+          <TouchableOpacity style={styles.imageClose} onPress={() => setImageVisible(false)} accessibilityLabel="Close profile photo"><AppIcon name="times" size={22} color="#FFFFFF" /></TouchableOpacity>
+          <Pressable style={styles.fullImageFrame} onPress={() => {}}>
+            <Image source={{ uri: profile.avatar }} style={styles.fullImage} resizeMode="contain" accessibilityLabel={`${profile.name}'s full profile photo`} />
+          </Pressable>
+          <Text style={styles.imageViewerName}>{profile.name}</Text>
+        </Pressable>
+      </Modal>
       <ConfirmModal
         visible={showCancelRequest}
         title={`Cancel request to ${profile.name}?`}
@@ -303,6 +314,7 @@ const styles = StyleSheet.create({
   heroGlow: { position: 'absolute', width: 160, height: 160, borderRadius: 80, right: -38, top: -72, opacity: 0.28 },
   avatarFrame: { alignItems: 'center', height: 48 },
   avatar: { width: 104, height: 104, borderRadius: 52, borderWidth: 5, marginTop: -52 },
+  avatarViewBadge: { position: 'absolute', right: -3, bottom: -5, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   identity: { alignItems: 'center', paddingHorizontal: 20, paddingTop: 11, paddingBottom: 22 },
   name: { fontSize: 25, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center' },
   rolePill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, marginTop: 7 },
@@ -343,4 +355,9 @@ const styles = StyleSheet.create({
   loadErrorText: { fontSize: 14, lineHeight: 21, textAlign: 'center' },
   profilePost: { marginHorizontal: 0, width: '100%' },
   postsFooter: { paddingVertical: 18 },
+  imageViewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  imageClose: { position: 'absolute', top: 54, right: 18, zIndex: 2, width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  fullImageFrame: { width: '100%', height: '72%', alignItems: 'center', justifyContent: 'center' },
+  fullImage: { width: '100%', height: '100%' },
+  imageViewerName: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', marginTop: 14 },
 });

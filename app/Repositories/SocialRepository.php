@@ -159,9 +159,26 @@ class SocialRepository
         return Community::with('admin')->withCount('members')->get();
     }
 
-    public function communitiesPage(int $perPage = 20)
+    public function communitiesPage(User $viewer, string $search = '', string $filter = 'all', int $perPage = 20)
     {
-        return Community::with('admin')->withCount('members')->orderBy('name')->paginate($perPage);
+        $keywords = match ($filter) {
+            'relationships' => ['marital', 'marriage', 'courtship', 'couples'],
+            'recovery' => ['recovery', 'addiction', 'healing'],
+            'singles' => ['single', 'purity', 'virgin'],
+            default => [],
+        };
+
+        return Community::with('admin')
+            ->withCount(['members', 'posts' => fn ($posts) => $posts->where('status', 'approved')])
+            ->when($filter === 'mine', fn ($query) => $query->whereHas('members', fn ($members) => $members->whereKey($viewer->id)))
+            ->when($search !== '', fn ($query) => $query->where(fn ($match) => $match
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%")))
+            ->when($keywords !== [], fn ($query) => $query->where(fn ($match) => collect($keywords)->each(
+                fn ($keyword) => $match->orWhere('name', 'like', "%{$keyword}%")->orWhere('description', 'like', "%{$keyword}%")
+            )))
+            ->orderBy('name')
+            ->paginate($perPage);
     }
 
     public function community(int $id, ?User $viewer = null): Community

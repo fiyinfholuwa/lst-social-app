@@ -62,7 +62,7 @@ const apiService = {
   getSavedPostsPage: (page = 1) => httpClient.get(`/saved-posts?page=${page}`),
   toggleSavedPost: postId => httpClient.post(`/posts/${postId}/save`),
   getCommunities: () => httpClient.get('/communities'),
-  getCommunitiesPage: (page = 1) => httpClient.get(`/communities?page=${page}`),
+  getCommunitiesPage: (page = 1, query = '', filter = 'all') => httpClient.get(`/communities?page=${page}&q=${encodeURIComponent(query)}&filter=${encodeURIComponent(filter)}`),
   getCommunity: communityId => httpClient.get(`/communities/${communityId}`),
   getCommunityArticles: async communityId => (await httpClient.get(`/communities/${communityId}/articles`)).articles,
   getCommunityPosts: (communityId, page = 1) => httpClient.get(`/communities/${communityId}/posts?page=${page}`),

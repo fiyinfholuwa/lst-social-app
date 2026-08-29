@@ -359,7 +359,15 @@ class SocialController extends Controller
     public function communities(Request $request)
     {
         if ($request->has('page')) {
-            $page = $this->repo->communitiesPage();
+            $filters = $request->validate([
+                'q' => 'nullable|string|max:100',
+                'filter' => 'nullable|in:all,mine,relationships,recovery,singles',
+            ]);
+            $page = $this->repo->communitiesPage(
+                $request->user(),
+                trim($filters['q'] ?? ''),
+                $filters['filter'] ?? 'all',
+            );
 
             return response()->json([
                 'data' => $page->getCollection()->map(fn ($community) => $this->service->communityData($community))->values(),
@@ -725,6 +733,7 @@ class SocialController extends Controller
             ])->values(),
             'currentPage' => $page->currentPage(),
             'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
         ]);
     }
 

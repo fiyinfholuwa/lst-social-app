@@ -77,6 +77,7 @@ Route::middleware(['auth:sanctum', 'last-seen'])->group(function () {
     Route::post('/communities/{community}/moderation/posts/{post}', [SocialController::class, 'reviewCommunityPost'])->middleware('throttle:social-writes');
     Route::get('/friendships', [ConnectionController::class, 'friendships']);
     Route::get('/friends', [ConnectionController::class, 'friends']);
+    Route::get('/friend-suggestions', [ConnectionController::class, 'friendSuggestions']);
     Route::post('/users/{user}/friend-request', [ConnectionController::class, 'request'])->middleware('throttle:relationship-writes');
     Route::post('/users/{user}/relationship', [ConnectionController::class, 'act'])->middleware('throttle:relationship-writes');
     Route::get('/chats', [ConnectionController::class, 'chats']);

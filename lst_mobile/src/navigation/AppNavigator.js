@@ -42,8 +42,8 @@ import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 
           return (
             <Stack.Navigator
-              key={!user ? 'guest' : user.emailVerified ? 'verified' : 'unverified'}
-              initialRouteName={!user ? 'Auth' : user.emailVerified ? 'MainTabs' : 'VerifyEmail'}
+              key={user ? 'authenticated' : 'guest'}
+              initialRouteName={user ? 'MainTabs' : 'Auth'}
               screenOptions={{
               headerShown: false,
               headerBackTitleVisible: false,

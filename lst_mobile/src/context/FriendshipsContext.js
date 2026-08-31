@@ -42,7 +42,9 @@ export function FriendshipsProvider({ children }) {
     } catch (error) {
       console.error('Unable to load friendships:', error);
     } finally {
-      if (sequence === requestSequence.current && !silent) setLoading(false);
+      // A silent refresh can supersede the initial, non-silent request. In that
+      // case it also owns the final loading state and must release the loader.
+      if (sequence === requestSequence.current) setLoading(false);
     }
   }, [user?.id]);
 

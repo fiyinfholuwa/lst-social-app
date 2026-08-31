@@ -85,6 +85,7 @@ const apiService = {
   reviewCommunityPost: (communityId, postId, action) => httpClient.post(`/communities/${communityId}/moderation/posts/${postId}`, { action }),
   getFriendships: () => httpClient.get('/friendships'),
   getFriendsPage: (page = 1) => httpClient.get(`/friends?page=${page}`),
+  getFriendSuggestions: (page = 1) => httpClient.get(`/friend-suggestions?page=${page}`),
   searchUsers: (query, page = 1) => httpClient.get(`/users/search?q=${encodeURIComponent(query)}&page=${page}`),
   getFriendRequestsPage: (direction = 'incoming', page = 1) => httpClient.get(`/friend-requests?direction=${direction}&page=${page}`),
   getBlockedUsersPage: (page = 1) => httpClient.get(`/blocked-users?page=${page}`),

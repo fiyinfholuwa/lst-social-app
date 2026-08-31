@@ -14,21 +14,21 @@ const slides = [
     title: 'A family that\ngrows together.',
     body: 'Build meaningful relationships, strengthen your home, and walk with people who genuinely care.',
     icon: 'heart-outline',
-    video: require('../../../assets/onboarding-family.mp4'),
+    video: require('../../../assets/onboarding-love.mp4'),
   },
   {
     eyebrow: 'SPIRITUAL GROWTH',
     title: 'Go deeper in\nyour walk with God.',
     body: 'Find prayer, discipleship, honest encouragement, and practical support for every season of faith.',
     icon: 'leaf-outline',
-    video: require('../../../assets/onboarding-growth.mp4'),
+    video: require('../../../assets/onboarding-growth-ng.m4v'),
   },
   {
     eyebrow: 'LOVE & CONNECTION',
     title: 'Love people.\nLive with purpose.',
     body: 'Share life, celebrate progress, offer support, and form safe connections rooted in genuine love.',
     icon: 'heart',
-    video: require('../../../assets/onboarding-love.mp4'),
+    video: require('../../../assets/onboarding-love-ng.m4v'),
   },
 ];
 

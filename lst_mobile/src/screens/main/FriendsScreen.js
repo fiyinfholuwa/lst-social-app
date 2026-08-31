@@ -20,6 +20,7 @@ export default function FriendsScreen({ navigation }) {
   const [hasMoreFriends, setHasMoreFriends] = useState(false);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [loadingMoreFriends, setLoadingMoreFriends] = useState(false);
+  const [peopleSuggestions, setPeopleSuggestions] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [requestPage, setRequestPage] = useState(1);
   const [hasMoreRequests, setHasMoreRequests] = useState(false);
@@ -53,7 +54,8 @@ export default function FriendsScreen({ navigation }) {
     Promise.all([
       apiService.getFriendsPage(1),
       apiService.getFriendRequestsPage('outgoing', 1),
-    ]).then(([friendResponse, requestResponse]) => {
+      apiService.getFriendSuggestions(1),
+    ]).then(([friendResponse, requestResponse, suggestionResponse]) => {
       if (!active) return;
       setFriends(friendResponse.data || []);
       setFriendPage(friendResponse.currentPage || 1);
@@ -61,6 +63,7 @@ export default function FriendsScreen({ navigation }) {
       setSentRequests(requestResponse.data || []);
       setRequestPage(requestResponse.currentPage || 1);
       setHasMoreRequests(Boolean(requestResponse.hasMorePages));
+      setPeopleSuggestions((suggestionResponse.data || []).map(person => ({ ...person, isSuggestion: true })));
     }).catch(error => {
       if (active) {
         console.error('Unable to load friends:', error);
@@ -184,6 +187,7 @@ export default function FriendsScreen({ navigation }) {
       if (relationship === 'incoming') await acceptFriendRequest(personId);
       else await sendFriendRequest(personId);
       setSuggestions(current => current.filter(item => String(item.id) !== personId));
+      setPeopleSuggestions(current => current.filter(item => String(item.id) !== personId));
     } catch (error) {
       Alert.alert('Request not sent', error.message || 'Please try again.');
     } finally {
@@ -238,6 +242,7 @@ export default function FriendsScreen({ navigation }) {
   const isSearching = query.trim().length >= 2;
   const displayedPeople = isSearching ? results : activeTab === 'today' ? suggestions : [
     ...(sentRequests.length ? [{ id: 'sent-requests-heading', rowType: 'heading', title: 'Sent requests' }, ...sentRequests] : []),
+    ...(peopleSuggestions.length ? [{ id: 'suggestions-heading', rowType: 'heading', title: 'People you may know' }, ...peopleSuggestions] : []),
     ...(friends.length ? [{ id: 'friends-heading', rowType: 'heading', title: 'Friends' }, ...friends] : []),
   ];
 
@@ -261,7 +266,7 @@ export default function FriendsScreen({ navigation }) {
             <Text style={[styles.bio, { color: theme.secondaryText }]} numberOfLines={1}>{item.bio || 'LST community member'}</Text>
           </View>
         </TouchableOpacity>
-        {!isFriend && (isSearching || requestSent) ? (
+        {!isFriend && (isSearching || requestSent || item.isSuggestion) ? (
           <TouchableOpacity
             style={[styles.requestButton, { backgroundColor: requestSent ? theme.primarySoft : theme.primary }]}
             onPress={requestSent ? () => setCancelTarget(item) : () => addFriend(item, relationship)}
@@ -323,7 +328,7 @@ export default function FriendsScreen({ navigation }) {
           style={[styles.searchInput, { color: theme.text }]}
           value={query}
           onChangeText={setQuery}
-          placeholder="Search for a friend by name"
+          placeholder="Search people by name"
           placeholderTextColor={theme.secondaryText}
           autoCapitalize="words"
           returnKeyType="search"

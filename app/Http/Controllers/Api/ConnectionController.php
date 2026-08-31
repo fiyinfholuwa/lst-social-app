@@ -38,6 +38,11 @@ class ConnectionController extends Controller
         ]);
     }
 
+    public function friendSuggestions(Request $r)
+    {
+        return response()->json($this->userPageData($this->repo->friendSuggestionsPage($r->user()), $r));
+    }
+
     public function searchUsers(Request $r)
     {
         $data = $r->validate(['q' => 'required|string|min:2|max:100', 'page' => 'nullable|integer|min:1']);

@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SocialApiTest extends TestCase
@@ -226,5 +227,39 @@ class SocialApiTest extends TestCase
             'sender_id' => $user->id,
             'receiver_id' => $match->id,
         ]);
+    }
+
+    public function test_friend_suggestions_prioritize_shared_communities_and_exclude_existing_relationships(): void
+    {
+        $viewer = User::factory()->create(['name' => 'Current User']);
+        $shared = User::factory()->create(['name' => 'Shared Community']);
+        $unrelated = User::factory()->create(['name' => 'Unrelated Person']);
+        $pending = User::factory()->create(['name' => 'Pending Person']);
+        $blocked = User::factory()->create(['name' => 'Blocked Person']);
+        $community = Community::create(['name' => 'Shared circle']);
+        $community->members()->attach([$viewer->id, $shared->id]);
+        DB::table('friendships')->insert([
+            'sender_id' => $viewer->id,
+            'receiver_id' => $pending->id,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('user_blocks')->insert([
+            'user_id' => $blocked->id,
+            'blocked_user_id' => $viewer->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $headers = ['Authorization' => 'Bearer '.$viewer->createToken('test')->plainTextToken];
+
+        $this->withHeaders($headers)
+            ->getJson('/api/friend-suggestions')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', (string) $shared->id)
+            ->assertJsonFragment(['id' => (string) $unrelated->id])
+            ->assertJsonMissing(['id' => (string) $pending->id])
+            ->assertJsonMissing(['id' => (string) $blocked->id]);
     }
 }

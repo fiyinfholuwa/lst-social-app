@@ -123,6 +123,38 @@ class ConnectionRepository
             ->paginate($perPage);
     }
 
+    public function friendSuggestionsPage(User $user, int $perPage = 12)
+    {
+        $communityIds = $user->communities()->pluck('communities.id');
+
+        return User::query()
+            ->visibleInSocial()
+            ->select(['users.id', 'users.name', 'users.avatar', 'users.bio'])
+            ->whereKeyNot($user->id)
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('friendships')
+                ->where(fn ($friendship) => $friendship
+                    ->where(fn ($pair) => $pair
+                        ->where('sender_id', $user->id)
+                        ->whereColumn('receiver_id', 'users.id'))
+                    ->orWhere(fn ($pair) => $pair
+                        ->where('receiver_id', $user->id)
+                        ->whereColumn('sender_id', 'users.id'))))
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('user_blocks')
+                ->where(fn ($blocks) => $blocks
+                    ->where(fn ($block) => $block
+                        ->where('user_id', $user->id)
+                        ->whereColumn('blocked_user_id', 'users.id'))
+                    ->orWhere(fn ($block) => $block
+                        ->where('blocked_user_id', $user->id)
+                        ->whereColumn('user_id', 'users.id'))))
+            ->withCount(['communities as shared_communities_count' => fn ($query) => $query->whereIn('communities.id', $communityIds)])
+            ->orderByDesc('shared_communities_count')
+            ->orderBy('name')
+            ->paginate($perPage);
+    }
+
     public function request(User $user, User $other): void
     {
         abort_if($other->isHiddenFromSocial(), 404);

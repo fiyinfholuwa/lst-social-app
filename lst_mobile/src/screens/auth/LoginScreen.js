@@ -50,7 +50,7 @@ export default function LoginScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
         <View style={styles.brandRow}>
-          <BrandLogo width={174} />
+          <BrandLogo width={156} />
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -120,7 +120,7 @@ const getStyles = theme => StyleSheet.create({
   orbTop: { width: 180, height: 180, top: -74, right: -54 },
   orbSide: { width: 120, height: 120, left: -66, top: '37%', opacity: 0.09 },
   brandRow: { alignItems: 'center', marginBottom: 22 },
-  card: { borderWidth: 1, borderRadius: 28, padding: 22, shadowColor: '#54233D', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.1, shadowRadius: 28, elevation: 5 },
+  card: { borderWidth: 1, borderRadius: 28, padding: 22, shadowColor: '#54233D', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.025, shadowRadius: 6, elevation: 1 },
   welcomeIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   kicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1.8, marginBottom: 9 },
   title: { fontSize: 31, lineHeight: 37, fontWeight: '800', letterSpacing: -1, marginBottom: 9 },

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\SendWelcomeNotificationJob;
+use App\Models\PlatformSetting;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Auth\AuthenticationException;
@@ -21,7 +22,7 @@ class AuthService
             'last_name' => trim($data['last_name']),
             'name' => trim($data['first_name'].' '.$data['last_name']),
             'email' => $data['email'],
-            'email_verified_at' => now(),
+            'email_verified_at' => PlatformSetting::valueFor('email_verification_mode', 'required') === 'automatic' ? now() : null,
             'password' => Hash::make($data['password']),
         ]);
 

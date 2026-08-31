@@ -10,7 +10,8 @@ class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $isOwner = (int) $request->user()?->id === (int) $this->id;
+        $isOwner = (int) $request->user()?->id === (int) $this->id
+            || $request->is('api/login', 'api/register');
         $canSeeDateOfBirth = $isOwner || ! $this->is_profile_private;
 
         return [

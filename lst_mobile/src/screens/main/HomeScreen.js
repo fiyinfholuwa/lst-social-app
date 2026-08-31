@@ -208,7 +208,7 @@ const fallbackFeedBanner = {
                 ListEmptyComponent={<View style={styles.empty}><Text style={[styles.emptyTitle, { color: theme.text }]}>{loadError ? 'Couldn’t load posts' : 'No posts yet'}</Text><Text style={[styles.emptyText, { color: theme.secondaryText }]}>{loadError || 'New posts will appear here.'}</Text>{loadError ? <TouchableOpacity style={[styles.retry, { backgroundColor: theme.primary }]} onPress={loadPosts}><Text style={styles.retryText}>Try again</Text></TouchableOpacity> : null}</View>}
                 ListHeaderComponent={
                   <>
-                    {!emailVerified ? <TouchableOpacity activeOpacity={0.82} onPress={() => navigation.navigate('Profile')} style={[styles.verificationAlert, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
+                    {!emailVerified ? <TouchableOpacity activeOpacity={0.82} onPress={() => navigation.navigate('VerifyEmail')} style={[styles.verificationAlert, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
                       <View style={[styles.verificationIcon, { backgroundColor: theme.card }]}><Icon name="mail-outline" size={20} color={theme.accent} /></View>
                       <View style={styles.verificationCopy}>
                         <Text style={[styles.verificationTitle, { color: theme.text }]}>Verify your email</Text>

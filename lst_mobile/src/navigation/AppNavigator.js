@@ -28,6 +28,7 @@ import CommunityModerationScreen from '../screens/main/CommunityModerationScreen
 import CommunityModerationDetailScreen from '../screens/main/CommunityModerationDetailScreen.js';
 import SharePostScreen from '../screens/main/SharePostScreen';
 import SermonDetailScreen from '../screens/main/SermonDetailScreen';
+import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -40,7 +41,10 @@ import SermonDetailScreen from '../screens/main/SermonDetailScreen';
           if (!hasCompletedOnboarding) return <OnboardingScreen />;
 
           return (
-            <Stack.Navigator screenOptions={{
+            <Stack.Navigator
+              key={!user ? 'guest' : user.emailVerified ? 'verified' : 'unverified'}
+              initialRouteName={!user ? 'Auth' : user.emailVerified ? 'MainTabs' : 'VerifyEmail'}
+              screenOptions={{
               headerShown: false,
               headerBackTitleVisible: false,
               contentStyle: { backgroundColor: theme.background },
@@ -52,6 +56,7 @@ import SermonDetailScreen from '../screens/main/SermonDetailScreen';
                 <Stack.Screen name="Auth" component={AuthNavigator} />
               ) : (
                 <>
+                  <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
                   <Stack.Screen name="MainTabs" component={MainTabNavigator} options={{ title: '' }} />
                   <Stack.Screen name="PostDetail" component={PostScreen} options={{ headerShown: true, title: 'Post' }} />
                   <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: 'Community' }} />

@@ -127,5 +127,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/admin/settings/password', [AdminController::class, 'updateAdminPassword'])->name('admin.settings.password');
     Route::patch('/admin/settings/branding', [AdminController::class, 'updateBranding'])->name('admin.settings.branding');
     Route::patch('/admin/settings/app-update', [AdminController::class, 'updateAppVersion'])->name('admin.settings.app-update');
+    Route::patch('/admin/settings/email-verification', [AdminController::class, 'updateEmailVerification'])->name('admin.settings.email-verification');
     Route::patch('/admin/settings/feed-banner', [AdminController::class, 'updateFeedBanner'])->name('admin.settings.feed-banner');
 });

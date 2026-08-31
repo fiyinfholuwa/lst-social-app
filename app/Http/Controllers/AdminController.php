@@ -226,6 +226,7 @@ class AdminController extends Controller
                 'android_minimum_version' => PlatformSetting::valueFor('android_minimum_version', '1.0.0'),
                 'app_update_message' => PlatformSetting::valueFor('app_update_message', 'A new version of LST Social is available with improvements and important fixes.'),
             ];
+            $data['emailVerificationMode'] = PlatformSetting::valueFor('email_verification_mode', 'required');
             $data['feedBanner'] = [
                 'mode' => PlatformSetting::valueFor('feed_banner_mode', PlatformSetting::valueFor('announcement_enabled', '0') === '1' ? 'announcement' : 'encouragement'),
                 'announcement_title' => PlatformSetting::valueFor('announcement_title', ''),
@@ -668,6 +669,18 @@ class AdminController extends Controller
         foreach ($data as $key => $value) PlatformSetting::put($key, trim($value));
 
         return back()->with('status', 'Mobile update policy saved.');
+    }
+
+    public function updateEmailVerification(Request $request)
+    {
+        $data = $request->validate([
+            'email_verification_mode' => ['required', Rule::in(['required', 'automatic'])],
+        ]);
+        PlatformSetting::put('email_verification_mode', $data['email_verification_mode']);
+
+        return back()->with('status', $data['email_verification_mode'] === 'required'
+            ? 'New members must now verify their email address.'
+            : 'New members will now be verified immediately.');
     }
 
     public function updateContentReport(Request $request, ContentReport $contentReport)

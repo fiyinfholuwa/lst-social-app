@@ -57,18 +57,23 @@
       "bundleIdentifier": "com.fiyinfholuwa.lstsocial",
       "supportsTablet": true,
       "associatedDomains": [
+        "applinks:social.lovestraighttalks.com",
         "applinks:social.lovestraighttalks.com"
       ],
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "LST Social uses your microphone when you choose to record a voice note."
+        "NSMicrophoneUsageDescription": "LST Social uses your microphone when you choose to record a voice note.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "RECORD_AUDIO",
-        "POST_NOTIFICATIONS"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/app-icon.png",
@@ -96,6 +101,11 @@
     "extra": {
       "eas": {
         "projectId": "2b054da6-480d-4ddb-97f3-fa0b3bf57298"
+      },
+      "expo-navigation-bar": {
+        "enforceContrast": false,
+        "style": "light",
+        "hidden": true
       }
     }
   }

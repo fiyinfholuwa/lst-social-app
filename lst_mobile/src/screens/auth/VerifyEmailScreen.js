@@ -6,6 +6,7 @@ import AppIcon from '../../components/AppIcon';
 import BrandLogo from '../../components/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { navigationRef } from '../../navigation/navigationRef';
 
 export default function VerifyEmailScreen({ navigation }) {
   const { user, refreshUser, logout } = useAuth();
@@ -57,7 +58,27 @@ export default function VerifyEmailScreen({ navigation }) {
     setVerifying(true);
     try {
       await apiService.verifyEmailOtp(code);
-      await refreshUser();
+      setCode('');
+      try {
+        await refreshUser();
+      } catch {
+        // Verification succeeded on the server. Retry profile refresh when the
+        // confirmation is dismissed rather than reporting the code as invalid.
+      }
+      Alert.alert(
+        'Email verified successfully',
+        'Your email address is confirmed. You can now post, share and join communities.',
+        [{
+          text: 'Go to my profile',
+          onPress: async () => {
+            try { await refreshUser(); } catch {}
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('MainTabs', { screen: 'Profile' });
+            }
+          },
+        }],
+        { cancelable: false },
+      );
     } catch (error) {
       Alert.alert('Code not accepted', error.message);
     } finally {

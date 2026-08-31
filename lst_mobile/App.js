@@ -14,6 +14,7 @@ import { ChatUnreadProvider } from './src/context/ChatUnreadContext';
 import { ConnectivityProvider } from './src/context/ConnectivityContext';
 import PushNotificationManager from './src/components/PushNotificationManager';
 import DeepLinkManager from './src/components/DeepLinkManager';
+import AppUpdateManager from './src/components/AppUpdateManager';
 import { flushPendingPush, navigationRef } from './src/navigation/navigationRef';
 
 function AppContent() {
@@ -40,6 +41,7 @@ function AppContent() {
                   <ChatUnreadProvider>
                   <ConnectivityProvider>
                   <AppAlertProvider>
+                    <AppUpdateManager />
                     <PushNotificationManager />
                     <DeepLinkManager />
                     <NavigationContainer ref={navigationRef} onReady={flushPendingPush} theme={navigationTheme}>

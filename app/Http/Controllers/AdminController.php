@@ -218,6 +218,13 @@ class AdminController extends Controller
                 'ios_app_url' => PlatformSetting::valueFor('ios_app_url', config('branding.ios_app_url')),
                 'android_app_url' => PlatformSetting::valueFor('android_app_url', config('branding.android_app_url')),
             ];
+            $data['appUpdate'] = [
+                'ios_latest_version' => PlatformSetting::valueFor('ios_latest_version', '1.1.0'),
+                'ios_minimum_version' => PlatformSetting::valueFor('ios_minimum_version', '1.0.0'),
+                'android_latest_version' => PlatformSetting::valueFor('android_latest_version', '1.1.0'),
+                'android_minimum_version' => PlatformSetting::valueFor('android_minimum_version', '1.0.0'),
+                'app_update_message' => PlatformSetting::valueFor('app_update_message', 'A new version of LST Social is available with improvements and important fixes.'),
+            ];
             $data['feedBanner'] = [
                 'mode' => PlatformSetting::valueFor('feed_banner_mode', PlatformSetting::valueFor('announcement_enabled', '0') === '1' ? 'announcement' : 'encouragement'),
                 'announcement_title' => PlatformSetting::valueFor('announcement_title', ''),
@@ -636,6 +643,30 @@ class AdminController extends Controller
         foreach ($data as $key => $value) PlatformSetting::put($key, trim($value));
 
         return back()->with('status', 'Landing-page branding and download links updated.');
+    }
+
+    public function updateAppVersion(Request $request)
+    {
+        $versionRule = ['required', 'regex:/^\d+\.\d+\.\d+$/'];
+        $data = $request->validate([
+            'ios_latest_version' => $versionRule,
+            'ios_minimum_version' => $versionRule,
+            'android_latest_version' => $versionRule,
+            'android_minimum_version' => $versionRule,
+            'app_update_message' => ['required', 'string', 'max:240'],
+        ]);
+
+        foreach (['ios', 'android'] as $platform) {
+            abort_if(
+                version_compare($data["{$platform}_minimum_version"], $data["{$platform}_latest_version"], '>'),
+                422,
+                ucfirst($platform).' minimum version cannot be newer than its latest version.'
+            );
+        }
+
+        foreach ($data as $key => $value) PlatformSetting::put($key, trim($value));
+
+        return back()->with('status', 'Mobile update policy saved.');
     }
 
     public function updateContentReport(Request $request, ContentReport $contentReport)

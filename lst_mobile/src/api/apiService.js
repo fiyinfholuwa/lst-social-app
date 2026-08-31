@@ -7,6 +7,7 @@ const appendFile = (form, field, asset, fallbackName) => {
 };
 
 const apiService = {
+  getAppVersion: platform => httpClient.get(`/app-version?platform=${platform}`, { auth: false }),
   login: (email, password) => httpClient.post('/login', { email, password }, { auth: false }),
   checkEmailAvailability: email => httpClient.post('/register/check-email', { email }, { auth: false }),
   register: (firstName, lastName, email, password, passwordConfirmation) => httpClient.post('/register', {

@@ -1,11 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AppVersionController;
 use App\Http\Controllers\Api\ConnectionController;
 use App\Http\Controllers\Api\SocialController;
 use App\Http\Controllers\Api\PushTokenController;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/app-version', AppVersionController::class)->middleware('throttle:30,1');
 
 Route::middleware('throttle:6,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);

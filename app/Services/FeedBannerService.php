@@ -16,12 +16,16 @@ class FeedBannerService
         ['text' => 'Let’s not be weary in doing good, for we will reap in due season if we don’t give up.', 'reference' => 'Galatians 6:9'],
     ];
 
-    public function current(): array
+    public function current(): ?array
     {
         $mode = PlatformSetting::valueFor(
             'feed_banner_mode',
             PlatformSetting::valueFor('announcement_enabled', '0') === '1' ? 'announcement' : 'encouragement'
         );
+
+        if ($mode === 'hidden') {
+            return null;
+        }
 
         if ($mode === 'announcement') {
             return [

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { ActivityIndicator, Alert, View, FlatList, Linking, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
+import { ActivityIndicator, Alert, View, FlatList, Linking, Modal, Pressable, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
         import { useTheme } from '../../context/ThemeContext';
@@ -35,8 +35,8 @@ const fallbackFeedBanner = {
           const [nextPage, setNextPage] = useState(1);
           const [hasMorePosts, setHasMorePosts] = useState(true);
           const [loadError, setLoadError] = useState('');
-          const [feedBanner, setFeedBanner] = useState(fallbackFeedBanner);
-          const [bannerExpanded, setBannerExpanded] = useState(false);
+          const [feedBanner, setFeedBanner] = useState(null);
+          const [bannerDetailsVisible, setBannerDetailsVisible] = useState(false);
           const loadingMoreRef = useRef(false);
           const { theme } = useTheme();
           const { user, refreshUser } = useAuth();
@@ -148,6 +148,29 @@ const fallbackFeedBanner = {
                 badgeCount={unreadCount}
                 onAction={() => navigation.navigate('Notifications')}
               />
+              {feedBanner ? (
+                <TouchableOpacity
+                  activeOpacity={0.78}
+                  onPress={() => setBannerDetailsVisible(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View details: ${feedBanner.title || feedBanner.label}`}
+                  style={styles.bannerWrap}
+                >
+                  <LinearGradient colors={[theme.primary, theme.accentDark, theme.warmAccent]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.compactBanner}>
+                    <View style={styles.bannerIcon}>
+                      <Icon name={feedBanner.mode === 'announcement' ? 'megaphone-outline' : 'sparkles-outline'} size={15} color="#FFFFFF" />
+                    </View>
+                    <View style={styles.bannerCopy}>
+                      <View style={styles.bannerMeta}>
+                        <Text style={styles.compactBannerLabel} numberOfLines={1}>{feedBanner.title || feedBanner.label}</Text>
+                        {feedBanner.reference ? <Text style={styles.compactReference} numberOfLines={1}>{feedBanner.reference}</Text> : null}
+                      </View>
+                      <Text style={styles.compactBannerText} numberOfLines={1}>{feedBanner.mode === 'encouragement' ? `“${feedBanner.text}”` : feedBanner.text}</Text>
+                    </View>
+                    <Icon name="chevron-right" size={14} color="#FFFFFF" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              ) : null}
               <FlatList
                 data={visiblePosts}
                 keyExtractor={(item) => String(item.id)}
@@ -185,37 +208,6 @@ const fallbackFeedBanner = {
                 ListEmptyComponent={<View style={styles.empty}><Text style={[styles.emptyTitle, { color: theme.text }]}>{loadError ? 'Couldn’t load posts' : 'No posts yet'}</Text><Text style={[styles.emptyText, { color: theme.secondaryText }]}>{loadError || 'New posts will appear here.'}</Text>{loadError ? <TouchableOpacity style={[styles.retry, { backgroundColor: theme.primary }]} onPress={loadPosts}><Text style={styles.retryText}>Try again</Text></TouchableOpacity> : null}</View>}
                 ListHeaderComponent={
                   <>
-                    {feedBanner ? <LinearGradient
-                      colors={[theme.primary, theme.accentDark, theme.warmAccent]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.verseCard}
-                    >
-                      <Text style={styles.verseLabel}>{feedBanner.label}</Text>
-                      {feedBanner.title ? <Text style={styles.announcementTitle}>{feedBanner.title}</Text> : null}
-                      <TouchableOpacity
-                        activeOpacity={feedBanner.text.length > 90 ? 0.75 : 1}
-                        onPress={() => feedBanner.text.length > 90 && setBannerExpanded(current => !current)}
-                        accessibilityRole={feedBanner.text.length > 90 ? 'button' : undefined}
-                        accessibilityLabel={feedBanner.text.length > 90 ? `${bannerExpanded ? 'Collapse' : 'Expand'} banner message` : undefined}
-                      >
-                        <Text style={styles.verse} numberOfLines={bannerExpanded ? undefined : 2}>{feedBanner.mode === 'encouragement' ? `“${feedBanner.text}”` : feedBanner.text}</Text>
-                        {feedBanner.text.length > 90 ? <Text style={styles.expandText}>{bannerExpanded ? 'Show less' : 'Read more'}</Text> : null}
-                      </TouchableOpacity>
-                      {feedBanner.reference ? <Text style={styles.reference}>{feedBanner.reference}</Text> : null}
-                      {feedBanner.mode === 'announcement' && feedBanner.actionUrl ? (
-                        <TouchableOpacity
-                          style={styles.announcementAction}
-                          onPress={openAnnouncement}
-                          activeOpacity={0.72}
-                          accessibilityRole="link"
-                          accessibilityLabel={`${feedBanner.actionLabel}: ${feedBanner.title || 'announcement'}`}
-                        >
-                          <Text style={styles.announcementActionText}>{feedBanner.actionLabel}</Text>
-                          <Icon name="arrow-forward" size={13} color="#FFFFFF" />
-                        </TouchableOpacity>
-                      ) : null}
-                    </LinearGradient> : null}
                     {!emailVerified ? <TouchableOpacity activeOpacity={0.82} onPress={() => navigation.navigate('Profile')} style={[styles.verificationAlert, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
                       <View style={[styles.verificationIcon, { backgroundColor: theme.card }]}><Icon name="mail-outline" size={20} color={theme.accent} /></View>
                       <View style={styles.verificationCopy}>
@@ -232,6 +224,32 @@ const fallbackFeedBanner = {
                   </>
                 }
               />
+              <Modal visible={bannerDetailsVisible} transparent animationType="fade" onRequestClose={() => setBannerDetailsVisible(false)}>
+                <Pressable style={styles.modalBackdrop} onPress={() => setBannerDetailsVisible(false)}>
+                  <Pressable style={[styles.bannerModal, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
+                    <View style={styles.modalHeader}>
+                      <View style={[styles.modalIcon, { backgroundColor: theme.primarySoft }]}>
+                        <Icon name={feedBanner?.mode === 'announcement' ? 'megaphone-outline' : 'sparkles-outline'} size={20} color={theme.primary} />
+                      </View>
+                      <View style={styles.modalHeadingCopy}>
+                        <Text style={[styles.modalLabel, { color: theme.primary }]}>{feedBanner?.label}</Text>
+                        {feedBanner?.title ? <Text style={[styles.modalTitle, { color: theme.text }]}>{feedBanner.title}</Text> : null}
+                      </View>
+                      <TouchableOpacity style={[styles.modalClose, { backgroundColor: theme.background }]} onPress={() => setBannerDetailsVisible(false)} accessibilityLabel="Close banner details">
+                        <Icon name="times" size={18} color={theme.text} />
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={[styles.modalMessage, { color: theme.text }]}>{feedBanner?.mode === 'encouragement' ? `“${feedBanner?.text}”` : feedBanner?.text}</Text>
+                    {feedBanner?.reference ? <Text style={[styles.modalReference, { color: theme.secondaryText }]}>{feedBanner.reference}</Text> : null}
+                    {feedBanner?.mode === 'announcement' && feedBanner?.actionUrl ? (
+                      <TouchableOpacity style={[styles.modalAction, { backgroundColor: theme.primary }]} onPress={() => { setBannerDetailsVisible(false); openAnnouncement(); }} accessibilityRole="link">
+                        <Text style={styles.modalActionText}>{feedBanner.actionLabel || 'Learn more'}</Text>
+                        <Icon name="arrow-forward" size={15} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </Pressable>
+                </Pressable>
+              </Modal>
             </View>
           );
         }
@@ -239,14 +257,26 @@ const fallbackFeedBanner = {
         const styles = StyleSheet.create({
           container: { flex: 1 },
           loadingFooter: { paddingVertical: 20, alignItems: 'center' },
-          verseCard: { marginHorizontal: 14, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 16, marginBottom: 9 },
-          verseLabel: { color: 'rgba(255,255,255,.8)', fontSize: 9, lineHeight: 13, fontWeight: '800', letterSpacing: 1.2 },
-          announcementTitle: { color: '#FFFFFF', fontSize: 13, lineHeight: 17, fontWeight: '800', marginTop: 5 },
-          verse: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', lineHeight: 19, marginTop: 5 },
-          expandText: { color: 'rgba(255,255,255,.82)', fontSize: 10, lineHeight: 14, fontWeight: '800', marginTop: 3 },
-          reference: { color: 'rgba(255,255,255,.76)', fontSize: 11, lineHeight: 16, marginTop: 5 },
-          announcementAction: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 7, paddingHorizontal: 10, minHeight: 29, borderRadius: 9, backgroundColor: 'rgba(255,255,255,.16)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,.4)' },
-          announcementActionText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
+          bannerWrap: { marginHorizontal: 14, marginBottom: 8 },
+          compactBanner: { minHeight: 52, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
+          bannerIcon: { width: 29, height: 29, borderRadius: 10, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' },
+          bannerCopy: { flex: 1, minWidth: 0 },
+          bannerMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+          compactBannerLabel: { flex: 1, color: 'rgba(255,255,255,.8)', fontSize: 8, lineHeight: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
+          compactBannerText: { color: '#FFFFFF', fontSize: 11.5, lineHeight: 16, fontWeight: '700', marginTop: 1 },
+          compactReference: { color: 'rgba(255,255,255,.76)', fontSize: 8.5, lineHeight: 11 },
+          modalBackdrop: { flex: 1, paddingHorizontal: 22, backgroundColor: 'rgba(0,0,0,.52)', alignItems: 'center', justifyContent: 'center' },
+          bannerModal: { width: '100%', maxWidth: 440, padding: 18, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth },
+          modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+          modalIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+          modalHeadingCopy: { flex: 1, minWidth: 0 },
+          modalLabel: { fontSize: 9, lineHeight: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+          modalTitle: { fontSize: 16, lineHeight: 21, fontWeight: '800', marginTop: 2 },
+          modalClose: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+          modalMessage: { fontSize: 15, lineHeight: 23, fontWeight: '600', marginTop: 18 },
+          modalReference: { fontSize: 12, lineHeight: 17, fontWeight: '700', marginTop: 9 },
+          modalAction: { minHeight: 44, marginTop: 20, paddingHorizontal: 16, borderRadius: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+          modalActionText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
           composer: { marginHorizontal: 14, marginBottom: 16, padding: 12, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
           composerIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
           composerText: { flex: 1, fontSize: 13 },

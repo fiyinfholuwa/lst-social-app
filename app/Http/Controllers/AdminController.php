@@ -687,7 +687,7 @@ class AdminController extends Controller
     public function updateFeedBanner(Request $request)
     {
         $data = $request->validate([
-            'feed_banner_mode' => ['required', Rule::in(['encouragement', 'announcement'])],
+            'feed_banner_mode' => ['required', Rule::in(['encouragement', 'announcement', 'hidden'])],
             'announcement_title' => 'nullable|string|max:80',
             'announcement_text' => 'required_if:feed_banner_mode,announcement|nullable|string|max:240',
             'announcement_action_url' => 'nullable|url:https|max:2000',
@@ -699,7 +699,13 @@ class AdminController extends Controller
         PlatformSetting::put('announcement_text', trim($data['announcement_text'] ?? ''));
         PlatformSetting::put('announcement_action_url', trim($data['announcement_action_url'] ?? ''));
 
-        return back()->with('status', $data['feed_banner_mode'] === 'announcement' ? 'Feed announcement published.' : 'Daily encouragement restored.');
+        $status = match ($data['feed_banner_mode']) {
+            'announcement' => 'Feed announcement published.',
+            'hidden' => 'Home feed banner hidden.',
+            default => 'Daily encouragement restored.',
+        };
+
+        return back()->with('status', $status);
     }
 
     public function storeSermonCategory(Request $request)

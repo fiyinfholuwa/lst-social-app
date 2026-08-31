@@ -73,4 +73,17 @@ class FeedBannerTest extends TestCase
             'announcement_action_url' => 'http://example.com/status',
         ])->assertRedirect('/admin/settings')->assertSessionHasErrors(['announcement_text', 'announcement_action_url']);
     }
+
+    public function test_admin_can_hide_the_home_feed_banner_completely(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $member = User::factory()->create();
+
+        $this->actingAs($admin)->patch('/admin/settings/feed-banner', [
+            'feed_banner_mode' => 'hidden',
+        ])->assertRedirect()->assertSessionHas('status', 'Home feed banner hidden.');
+
+        $this->assertSame('hidden', PlatformSetting::valueFor('feed_banner_mode'));
+        $this->actingAs($member)->getJson('/api/feed-banner')->assertOk()->assertExactJson([]);
+    }
 }

@@ -31,6 +31,24 @@ const formatDuration = milliseconds => {
 
 const MESSAGE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 
+const formatLastSeen = withUser => {
+  if (withUser?.isOnline) return 'Online';
+  if (!withUser?.lastSeenAt) return 'Last seen unavailable';
+
+  const seenAt = new Date(withUser.lastSeenAt);
+  if (Number.isNaN(seenAt.getTime())) return 'Last seen unavailable';
+
+  const now = new Date();
+  const time = seenAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (seenAt.toDateString() === now.toDateString()) return `Last seen today at ${time}`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (seenAt.toDateString() === yesterday.toDateString()) return `Last seen yesterday at ${time}`;
+
+  return `Last seen ${seenAt.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${time}`;
+};
+
 const canModifyMessage = message => {
   if (!message) return false;
   const createdAt = new Date(message.createdAt).getTime();
@@ -186,6 +204,7 @@ export default function ChatDetailScreen({ route, navigation }) {
   useEffect(() => {
     let active = true;
     let timer;
+    let chatTimer;
     let failureCount = 0;
     const poll = async () => {
       const succeeded = await loadMessages();
@@ -195,10 +214,12 @@ export default function ChatDetailScreen({ route, navigation }) {
       timer = setTimeout(poll, delay);
     };
     poll();
-    apiService.getChat(chatId)
-      .then(setChat)
-      .catch(error => Alert.alert('Couldn’t load chat', error.message || 'Please try again.'));
-    return () => { active = false; clearTimeout(timer); };
+    const refreshChat = () => apiService.getChat(chatId)
+      .then(value => { if (active) setChat(value); })
+      .catch(error => console.error('Unable to refresh chat details:', error));
+    refreshChat();
+    chatTimer = setInterval(refreshChat, 30000);
+    return () => { active = false; clearTimeout(timer); clearInterval(chatTimer); };
   }, [chatId]);
 
   const loadMessages = async (requestedPage = 1) => {
@@ -378,8 +399,8 @@ export default function ChatDetailScreen({ route, navigation }) {
           <View style={styles.profileCopy}>
             <Text style={[styles.profileName, { color: theme.text }]} numberOfLines={1}>{chat?.withUser?.name || route.params?.userName || 'Conversation'}</Text>
             <View style={styles.privateRow}>
-              <AppIcon name="lock-closed" size={9} color={theme.secondaryText} />
-              <Text style={[styles.profileHint, { color: theme.secondaryText }]}>Private conversation</Text>
+              <View style={[styles.presenceDot, { backgroundColor: chat?.withUser?.isOnline ? '#22C55E' : theme.secondaryText }]} />
+              <Text style={[styles.profileHint, { color: chat?.withUser?.isOnline ? '#16A34A' : theme.secondaryText }]} numberOfLines={1}>{formatLastSeen(chat?.withUser)}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -547,6 +568,7 @@ const styles = StyleSheet.create({
   profileName: { fontSize: 15, fontWeight: '800' },
   privateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   profileHint: { fontSize: 10.5 },
+  presenceDot: { width: 6, height: 6, borderRadius: 3 },
   messages: { flexGrow: 1, paddingVertical: 16 },
   messagesFooter: { paddingVertical: 14 },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end' },

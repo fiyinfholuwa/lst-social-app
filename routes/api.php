@@ -15,7 +15,7 @@ Route::middleware('throttle:6,1')->group(function () {
     Route::post('/forgot-password/reset', [AuthController::class, 'resetForgottenPassword']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'last-seen'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
     Route::post('/email/verification-notification', [AuthController::class, 'sendVerification'])->middleware('throttle:3,1');

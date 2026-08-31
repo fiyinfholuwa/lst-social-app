@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use App\Services\AutomaticFriendshipService;
 
-#[Fillable(['name', 'first_name', 'last_name', 'email', 'phone_number', 'password', 'avatar', 'bio', 'hobbies', 'marital_status', 'date_of_birth', 'workplace', 'occupation', 'is_profile_private', 'role', 'auto_friend_everyone', 'suspended_at', 'email_verified_at'])]
+#[Fillable(['name', 'first_name', 'last_name', 'email', 'phone_number', 'password', 'avatar', 'bio', 'hobbies', 'marital_status', 'date_of_birth', 'workplace', 'occupation', 'is_profile_private', 'role', 'auto_friend_everyone', 'suspended_at', 'last_seen_at', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -65,6 +65,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'is_profile_private' => 'boolean',
             'auto_friend_everyone' => 'boolean',
             'suspended_at' => 'datetime',
+            'last_seen_at' => 'datetime',
         ];
     }
 

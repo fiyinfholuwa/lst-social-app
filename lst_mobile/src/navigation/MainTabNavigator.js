@@ -11,6 +11,7 @@ import FriendsScreen from '../screens/main/FriendsScreen';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChatUnread } from '../context/ChatUnreadContext';
+import { useFriendships } from '../context/FriendshipsContext';
 
         const Tab = createBottomTabNavigator();
 
@@ -18,6 +19,7 @@ import { useChatUnread } from '../context/ChatUnreadContext';
           const { theme } = useTheme();
           const insets = useSafeAreaInsets();
           const { unreadChatCount } = useChatUnread();
+          const { incomingRequestIds } = useFriendships();
 
           return (
             <Tab.Navigator
@@ -63,7 +65,7 @@ import { useChatUnread } from '../context/ChatUnreadContext';
               <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Today' }} />
               <Tab.Screen name="Communities" component={CommunitiesScreen} options={{ title: 'Circles' }} />
               <Tab.Screen name="Chats" component={ChatsScreen} options={{ title: 'Messages', tabBarBadge: unreadChatCount || undefined, tabBarBadgeStyle: { backgroundColor: theme.accent, color: '#FFFFFF', fontSize: 9 } }} />
-              <Tab.Screen name="Friends" component={FriendsScreen} options={{ title: 'Friends' }} />
+              <Tab.Screen name="Friends" component={FriendsScreen} options={{ title: 'Friends', tabBarBadge: incomingRequestIds.length || undefined, tabBarBadgeStyle: { backgroundColor: theme.accent, color: '#FFFFFF', fontSize: 9 } }} />
               <Tab.Screen name="Sermons" component={SermonsScreen} options={{ title: 'Sermons' }} />
               <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'You' }} />
             </Tab.Navigator>

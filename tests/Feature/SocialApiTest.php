@@ -49,7 +49,7 @@ class SocialApiTest extends TestCase
     public function test_authenticated_social_flow_uses_persisted_data(): void
     {
         $user = User::factory()->create();
-        $other = User::factory()->create();
+        $other = User::factory()->create(['last_seen_at' => now()->subMinutes(5)]);
         $community = Community::create(['name' => 'Test community']);
 
         $token = $user->createToken('test')->plainTextToken;
@@ -67,11 +67,17 @@ class SocialApiTest extends TestCase
         $this->withHeaders($headers)->getJson('/api/saved-posts?page=1')->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/users/{$other->id}/friend-request")->assertOk()->assertJsonPath('outgoingRequestIds.0', (string) $other->id);
-        $chat = $this->withHeaders($headers)->postJson("/api/chats/with/{$other->id}")->assertOk()->json();
+        $chat = $this->withHeaders($headers)->postJson("/api/chats/with/{$other->id}")
+            ->assertOk()
+            ->assertJsonPath('withUser.isOnline', false)
+            ->assertJsonPath('withUser.lastSeenAt', $other->last_seen_at->toIso8601String())
+            ->json();
         $this->withHeaders($headers)->postJson("/api/chats/{$chat['id']}/messages", ['text' => 'Hello'])->assertCreated()->assertJsonPath('text', 'Hello');
 
         $this->assertDatabaseHas('posts', ['content' => 'A persisted encouragement']);
         $this->assertDatabaseHas('messages', ['text' => 'Hello']);
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+        $this->assertNotNull($user->fresh()->last_seen_at);
     }
 
     public function test_member_can_submit_a_moderated_community_post_and_leave(): void

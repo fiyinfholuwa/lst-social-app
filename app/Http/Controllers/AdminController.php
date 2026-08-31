@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\BroadcastSermonUpdateJob;
 use App\Models\Community;
 use App\Models\CommunityApplication;
 use App\Models\ContentReport;
@@ -766,7 +767,13 @@ class AdminController extends Controller
     public function updateSermon(Request $request, Sermon $sermon)
     {
         $sermon->update($this->sermonData($request));
-        return back()->with('status', 'Sermon updated.');
+        if ($sermon->is_published) {
+            BroadcastSermonUpdateJob::dispatch($sermon->id);
+        }
+
+        return back()->with('status', $sermon->is_published
+            ? 'Sermon updated. Notifications are being sent to all members.'
+            : 'Sermon updated. No notifications were sent because it is hidden.');
     }
 
     public function destroySermon(Sermon $sermon)

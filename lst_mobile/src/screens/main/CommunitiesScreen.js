@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,7 @@ import AppIcon from '../../components/AppIcon';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { resolveMediaUri } from '../../utils/mediaUrl';
 
 const filters = ['All', 'My circles', 'Relationships', 'Recovery', 'Singles'];
 const filterKeys = { All: 'all', 'My circles': 'mine', Relationships: 'relationships', Recovery: 'recovery', Singles: 'singles' };
@@ -26,8 +27,12 @@ const compactCount = value => Number(value || 0).toLocaleString(undefined, { not
 
 const CircleImage = ({ uri, style, theme, size = 22 }) => {
   const [failed, setFailed] = useState(false);
-  if (!uri || failed) return <View style={[style, styles.imageFallback, { backgroundColor: theme.primarySoft }]}><AppIcon name="people-outline" size={size} color={theme.primary} /></View>;
-  return <Image source={{ uri }} style={style} onError={() => setFailed(true)} />;
+  const resolvedUri = useMemo(() => resolveMediaUri(uri), [uri]);
+
+  useEffect(() => setFailed(false), [resolvedUri]);
+
+  if (!resolvedUri || failed) return <View style={[style, styles.imageFallback, { backgroundColor: theme.primarySoft }]}><AppIcon name="people-outline" size={size} color={theme.primary} /></View>;
+  return <Image source={{ uri: resolvedUri }} style={style} onError={() => setFailed(true)} />;
 };
 
 const CommunitySkeleton = ({ theme }) => {

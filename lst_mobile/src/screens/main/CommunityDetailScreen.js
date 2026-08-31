@@ -10,6 +10,7 @@ import PostCard from '../../components/PostCard';
 import { useAuth } from '../../context/AuthContext';
 import { useFriendships } from '../../context/FriendshipsContext';
 import { useTheme } from '../../context/ThemeContext';
+import { resolveMediaUri } from '../../utils/mediaUrl';
 import { useCommunityApplications } from '../../context/CommunityApplicationsContext';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 
@@ -137,7 +138,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
   const Header = () => (
     <>
-      <Image source={{ uri: community.image }} style={styles.cover} />
+      <Image source={{ uri: resolveMediaUri(community.image) }} style={styles.cover} />
       <View style={styles.intro}>
         <Text style={[styles.title, { color: theme.text }]}>{community.name}</Text>
         <Text style={[styles.description, { color: theme.secondaryText }]}>{community.description}</Text>

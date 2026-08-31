@@ -2,21 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import AppIcon from './AppIcon';
-import { API_BASE_URL } from '../api/config';
-
-const apiOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
-
-const resolveAvatarUri = uri => {
-  if (typeof uri !== 'string' || !uri.trim()) return null;
-
-  const value = uri.trim();
-  if (value.startsWith('/')) return `${apiOrigin}${value}`;
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?=\/|$)/i.test(value)) {
-    return value.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, apiOrigin);
-  }
-
-  return value;
-};
+import { resolveMediaUri } from '../utils/mediaUrl';
 
 /**
  * Displays a profile photo when one is available, otherwise a consistent
@@ -25,7 +11,7 @@ const resolveAvatarUri = uri => {
 export default function Avatar({ uri, size = 44, style, accessibilityLabel }) {
   const { theme } = useTheme();
   const [imageFailed, setImageFailed] = useState(false);
-  const resolvedUri = useMemo(() => resolveAvatarUri(uri), [uri]);
+  const resolvedUri = useMemo(() => resolveMediaUri(uri), [uri]);
   const hasImage = Boolean(resolvedUri) && !imageFailed;
 
   useEffect(() => setImageFailed(false), [resolvedUri]);

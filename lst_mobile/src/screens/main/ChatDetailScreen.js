@@ -381,7 +381,7 @@ export default function ChatDetailScreen({ route, navigation }) {
 
   return (
     <KeyboardSafeView
-      style={{ backgroundColor: theme.background }}
+      style={[styles.container, { backgroundColor: theme.background }]}
       keyboardVerticalOffset={0}
       androidBehavior="none"
     >

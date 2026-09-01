@@ -146,6 +146,21 @@
     @endphp
     <section class="analytics-grid"><article class="card panel analytics-chart"><div class="panel-head"><div><h2>Activity this week</h2><div class="panel-sub">New members and posts over the last seven days</div></div><div class="chart-legend"><span><i class="members"></i>Members</span><span><i class="posts"></i>Posts</span></div></div><div class="activity-chart">@foreach($weeklyActivity as $day)<div class="chart-day"><div class="chart-values"><div class="chart-bar members" style="height:{{ max(5,($day['members']/$chartMax)*100) }}%" title="{{ $day['members'] }} members"></div><div class="chart-bar posts" style="height:{{ max(5,($day['posts']/$chartMax)*100) }}%" title="{{ $day['posts'] }} posts"></div></div><strong>{{ $day['label'] }}</strong><small>{{ $day['members'] + $day['posts'] }}</small></div>@endforeach</div></article><article class="card panel health-panel"><div class="panel-head"><div><h2>Platform health</h2><div class="panel-sub">Important operational indicators</div></div></div><div class="health-list">@foreach($analyticsRates as $label=>$value)<div><span>{{ $label }}</span><strong>{{ in_array($label,['Verification rate','Community content']) ? $value.'%' : number_format($value) }}</strong>@if(in_array($label,['Verification rate','Community content']))<i><b style="width:{{ $value }}%"></b></i>@endif</div>@endforeach</div></article></section>
     <section class="analytics-lower"><article class="card panel"><div class="panel-head"><div><h2>Community performance</h2><div class="panel-sub">Membership, publishing and application volume</div></div></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Community</th><th>Members</th><th>Posts</th><th>Applications</th><th>Posts/member</th></tr></thead><tbody>@forelse($communityAnalytics as $community)<tr><td><strong>{{ $community->name }}</strong></td><td>{{ number_format($community->members_count) }}</td><td>{{ number_format($community->posts_count) }}</td><td>{{ number_format($community->applications_count) }}</td><td>{{ $community->members_count ? number_format($community->posts_count/$community->members_count,1) : '0.0' }}</td></tr>@empty<tr><td colspan="5" class="empty-cell">No community activity yet.</td></tr>@endforelse</tbody></table></div></article><article class="card panel"><div class="panel-head"><div><h2>Engagement</h2><div class="panel-sub">All-time interaction and learning totals</div></div></div><div class="engagement-list">@foreach($engagementTotals as $label=>$value)<div><span>{{ $label }}</span><strong>{{ number_format($value) }}</strong></div>@endforeach</div></article></section>
+@elseif($section === 'notifications')
+    <div class="page-heading"><div><div class="eyebrow">Member communication</div><h1>Push notifications</h1><p>Send an important update to members’ devices and notification inboxes.</p></div></div>
+    <section class="stats">
+        @foreach($notificationMetrics as $label => $value)<article class="card stat"><div class="stat-top"><span class="stat-icon">{{ substr($label, 0, 1) }}</span><span class="trend">Live</span></div><div class="stat-value">{{ number_format($value) }}</div><div class="stat-label">{{ $label }}</div></article>@endforeach
+    </section>
+    <section class="card panel" style="max-width:760px">
+        <div class="panel-head"><div><h2>Compose notification</h2><div class="panel-sub">Members receive this in the app. Devices with push enabled also receive a system notification.</div></div></div>
+        <form class="admin-form" method="POST" action="{{ route('admin.notifications.broadcast') }}" onsubmit="return confirm('Send this notification to the selected audience?')">
+            @csrf
+            <label>Audience<select name="audience" required><option value="all" @selected(old('audience') === 'all')>All active members</option><option value="verified" @selected(old('audience') === 'verified')>Verified active members only</option></select><small>Suspended accounts are always excluded.</small></label>
+            <label>Title<input name="title" maxlength="80" value="{{ old('title') }}" placeholder="Important update" required><small>Up to 80 characters.</small></label>
+            <label>Message<textarea name="message" maxlength="240" rows="5" placeholder="Write a short, clear message…" required>{{ old('message') }}</textarea><small>Up to 240 characters. Delivery runs in the background.</small></label>
+            <button class="btn btn-primary" type="submit">Send notification</button>
+        </form>
+    </section>
 @elseif($section === 'settings')
     <div class="page-heading settings-heading"><div><div class="eyebrow">Platform configuration</div><h1>Settings</h1><p>Manage the public identity of LST Social and secure your administrator account.</p></div><span class="settings-saved"><i></i> Changes save immediately</span></div>
     <div class="settings-layout">
@@ -161,7 +176,7 @@
 @else
     @php
         $content = [
-            'overview' => ['Overview', 'Monitor your entire LST Social workspace.'], 'posts' => ['Posts', 'Review and manage community posts.'], 'quizzes' => ['Quizzes', 'Control questions and pass requirements.'], 'sermons' => ['Sermons', 'Manage sermon links and categories.'], 'moderation' => ['Moderation', 'Review reports and safety actions.'], 'analytics' => ['Analytics', 'Understand growth and engagement.'], 'settings' => ['Settings', 'Configure platform access and security.'],
+            'overview' => ['Overview', 'Monitor your entire LST Social workspace.'], 'posts' => ['Posts', 'Review and manage community posts.'], 'quizzes' => ['Quizzes', 'Control questions and pass requirements.'], 'sermons' => ['Sermons', 'Manage sermon links and categories.'], 'notifications' => ['Notifications', 'Send updates to members.'], 'moderation' => ['Moderation', 'Review reports and safety actions.'], 'analytics' => ['Analytics', 'Understand growth and engagement.'], 'settings' => ['Settings', 'Configure platform access and security.'],
         ];
         [$title, $description] = $content[$section];
     @endphp

@@ -74,7 +74,7 @@
                 @include('admin.sections.member-details')
             @elseif($applicationsPage ?? false)
                 @include('admin.sections.community-applications')
-            @elseif(in_array(($section ?? 'overview'), ['overview','members','communities','posts','quizzes','articles','sermons','moderation','analytics','settings'], true))
+            @elseif(in_array(($section ?? 'overview'), ['overview','members','communities','posts','quizzes','articles','sermons','notifications','moderation','analytics','settings'], true))
                 @include('admin.sections.index', ['section' => $section])
             @else
             <div class="page-heading">

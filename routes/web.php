@@ -121,6 +121,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/sermons', [AdminController::class, 'storeSermon'])->name('admin.sermons.store');
     Route::patch('/admin/sermons/{sermon}', [AdminController::class, 'updateSermon'])->name('admin.sermons.update');
     Route::delete('/admin/sermons/{sermon}', [AdminController::class, 'destroySermon'])->name('admin.sermons.destroy');
+    Route::post('/admin/notifications/broadcast', [AdminController::class, 'broadcastNotification'])->middleware('throttle:6,1')->name('admin.notifications.broadcast');
     Route::patch('/admin/support-requests/{supportRequest}', [AdminController::class, 'updateSupportRequest'])->name('admin.support.update');
     Route::patch('/admin/content-reports/{contentReport}', [AdminController::class, 'updateContentReport'])->name('admin.reports.update');
     Route::patch('/admin/settings/profile', [AdminController::class, 'updateAdminProfile'])->name('admin.settings.profile');

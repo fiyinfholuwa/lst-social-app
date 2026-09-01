@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\BroadcastSermonUpdateJob;
+use App\Jobs\BroadcastAdminNotificationJob;
 use App\Models\Community;
 use App\Models\CommunityApplication;
 use App\Models\ContentReport;
@@ -14,6 +15,7 @@ use App\Models\SupportRequest;
 use App\Models\Sermon;
 use App\Models\SermonCategory;
 use App\Models\User;
+use App\Models\PushToken;
 use App\Services\CacheService;
 use App\Services\AccountDeletionService;
 use App\Services\AutomaticFriendshipService;
@@ -27,7 +29,7 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
-    private const SECTIONS = ['overview', 'members', 'communities', 'posts', 'quizzes', 'articles', 'sermons', 'moderation', 'analytics', 'settings'];
+    private const SECTIONS = ['overview', 'members', 'communities', 'posts', 'quizzes', 'articles', 'sermons', 'notifications', 'moderation', 'analytics', 'settings'];
 
     public function loginForm()
     {
@@ -171,6 +173,14 @@ class AdminController extends Controller
         if ($section === 'sermons') {
             $data['sermonCategories'] = SermonCategory::withCount('sermons')->orderBy('position')->orderBy('name')->get();
             $data['sermons'] = Sermon::with('category:id,name')->latest()->paginate(25);
+        }
+
+        if ($section === 'notifications') {
+            $data['notificationMetrics'] = [
+                'Active members' => User::whereNull('suspended_at')->count(),
+                'Verified members' => User::whereNull('suspended_at')->whereNotNull('email_verified_at')->count(),
+                'Push-enabled devices' => PushToken::count(),
+            ];
         }
 
         if ($section === 'moderation') {
@@ -751,6 +761,23 @@ class AdminController extends Controller
         };
 
         return back()->with('status', $status);
+    }
+
+    public function broadcastNotification(Request $request)
+    {
+        $data = $request->validate([
+            'audience' => ['required', Rule::in(['all', 'verified'])],
+            'title' => 'required|string|max:80',
+            'message' => 'required|string|max:240',
+        ]);
+
+        BroadcastAdminNotificationJob::dispatch(
+            trim($data['title']),
+            trim($data['message']),
+            $data['audience'],
+        );
+
+        return back()->with('status', 'Notification queued for delivery.');
     }
 
     public function storeSermonCategory(Request $request)

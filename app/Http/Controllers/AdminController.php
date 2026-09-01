@@ -458,7 +458,7 @@ class AdminController extends Controller
     {
         $data = $this->communityData($request);
         unset($data['image']);
-        if ($request->hasFile('image')) $data['image'] = $uploads->store($request->file('image'), 'communities');
+        if ($request->hasFile('image')) $data['image'] = $uploads->storeOptimizedImage($request->file('image'), 'communities');
         $community = Community::create($data);
         if ($community->admin_id) $community->members()->syncWithoutDetaching([$community->admin_id]);
         $cache->invalidate('communities');
@@ -481,7 +481,7 @@ class AdminController extends Controller
         $data = $this->communityData($request);
         if ($request->hasFile('image')) {
             $uploads->delete($community->image, 'communities');
-            $data['image'] = $uploads->store($request->file('image'), 'communities');
+            $data['image'] = $uploads->storeOptimizedImage($request->file('image'), 'communities');
         }
 
         $community->update($data);

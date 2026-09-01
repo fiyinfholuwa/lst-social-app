@@ -30,6 +30,23 @@ const formatDuration = milliseconds => {
 };
 
 const MESSAGE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
+const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+const formatMessageTime = message => {
+  if (message.pending) return 'Sending…';
+  const createdAt = new Date(message.createdAt);
+  if (Number.isNaN(createdAt.getTime())) return message.timestamp;
+  return createdAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+
+const messagesBelongTogether = (first, second) => {
+  if (!first || !second || String(first.senderId) !== String(second.senderId)) return false;
+  const firstTime = new Date(first.createdAt).getTime();
+  const secondTime = new Date(second.createdAt).getTime();
+  return Number.isFinite(firstTime)
+    && Number.isFinite(secondTime)
+    && Math.abs(firstTime - secondTime) <= MESSAGE_GROUP_WINDOW_MS;
+};
 
 const formatLastSeen = withUser => {
   if (withUser?.isOnline) return 'Online';
@@ -71,10 +88,7 @@ function MessageReceipt({ pending, read }) {
 
   return (
     <View style={styles.receipt} accessibilityLabel="Read">
-      <View style={styles.doubleCheck}>
-        <AppIcon name="check" size={15} color="#00E5FF" style={styles.readCheck} />
-        <AppIcon name="check" size={15} color="#00E5FF" style={[styles.readCheck, styles.secondCheck]} />
-      </View>
+      <AppIcon name="check-double" size={16} color="#BDECF3" />
     </View>
   );
 }
@@ -157,6 +171,7 @@ export default function ChatDetailScreen({ route, navigation }) {
   const { chatId } = route.params;
   const [occasion, setOccasion] = useState(route.params?.occasion || null);
   const [messages, setMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const [messagesPage, setMessagesPage] = useState(1);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
@@ -172,7 +187,6 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState('');
   const [messageActionPending, setMessageActionPending] = useState(false);
-  const [showLatestButton, setShowLatestButton] = useState(false);
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -239,6 +253,7 @@ export default function ChatDetailScreen({ route, navigation }) {
       console.error('Unable to load messages:', error);
       return false;
     } finally {
+      if (requestedPage === 1) setLoadingMessages(false);
       if (requestedPage > 1) setLoadingMoreMessages(false);
     }
   };
@@ -381,7 +396,7 @@ export default function ChatDetailScreen({ route, navigation }) {
 
   return (
     <KeyboardSafeView
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[styles.container, { backgroundColor: theme.surface }]}
       keyboardVerticalOffset={0}
       androidBehavior="none"
     >
@@ -409,30 +424,38 @@ export default function ChatDetailScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
+      <View style={[styles.retentionNotice, { backgroundColor: theme.primarySoft }]}>
+        <AppIcon name="time-outline" size={13} color={theme.primary} />
+        <Text style={[styles.retentionText, { color: theme.primary }]}>Messages are retained for 6 months.</Text>
+      </View>
+
       <FlatList
         ref={listRef}
         data={messages}
         keyExtractor={item => String(item.id)}
         inverted
-        onScroll={({ nativeEvent }) => setShowLatestButton(nativeEvent.contentOffset.y > 220)}
-        scrollEventThrottle={100}
-        onEndReached={() => hasMoreMessages && !loadingMoreMessages && loadMessages(messagesPage + 1)}
-        onEndReachedThreshold={0.35}
-        ListFooterComponent={loadingMoreMessages ? <ActivityIndicator style={styles.messagesFooter} color={theme.primary} /> : null}
+        ListFooterComponent={hasMoreMessages ? (
+          <TouchableOpacity
+            style={[styles.olderMessagesButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onPress={() => loadMessages(messagesPage + 1)}
+            disabled={loadingMoreMessages}
+            accessibilityLabel="View older messages"
+          >
+            {loadingMoreMessages ? <ActivityIndicator size="small" color={theme.primary} /> : <AppIcon name="time-outline" size={14} color={theme.primary} />}
+            <Text style={[styles.olderMessagesText, { color: theme.primary }]}>{loadingMoreMessages ? 'Loading older messages…' : 'View older messages'}</Text>
+          </TouchableOpacity>
+        ) : null}
         contentContainerStyle={styles.messages}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={<View style={styles.emptyConversation}><View style={[styles.emptyConversationIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="chatbubbles-outline" size={24} color={theme.primary} /></View><Text style={[styles.emptyConversationTitle, { color: theme.text }]}>Start the conversation</Text><Text style={[styles.emptyConversationText, { color: theme.secondaryText }]}>Send a kind message, an emoji, or a voice note.</Text></View>}
+        ListEmptyComponent={loadingMessages ? <View style={styles.loadingConversation}><ActivityIndicator color={theme.primary} /><Text style={[styles.loadingConversationText, { color: theme.secondaryText }]}>Loading messages…</Text></View> : <View style={styles.emptyConversation}><View style={[styles.emptyConversationIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="chatbubbles-outline" size={24} color={theme.primary} /></View><Text style={[styles.emptyConversationTitle, { color: theme.text }]}>Start the conversation</Text><Text style={[styles.emptyConversationText, { color: theme.secondaryText }]}>Send a kind message, an emoji, or a voice note.</Text></View>}
         renderItem={({ item, index }) => {
           const mine = String(item.senderId) === String(user.id);
           const newerMessage = messages[index - 1];
           const olderMessage = messages[index + 1];
-          const sameAsNewer = newerMessage && String(newerMessage.senderId) === String(item.senderId);
-          const sameAsOlder = olderMessage && String(olderMessage.senderId) === String(item.senderId);
-          const showAvatar = !mine && !sameAsNewer;
-          const showMeta = !sameAsNewer;
+          const sameAsNewer = messagesBelongTogether(item, newerMessage);
+          const sameAsOlder = messagesBelongTogether(item, olderMessage);
           return (
             <View style={[styles.messageRow, sameAsNewer ? styles.groupedRow : styles.groupEndRow, mine ? styles.myMessage : styles.otherMessage]}>
-              {!mine ? (showAvatar ? <Avatar uri={chat?.withUser?.avatar} size={28} style={styles.messageAvatar} accessibilityLabel={`${chat?.withUser?.name || 'Friend'}'s avatar`} /> : <View style={styles.avatarSpacer} />) : null}
               <TouchableOpacity
                   activeOpacity={0.82}
                   onLongPress={() => !item.pending && setSelectedMessage(item)}
@@ -450,18 +473,16 @@ export default function ChatDetailScreen({ route, navigation }) {
                   {item.occasion === 'birthday_wish' ? <View style={styles.occasionLabel}><AppIcon name="gift-outline" size={11} color={mine ? '#FFFFFF' : theme.primary} /><Text style={[styles.occasionText, { color: mine ? '#FFFFFF' : theme.primary }]}>Birthday wish</Text></View> : null}
                   {item.type === 'voice' ? <VoiceNote message={item} mine={mine} theme={theme} activeVoiceId={activeVoiceId} onActivate={setActiveVoiceId} /> : <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>}
                   {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><Text style={styles.reactionEmoji}>{reaction.emoji}</Text>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}
-                  {showMeta ? <View style={styles.messageMeta}>
+                  <View style={styles.messageMeta}>
                   {item.edited ? <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>edited</Text> : null}
-                  <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{item.timestamp}</Text>
+                  <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{formatMessageTime(item)}</Text>
                   {mine ? <MessageReceipt pending={item.pending} read={item.read} /> : null}
-                </View> : null}
+                </View>
               </TouchableOpacity>
             </View>
           );
         }}
       />
-
-      {showLatestButton ? <TouchableOpacity style={[styles.latestButton, { backgroundColor: theme.card, borderColor: theme.border, bottom: Math.max(insets.bottom, 10) + 72 + keyboardOverlap }]} onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })} accessibilityLabel="Jump to latest message"><AppIcon name="chevron-down" size={18} color={theme.primary} /></TouchableOpacity> : null}
 
       {recording ? (
         <View
@@ -569,33 +590,30 @@ const styles = StyleSheet.create({
   privateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   profileHint: { fontSize: 10.5 },
   presenceDot: { width: 6, height: 6, borderRadius: 3 },
-  messages: { flexGrow: 1, paddingVertical: 16 },
-  messagesFooter: { paddingVertical: 14 },
+  retentionNotice: { alignSelf: 'center', minHeight: 28, marginTop: 9, paddingHorizontal: 11, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  retentionText: { fontSize: 10, fontWeight: '700' },
+  messages: { flexGrow: 1, paddingVertical: 12 },
+  olderMessagesButton: { alignSelf: 'center', minHeight: 38, marginVertical: 12, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderRadius: 19, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  olderMessagesText: { fontSize: 11, fontWeight: '800' },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  groupedRow: { marginTop: 1 },
-  groupEndRow: { marginTop: 7 },
+  groupedRow: { marginTop: 2 },
+  groupEndRow: { marginTop: 9 },
   myMessage: { justifyContent: 'flex-end' },
   otherMessage: { justifyContent: 'flex-start' },
-  messageAvatar: { marginRight: 7, marginBottom: 2 },
-  avatarSpacer: { width: 35 },
-  bubble: { maxWidth: '80%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 19, borderWidth: StyleSheet.hairlineWidth },
-  mineBubble: { borderBottomRightRadius: 6 },
-  otherBubble: { borderBottomLeftRadius: 6 },
+  bubble: { maxWidth: '84%', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 5, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
+  mineBubble: { borderBottomRightRadius: 5 },
+  otherBubble: { borderBottomLeftRadius: 5 },
   mineJoinedTop: { borderTopRightRadius: 7 },
   mineJoinedBottom: { borderBottomRightRadius: 7 },
   otherJoinedTop: { borderTopLeftRadius: 7 },
   otherJoinedBottom: { borderBottomLeftRadius: 7 },
   voiceBubble: { width: 225 },
-  messageText: { fontSize: 14, lineHeight: 20 },
+  messageText: { fontSize: 14, lineHeight: 19 },
   occasionLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
   occasionText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-  messageMeta: { minHeight: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 3 },
-  messageTime: { fontSize: 10 },
-  receipt: { minWidth: 16, height: 15, alignItems: 'center', justifyContent: 'center' },
-  doubleCheck: { width: 21, height: 15, flexDirection: 'row', alignItems: 'center' },
-  readCheck: { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 },
-  secondCheck: { marginLeft: -6 },
-  latestButton: { position: 'absolute', right: 15, zIndex: 5, width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4 },
+  messageMeta: { minHeight: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 2 },
+  messageTime: { fontSize: 9 },
+  receipt: { width: 18, height: 15, alignItems: 'center', justifyContent: 'center' },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -14, paddingHorizontal: 12, paddingTop: 10 },
   occasionComposer: { minHeight: 36, borderRadius: 12, paddingHorizontal: 11, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 7 },
   occasionComposerText: { flex: 1, fontSize: 12, fontWeight: '800' },
@@ -604,6 +622,8 @@ const styles = StyleSheet.create({
   input: { flex: 1, minHeight: 45, maxHeight: 107, paddingRight: 14, paddingTop: 12, paddingBottom: 11, fontSize: 14 },
   emojiButton: { width: 40, height: 45, alignItems: 'center', justifyContent: 'center' },
   roundAction: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  loadingConversation: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 50 },
+  loadingConversationText: { fontSize: 11, fontWeight: '700' },
   emptyConversation: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
   emptyConversationIcon: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   emptyConversationTitle: { fontSize: 16, fontWeight: '800', marginTop: 12 },

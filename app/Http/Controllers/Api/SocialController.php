@@ -691,7 +691,12 @@ class SocialController extends Controller
         }
         if ($r->hasFile('avatar_image')) {
             $this->uploads->delete($r->user()->avatar, 'profiles');
-            $d['avatar'] = $this->uploads->store($r->file('avatar_image'), 'profiles');
+            $d['avatar'] = $this->uploads->storeOptimizedImage(
+                $r->file('avatar_image'),
+                'profiles',
+                maxWidth: 800,
+                maxHeight: 800,
+            );
         }
         unset($d['avatar_image']);
         $r->user()->update($d);
@@ -936,7 +941,13 @@ class SocialController extends Controller
 
     private function storePostImage($image): string
     {
-        return $this->uploads->store($image, 'posts');
+        return $this->uploads->storeOptimizedImage(
+            $image,
+            'posts',
+            maxWidth: 1920,
+            maxHeight: 1920,
+            quality: 84,
+        );
     }
 
     private function deletePostImage(string $image): void

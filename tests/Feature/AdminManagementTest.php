@@ -34,12 +34,15 @@ class AdminManagementTest extends TestCase
             'name' => 'Updated Managed Circle',
             'description' => 'A managed community',
             'admin_id' => $administrator->id,
-            'image' => UploadedFile::fake()->image('community.jpg', 800, 600),
+            'image' => UploadedFile::fake()->image('community.jpg', 1800, 1400),
         ])->assertRedirect();
         $community->refresh();
         $this->assertDatabaseHas('communities', ['id' => $community->id, 'name' => 'Updated Managed Circle', 'admin_id' => $administrator->id]);
         $uploadedPath = public_path(trim(config('uploads.directory'), '/').'/'.ltrim(str_replace(config('uploads.url_prefix'), '', parse_url($community->image, PHP_URL_PATH)), '/'));
         $this->assertFileExists($uploadedPath);
+        [$uploadedWidth, $uploadedHeight] = getimagesize($uploadedPath);
+        $this->assertLessThanOrEqual(1200, $uploadedWidth);
+        $this->assertLessThanOrEqual(1200, $uploadedHeight);
         File::delete($uploadedPath);
         $this->get('/admin/communities')->assertOk()->assertSee('New community')->assertSee('Delete community');
         $this->post('/admin/communities', ['name' => 'Created Circle'])->assertRedirect();

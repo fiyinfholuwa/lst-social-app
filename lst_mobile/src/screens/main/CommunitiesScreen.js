@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { LinearGradient } from 'expo-linear-gradient';
 import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -115,19 +114,6 @@ export default function CommunitiesScreen({ navigation }) {
 
   const ListHeader = () => (
     <>
-      <LinearGradient colors={[theme.primary, theme.accentDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-        <View style={styles.heroCopy}>
-          <Text style={styles.heroEyebrow}>FIND YOUR PEOPLE</Text>
-          <Text style={styles.heroTitle}>Grow better together.</Text>
-          <Text style={styles.heroText}>Discover supportive spaces built around shared seasons and goals.</Text>
-        </View>
-        <View style={styles.heroStats}>
-          <View style={styles.heroStat}><Text style={styles.heroStatValue}>{joinedIds.length}</Text><Text style={styles.heroStatLabel}>Joined</Text></View>
-          <View style={styles.heroDivider} />
-          <View style={styles.heroStat}><Text style={styles.heroStatValue}>{loading ? '—' : total}</Text><Text style={styles.heroStatLabel}>Available</Text></View>
-        </View>
-      </LinearGradient>
-
       <View style={[styles.search, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <AppIcon name="search" size={16} color={theme.secondaryText} />
         <TextInput
@@ -253,16 +239,6 @@ export default function CommunitiesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  hero: { marginHorizontal: 14, marginBottom: 13, padding: 17, borderRadius: 21, flexDirection: 'row', alignItems: 'flex-end', overflow: 'hidden' },
-  heroCopy: { flex: 1, paddingRight: 12 },
-  heroEyebrow: { color: 'rgba(255,255,255,0.72)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
-  heroTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginTop: 5 },
-  heroText: { color: 'rgba(255,255,255,0.82)', fontSize: 11, lineHeight: 16, marginTop: 5 },
-  heroStats: { minWidth: 76, padding: 10, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.13)' },
-  heroStat: { alignItems: 'center' },
-  heroStatValue: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
-  heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 8.5, marginTop: 1 },
-  heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 7 },
   search: { marginHorizontal: 14, height: 48, borderWidth: 1, borderRadius: 15, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
   searchInput: { flex: 1, fontSize: 13 },
   filters: { paddingHorizontal: 14, paddingVertical: 14, gap: 8 },

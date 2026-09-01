@@ -22,6 +22,57 @@ class UploadService
         return rtrim(config('uploads.url_prefix'), '/')."/{$folder}/{$filename}";
     }
 
+    public function storeOptimizedImage(
+        UploadedFile $file,
+        string $folder,
+        int $maxWidth = 1200,
+        int $maxHeight = 1200,
+        int $quality = 82,
+    ): string {
+        if (! function_exists('imagecreatefromstring')) {
+            return $this->store($file, $folder);
+        }
+
+        $contents = File::get($file->getRealPath());
+        $source = @imagecreatefromstring($contents);
+
+        if ($source === false) {
+            return $this->store($file, $folder);
+        }
+
+        $sourceWidth = imagesx($source);
+        $sourceHeight = imagesy($source);
+        $scale = min(1, $maxWidth / $sourceWidth, $maxHeight / $sourceHeight);
+        $width = max(1, (int) round($sourceWidth * $scale));
+        $height = max(1, (int) round($sourceHeight * $scale));
+        $image = imagecreatetruecolor($width, $height);
+
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        imagecopyresampled($image, $source, 0, 0, 0, 0, $width, $height, $sourceWidth, $sourceHeight);
+
+        $folder = $this->folder($folder);
+        $directory = public_path(trim(config('uploads.directory'), '/').'/'.$folder);
+        File::ensureDirectoryExists($directory);
+
+        $supportsWebp = function_exists('imagewebp');
+        $extension = $supportsWebp ? 'webp' : 'jpg';
+        $filename = Str::uuid().'.'.$extension;
+        $path = $directory.'/'.$filename;
+        $stored = $supportsWebp
+            ? imagewebp($image, $path, $quality)
+            : imagejpeg($image, $path, $quality);
+
+        imagedestroy($image);
+        imagedestroy($source);
+
+        if (! $stored) {
+            return $this->store($file, $folder);
+        }
+
+        return rtrim(config('uploads.url_prefix'), '/')."/{$folder}/{$filename}";
+    }
+
     public function delete(?string $url, ?string $expectedFolder = null): void
     {
         $path = parse_url((string) $url, PHP_URL_PATH);

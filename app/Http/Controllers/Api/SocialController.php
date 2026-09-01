@@ -217,6 +217,13 @@ class SocialController extends Controller
         return response()->json($this->service->post($post->id, $r->user()));
     }
 
+    public function postLikes(Request $request, Post $post)
+    {
+        $this->service->post($post->id, $request->user());
+
+        return response()->json($this->likerPage($post->likes()->orderBy('users.name')->paginate(30)));
+    }
+
     public function sharePost(Request $r, Post $post)
     {
         abort_unless($r->user()->hasVerifiedEmail(), 403, 'Verify your email before sharing a post.');
@@ -749,6 +756,27 @@ class SocialController extends Controller
         $liked = $sermon->likes()->whereKey($request->user()->id)->exists();
         $liked ? $sermon->likes()->detach($request->user()->id) : $sermon->likes()->attach($request->user()->id);
         return response()->json($this->sermonData($sermon->fresh(), $request));
+    }
+
+    public function sermonLikes(Sermon $sermon)
+    {
+        abort_unless($sermon->is_published, 404);
+
+        return response()->json($this->likerPage($sermon->likes()->latest('sermon_likes.created_at')->paginate(30)));
+    }
+
+    private function likerPage($page): array
+    {
+        return [
+            'data' => $page->getCollection()->map(fn (User $user) => [
+                'id' => (string) $user->id,
+                'name' => $user->name,
+                'avatar' => $this->uploads->url($user->avatar),
+            ])->values(),
+            'currentPage' => $page->currentPage(),
+            'hasMorePages' => $page->hasMorePages(),
+            'total' => $page->total(),
+        ];
     }
 
     public function sermonComments(Request $request, Sermon $sermon)

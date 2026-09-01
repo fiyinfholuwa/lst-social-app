@@ -38,6 +38,7 @@ Route::middleware(['auth:sanctum', 'last-seen'])->group(function () {
     Route::get('/feed-banner', [SocialController::class, 'feedBanner']);
     Route::get('/sermons', [SocialController::class, 'sermons']);
     Route::get('/sermons/{sermon}', [SocialController::class, 'sermon']);
+    Route::get('/sermons/{sermon}/likes', [SocialController::class, 'sermonLikes']);
     Route::post('/sermons/{sermon}/like', [SocialController::class, 'likeSermon'])->middleware('throttle:social-interactions');
     Route::get('/sermons/{sermon}/comments', [SocialController::class, 'sermonComments']);
     Route::post('/sermons/{sermon}/comments', [SocialController::class, 'createSermonComment'])->middleware('throttle:social-interactions');
@@ -50,6 +51,7 @@ Route::middleware(['auth:sanctum', 'last-seen'])->group(function () {
     Route::patch('/posts/{post}', [SocialController::class, 'updatePost'])->middleware('throttle:media-uploads');
     Route::delete('/posts/{post}', [SocialController::class, 'deletePost'])->middleware('throttle:social-writes');
     Route::get('/posts/{post}', [SocialController::class, 'post']);
+    Route::get('/posts/{post}/likes', [SocialController::class, 'postLikes']);
     Route::post('/posts/{post}/like', [SocialController::class, 'like'])->middleware('throttle:social-interactions');
     Route::post('/posts/{post}/share', [SocialController::class, 'sharePost'])->middleware('throttle:social-writes');
     Route::post('/posts/{post}/comments', [SocialController::class, 'comment'])->middleware('throttle:social-interactions');

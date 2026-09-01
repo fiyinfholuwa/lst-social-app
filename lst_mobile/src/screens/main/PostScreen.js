@@ -27,6 +27,7 @@ import { useSavedPosts } from '../../context/SavedPostsContext';
 import EmojiPicker from '../../components/EmojiPicker';
 import EmojiText from '../../components/EmojiText';
 import ReportModal from '../../components/ReportModal';
+import LikersModal from '../../components/LikersModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { copyPostLink } from '../../utils/postLinks';
 
@@ -112,6 +113,7 @@ export default function PostScreen({ route, navigation }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [reportingPost, setReportingPost] = useState(false);
+  const [likersVisible, setLikersVisible] = useState(false);
   const [keyboardOverlap, setKeyboardOverlap] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
@@ -119,6 +121,7 @@ export default function PostScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { isPostSaved, toggleSavedPost, forgetDeletedPost } = useSavedPosts();
   const insets = useSafeAreaInsets();
+  const loadPostLikes = useCallback(page => apiService.getPostLikes(postId, page), [postId]);
 
   const missingPostHandled = useRef(false);
 
@@ -385,10 +388,10 @@ export default function PostScreen({ route, navigation }) {
         ) : null}
 
         <View style={[styles.actions, { borderTopColor: theme.border }]}>
-          <TouchableOpacity style={styles.action} onPress={handleLike} accessibilityLabel="Encourage this post">
-            <AppIcon name="heart" solid={post.likedByCurrentUser} size={19} color={theme.accent} />
-            <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.likes}</Text>
-          </TouchableOpacity>
+          <View style={styles.action}>
+            <TouchableOpacity style={styles.likePart} onPress={handleLike} accessibilityLabel="Encourage this post"><AppIcon name="heart" solid={post.likedByCurrentUser} size={19} color={theme.accent} /></TouchableOpacity>
+            <TouchableOpacity style={styles.likeCountButton} onPress={() => post.likes > 0 && setLikersVisible(true)} disabled={!post.likes} accessibilityLabel={`View ${post.likes} people who liked this post`}><Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.likes}</Text></TouchableOpacity>
+          </View>
           <TouchableOpacity style={styles.action} accessibilityLabel="View comments">
             <AppIcon name="comment" size={19} color={theme.primary} />
             <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
@@ -502,6 +505,7 @@ export default function PostScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
       <ReportModal visible={reportingPost} targetType="post" targetId={post.id} targetName="post" onClose={result => { setReportingPost(false); if (result?.submitted) Alert.alert('Report received', 'Thank you. The moderation team will review this post.'); }} />
+      <LikersModal visible={likersVisible} onClose={() => setLikersVisible(false)} loadPage={loadPostLikes} navigation={navigation} title="Post likes" />
     </KeyboardAvoidingView>
   );
 }
@@ -559,6 +563,8 @@ const styles = StyleSheet.create({
   imageCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, marginTop: 18, paddingTop: 9 },
   action: { minWidth: 48, height: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  likePart: { minWidth: 25, minHeight: 38, alignItems: 'center', justifyContent: 'center' },
+  likeCountButton: { minWidth: 20, minHeight: 38, alignItems: 'flex-start', justifyContent: 'center' },
   actionCount: { fontSize: 11, fontWeight: '600' },
   iconAction: { width: 42, height: 38, alignItems: 'center', justifyContent: 'center' },
   saveAction: { marginLeft: 'auto' },

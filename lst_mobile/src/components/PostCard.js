@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import Icon from './AppIcon';
@@ -7,6 +8,8 @@ import Avatar from './Avatar';
 import PostOptionsMenu from './PostOptionsMenu';
 import EmojiText from './EmojiText';
 import ReportModal from './ReportModal';
+import LikersModal from './LikersModal';
+import apiService from '../api/apiService';
 import { copyPostLink } from '../utils/postLinks';
 
 const PREVIEW_LIMIT = 180;
@@ -15,8 +18,11 @@ const CARD_IMAGE_WIDTH = Dimensions.get('window').width - 58;
 function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare, onSave, onEdit, onDelete, isSaved = false, containerStyle }) {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const navigation = useNavigation();
   const [expanded, setExpanded] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [likersVisible, setLikersVisible] = useState(false);
+  const loadLikes = useCallback(page => apiService.getPostLikes(post.id, page), [post.id]);
   const isLong = post.content.length > PREVIEW_LIMIT;
   const postType = post.type || (post.communityId ? 'Community' : 'Encouragement');
   const images = post.images?.length ? post.images : post.image ? [post.image] : [];
@@ -92,10 +98,10 @@ function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare
       </TouchableOpacity> : null}
 
       <View style={[styles.actions, { borderTopColor: theme.border }]}>
-        <TouchableOpacity onPress={onLike} style={styles.countAction} accessibilityLabel={`${post.likes} encouragements`}>
-          <Icon name="heart" solid={post.likedByCurrentUser} size={18} color={theme.accent} />
-          <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.likes}</Text>
-        </TouchableOpacity>
+        <View style={styles.countAction}>
+          <TouchableOpacity onPress={onLike} style={styles.likeButton} accessibilityLabel="Encourage this post"><Icon name="heart" solid={post.likedByCurrentUser} size={18} color={theme.accent} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => post.likes > 0 && setLikersVisible(true)} disabled={!post.likes} style={styles.likeCountButton} accessibilityLabel={`View ${post.likes} people who liked this post`}><Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.likes}</Text></TouchableOpacity>
+        </View>
         <TouchableOpacity onPress={onPress} style={styles.countAction} accessibilityLabel={`${post.commentsCount || 0} comments`}>
           <Icon name="comment" size={18} color={theme.primary} />
           <Text style={[styles.actionCount, { color: theme.secondaryText }]}>{post.commentsCount || 0}</Text>
@@ -109,6 +115,7 @@ function PostCard({ post, onPress, onOriginalPress, onUserPress, onLike, onShare
         </TouchableOpacity>
       </View>
       <ReportModal visible={reporting} targetType="post" targetId={post.id} targetName="post" onClose={result => { setReporting(false); if (result?.submitted) Alert.alert('Report received', 'Thank you. The moderation team will review this post.'); }} />
+      <LikersModal visible={likersVisible} onClose={() => setLikersVisible(false)} loadPage={loadLikes} navigation={navigation} title="Post likes" />
     </View>
   );
 }
@@ -145,6 +152,8 @@ const styles = StyleSheet.create({
   imageCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, marginTop: 12, paddingTop: 8 },
   countAction: { minWidth: 47, height: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 3 },
+  likeButton: { width: 27, height: 36, alignItems: 'flex-start', justifyContent: 'center' },
+  likeCountButton: { minWidth: 20, height: 36, alignItems: 'flex-start', justifyContent: 'center' },
   actionCount: { fontSize: 12, fontWeight: '700' },
   iconAction: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   originalPost: { borderWidth: 1, borderRadius: 15, padding: 12, marginTop: 11 },

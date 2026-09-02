@@ -173,6 +173,7 @@ class ConnectionController extends Controller
             'text' => 'nullable|required_if:type,text|string|max:5000',
             'type' => 'nullable|in:text,voice',
             'occasion' => 'nullable|in:birthday_wish',
+            'reply_to' => 'nullable|integer',
             'audio' => 'nullable|required_if:type,voice|file|extensions:m4a,mp4,caf,wav,mp3,aac|max:15360',
             'duration' => 'nullable|required_if:type,voice|integer|min:500|max:600000',
         ]);
@@ -189,12 +190,21 @@ class ConnectionController extends Controller
             ? $this->uploads->store($r->file('audio'), 'voice-notes')
             : null;
 
+        $replyTo = null;
+        if (! empty($d['reply_to'])) {
+            $replyTo = $chat->messages()
+                ->whereKey($d['reply_to'])
+                ->whereDoesntHave('deletions', fn ($query) => $query->where('user_id', $r->user()->id))
+                ->firstOrFail();
+        }
+
         $m = $this->repo->send($r->user(), $chat, [
             'text' => $d['text'] ?? null,
             'type' => $d['type'] ?? 'text',
             'audio_uri' => $audioPath,
             'duration' => $d['duration'] ?? null,
             'occasion' => $d['occasion'] ?? null,
+            'parent_message_id' => $replyTo?->id,
         ]);
         $this->service->invalidateChat($chat);
         if ($recipient) {
@@ -209,7 +219,7 @@ class ConnectionController extends Controller
             ]);
         }
 
-        return response()->json($this->messageData($m), 201);
+        return response()->json($this->messageData($m->load('parentMessage')), 201);
     }
 
     public function updateMessage(Request $r, Chat $chat, Message $message)
@@ -286,6 +296,12 @@ class ConnectionController extends Controller
             'createdAt' => $message->created_at->toIso8601String(),
             'edited' => $message->edited_at !== null,
             'occasion' => $message->occasion,
+            'replyTo' => $message->parentMessage ? [
+                'id' => (string) $message->parentMessage->id,
+                'senderId' => (string) $message->parentMessage->sender_id,
+                'text' => $message->parentMessage->text,
+                'type' => $message->parentMessage->type,
+            ] : null,
             'reactions' => $reactions->groupBy('emoji')->map(fn ($items, $emoji) => [
                 'emoji' => $emoji,
                 'count' => $items->count(),

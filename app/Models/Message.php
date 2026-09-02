@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Message extends Model
 {
-    protected $fillable = ['chat_id', 'sender_id', 'type', 'text', 'audio_uri', 'duration', 'occasion', 'read_at', 'edited_at'];
+    protected $fillable = ['chat_id', 'sender_id', 'parent_message_id', 'type', 'text', 'audio_uri', 'duration', 'occasion', 'read_at', 'edited_at'];
 
     protected function casts(): array
     {
@@ -16,6 +16,11 @@ class Message extends Model
     public function chat()
     {
         return $this->belongsTo(Chat::class);
+    }
+
+    public function parentMessage()
+    {
+        return $this->belongsTo(self::class, 'parent_message_id');
     }
 
     public function sender()

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, FlatList, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, FlatList, Keyboard, Modal, PanResponder, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import {
   AudioModule,
@@ -167,6 +167,32 @@ function VoiceNote({ message, mine, theme, activeVoiceId, onActivate }) {
   );
 }
 
+function ReplyableMessage({ disabled, onReply, children }) {
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => !disabled && gesture.dx > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+    onPanResponderRelease: (_, gesture) => {
+      if (!disabled && gesture.dx >= 58 && Math.abs(gesture.dx) > Math.abs(gesture.dy)) onReply();
+    },
+  })).current;
+
+  return <View {...panResponder.panHandlers}>{children}</View>;
+}
+
+function ReplyPreview({ message, theme, mine = false, onCancel }) {
+  if (!message) return null;
+  const text = message.type === 'voice' ? 'Voice message' : message.text || 'Message';
+  const color = mine ? 'rgba(255,255,255,0.78)' : theme.secondaryText;
+  return (
+    <View style={[styles.replyPreview, { borderLeftColor: mine ? 'rgba(255,255,255,0.72)' : theme.primary, backgroundColor: mine ? 'rgba(255,255,255,0.11)' : theme.primarySoft }]}>
+      <View style={styles.replyPreviewCopy}>
+        <Text style={[styles.replyPreviewLabel, { color: mine ? '#FFFFFF' : theme.primary }]}>Replying to message</Text>
+        <Text style={[styles.replyPreviewText, { color }]} numberOfLines={1}>{text}</Text>
+      </View>
+      {onCancel ? <TouchableOpacity onPress={onCancel} style={styles.replyCancel} accessibilityLabel="Cancel reply"><AppIcon name="close" size={16} color={theme.secondaryText} /></TouchableOpacity> : null}
+    </View>
+  );
+}
+
 export default function ChatDetailScreen({ route, navigation }) {
   const { chatId } = route.params;
   const [occasion, setOccasion] = useState(route.params?.occasion || null);
@@ -187,6 +213,7 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState('');
   const [messageActionPending, setMessageActionPending] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -262,16 +289,17 @@ export default function ChatDetailScreen({ route, navigation }) {
     if (!inputText.trim() || sending) return;
     const text = inputText.trim();
     const temporaryId = `pending-${Date.now()}`;
-    const optimisticMessage = { id: temporaryId, senderId: user.id, text, type: 'text', occasion, timestamp: 'Sending…', reactions: [], pending: true };
+    const optimisticMessage = { id: temporaryId, senderId: user.id, text, type: 'text', occasion, replyTo: replyingTo, timestamp: 'Sending…', reactions: [], pending: true };
     setSending(true);
     setMessages(current => [optimisticMessage, ...current]);
     setInputText('');
     setSelection({ start: 0, end: 0 });
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
     try {
-      const sentMessage = await apiService.sendMessage(chatId, text, occasion);
+      const sentMessage = await apiService.sendMessage(chatId, text, occasion, replyingTo);
       setMessages(current => current.map(message => message.id === temporaryId ? sentMessage : message));
       setOccasion(null);
+      setReplyingTo(null);
       navigation.setParams({ occasion: undefined });
     } catch (error) {
       setMessages(current => current.filter(message => message.id !== temporaryId));
@@ -317,6 +345,13 @@ export default function ChatDetailScreen({ route, navigation }) {
     setEditText(selectedMessage?.text || '');
     setEditingMessage(selectedMessage);
     setSelectedMessage(null);
+  };
+
+  const beginReply = message => {
+    if (!message || message.pending) return;
+    setReplyingTo(message);
+    setSelectedMessage(null);
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const saveEditedMessage = async () => {
@@ -456,7 +491,8 @@ export default function ChatDetailScreen({ route, navigation }) {
           const sameAsOlder = messagesBelongTogether(item, olderMessage);
           return (
             <View style={[styles.messageRow, sameAsNewer ? styles.groupedRow : styles.groupEndRow, mine ? styles.myMessage : styles.otherMessage]}>
-              <TouchableOpacity
+              <ReplyableMessage disabled={item.pending} onReply={() => beginReply(item)}>
+                <TouchableOpacity
                   activeOpacity={0.82}
                   onLongPress={() => !item.pending && setSelectedMessage(item)}
                   delayLongPress={260}
@@ -470,6 +506,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                     { backgroundColor: mine ? theme.primary : theme.card, borderColor: mine ? theme.primary : theme.border },
                   ]}
                 >
+                  {item.replyTo ? <ReplyPreview message={item.replyTo} theme={theme} mine={mine} /> : null}
                   {item.occasion === 'birthday_wish' ? <View style={styles.occasionLabel}><AppIcon name="gift-outline" size={11} color={mine ? '#FFFFFF' : theme.primary} /><Text style={[styles.occasionText, { color: mine ? '#FFFFFF' : theme.primary }]}>Birthday wish</Text></View> : null}
                   {item.type === 'voice' ? <VoiceNote message={item} mine={mine} theme={theme} activeVoiceId={activeVoiceId} onActivate={setActiveVoiceId} /> : <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>}
                   {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><Text style={styles.reactionEmoji}>{reaction.emoji}</Text>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}
@@ -479,6 +516,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                   {mine ? <MessageReceipt pending={item.pending} read={item.read} /> : null}
                 </View>
               </TouchableOpacity>
+              </ReplyableMessage>
             </View>
           );
         }}
@@ -505,6 +543,7 @@ export default function ChatDetailScreen({ route, navigation }) {
           style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14), marginBottom: keyboardOverlap }]}
         >
           {occasion === 'birthday_wish' ? <View style={[styles.occasionComposer, { backgroundColor: theme.primarySoft }]}><AppIcon name="gift-outline" size={14} color={theme.primary} /><Text style={[styles.occasionComposerText, { color: theme.primary }]}>Write your birthday wish</Text><TouchableOpacity onPress={() => setOccasion(null)} accessibilityLabel="Cancel birthday wish"><AppIcon name="close" size={16} color={theme.primary} /></TouchableOpacity></View> : null}
+          {replyingTo ? <ReplyPreview message={replyingTo} theme={theme} onCancel={() => setReplyingTo(null)} /> : null}
           <View style={styles.inputRow}>
             <View style={[styles.inputPill, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <TouchableOpacity
@@ -557,6 +596,7 @@ export default function ChatDetailScreen({ route, navigation }) {
             <Text style={[styles.actionTitle, { color: theme.text }]}>Message options</Text>
             <View style={styles.reactionPicker}>{MESSAGE_REACTIONS.map(emoji => <TouchableOpacity key={emoji} style={[styles.reactionChoice, selectedMessage?.reactions?.some(reaction => reaction.emoji === emoji && reaction.reactedByCurrentUser) && { backgroundColor: theme.primarySoft, borderColor: theme.primary }]} onPress={() => reactToMessage(emoji)} disabled={messageActionPending}><Text style={styles.reactionChoiceText}>{emoji}</Text></TouchableOpacity>)}</View>
             {selectedMessage?.text ? <TouchableOpacity style={styles.actionRow} onPress={copyMessage}><AppIcon name="copy-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Copy message</Text></TouchableOpacity> : null}
+            {selectedMessage ? <TouchableOpacity style={styles.actionRow} onPress={() => beginReply(selectedMessage)}><AppIcon name="arrow-undo-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Reply</Text></TouchableOpacity> : null}
             {selectedMessage && String(selectedMessage.senderId) === String(user.id) && selectedMessage.type === 'text' && canModifyMessage(selectedMessage) ? <TouchableOpacity style={styles.actionRow} onPress={beginEditMessage}><AppIcon name="create-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Edit message</Text></TouchableOpacity> : null}
             {selectedMessage ? <TouchableOpacity style={styles.actionRow} onPress={requestDeleteMessage}><AppIcon name="trash" size={19} color={theme.danger} /><Text style={[styles.actionText, { color: theme.danger }]}>Delete message</Text></TouchableOpacity> : null}
             {selectedMessage && String(selectedMessage.senderId) !== String(user.id) ? <TouchableOpacity style={styles.actionRow} onPress={() => { setReportingMessage(selectedMessage); setSelectedMessage(null); }}><AppIcon name="flag" size={19} color={theme.danger} /><Text style={[styles.actionText, { color: theme.danger }]}>Report message</Text></TouchableOpacity> : null}
@@ -645,6 +685,11 @@ const styles = StyleSheet.create({
   reactionBadge: { minHeight: 24, borderRadius: 12, paddingHorizontal: 7, flexDirection: 'row', alignItems: 'center', gap: 3 },
   reactionEmoji: { fontSize: 13 },
   reactionCount: { fontSize: 10, fontWeight: '800' },
+  replyPreview: { minWidth: 150, maxWidth: 245, borderLeftWidth: 3, borderRadius: 7, paddingVertical: 5, paddingLeft: 8, paddingRight: 5, marginBottom: 7, flexDirection: 'row', alignItems: 'center' },
+  replyPreviewCopy: { flex: 1, minWidth: 0 },
+  replyPreviewLabel: { fontSize: 9.5, fontWeight: '800', marginBottom: 1 },
+  replyPreviewText: { fontSize: 11, lineHeight: 15 },
+  replyCancel: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
   actionBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(28,17,24,0.56)' },
   actionSheet: { padding: 20, paddingBottom: 30, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1 },
   actionHandle: { width: 42, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 15 },

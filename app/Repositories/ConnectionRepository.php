@@ -223,7 +223,7 @@ class ConnectionRepository
 
         return $chat->messages()
             ->whereDoesntHave('deletions', fn ($query) => $query->where('user_id', $user->id))
-            ->with('reactions')->oldest()->get();
+            ->with(['reactions', 'parentMessage'])->oldest()->get();
     }
 
     public function messagesPage(User $user, Chat $chat, int $perPage = 30)
@@ -233,7 +233,7 @@ class ConnectionRepository
 
         return $chat->messages()
             ->whereDoesntHave('deletions', fn ($query) => $query->where('user_id', $user->id))
-            ->with('reactions')->latest()->paginate($perPage);
+            ->with(['reactions', 'parentMessage'])->latest()->paginate($perPage);
     }
 
     public function send(User $user, Chat $chat, array $data): Message

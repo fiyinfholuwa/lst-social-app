@@ -102,7 +102,7 @@ const apiService = {
   getChat: chatId => httpClient.get(`/chats/${chatId}`),
   getOrCreateChat: otherUser => httpClient.post(`/chats/with/${otherUser.id}`),
   getMessages: (chatId, page = 1) => httpClient.get(`/chats/${chatId}/messages?page=${page}`),
-  sendMessage: (chatId, text, occasion = null) => httpClient.post(`/chats/${chatId}/messages`, { text, occasion }),
+  sendMessage: (chatId, text, occasion = null, replyTo = null) => httpClient.post(`/chats/${chatId}/messages`, { text, occasion, reply_to: replyTo?.id || null }),
   editMessage: (chatId, messageId, text) => httpClient.patch(`/chats/${chatId}/messages/${messageId}`, { text }),
   deleteMessage: (chatId, messageId, scope) => httpClient.delete(`/chats/${chatId}/messages/${messageId}`, { body: { scope } }),
   reactToMessage: (chatId, messageId, emoji) => httpClient.post(`/chats/${chatId}/messages/${messageId}/reaction`, { emoji }),

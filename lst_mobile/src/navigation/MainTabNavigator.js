@@ -5,7 +5,7 @@ import React from 'react';
         import HomeScreen from '../screens/main/HomeScreen';
         import CommunitiesScreen from '../screens/main/CommunitiesScreen';
         import ChatsScreen from '../screens/main/ChatsScreen';
-import SermonsScreen from '../screens/main/SermonsScreen';
+import ResourcesScreen from '../screens/main/ResourcesScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import FriendsScreen from '../screens/main/FriendsScreen';
 import { StyleSheet, View } from 'react-native';
@@ -66,7 +66,7 @@ import { useFriendships } from '../context/FriendshipsContext';
               <Tab.Screen name="Communities" component={CommunitiesScreen} options={{ title: 'Circles' }} />
               <Tab.Screen name="Chats" component={ChatsScreen} options={{ title: 'Messages', tabBarBadge: unreadChatCount || undefined, tabBarBadgeStyle: { backgroundColor: theme.accent, color: '#FFFFFF', fontSize: 9 } }} />
               <Tab.Screen name="Friends" component={FriendsScreen} options={{ title: 'Friends', tabBarBadge: incomingRequestIds.length || undefined, tabBarBadgeStyle: { backgroundColor: theme.accent, color: '#FFFFFF', fontSize: 9 } }} />
-              <Tab.Screen name="Sermons" component={SermonsScreen} options={{ title: 'Sermons' }} />
+              <Tab.Screen name="Sermons" component={ResourcesScreen} options={{ title: 'Resources' }} />
               <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'You' }} />
             </Tab.Navigator>
           );

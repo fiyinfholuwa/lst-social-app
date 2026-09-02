@@ -3,10 +3,15 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from './AppIcon';
 import { useTheme } from '../context/ThemeContext';
 
-export default function ScreenHeader({ eyebrow, title, actionIcon, onAction, badgeCount = 0 }) {
+export default function ScreenHeader({ eyebrow, title, actionIcon, onAction, badgeCount = 0, backAction }) {
   const { theme } = useTheme();
   return (
     <View style={styles.container}>
+      {backAction ? (
+        <TouchableOpacity style={[styles.backAction, { backgroundColor: theme.primarySoft }]} onPress={backAction} accessibilityLabel="Go back">
+          <Icon name="chevron-left" size={21} color={theme.primary} />
+        </TouchableOpacity>
+      ) : null}
       <View style={styles.copy}>
         {eyebrow ? <Text style={[styles.eyebrow, { color: theme.primary }]}>{eyebrow}</Text> : null}
         <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
@@ -27,6 +32,7 @@ export default function ScreenHeader({ eyebrow, title, actionIcon, onAction, bad
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 18, paddingTop: 58, paddingBottom: 16, flexDirection: 'row', alignItems: 'center' },
+  backAction: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 11 },
   copy: { flex: 1 },
   eyebrow: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
   title: { fontSize: 24, lineHeight: 29, fontWeight: '700', letterSpacing: -0.5 },

@@ -28,6 +28,7 @@ import CommunityModerationScreen from '../screens/main/CommunityModerationScreen
 import CommunityModerationDetailScreen from '../screens/main/CommunityModerationDetailScreen.js';
 import SharePostScreen from '../screens/main/SharePostScreen';
 import SermonDetailScreen from '../screens/main/SermonDetailScreen';
+import SermonsScreen from '../screens/main/SermonsScreen';
 import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 
         const Stack = createNativeStackNavigator();
@@ -79,6 +80,7 @@ import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
                   <Stack.Screen name="CommunityModerationDetail" component={CommunityModerationDetailScreen} options={{ headerShown: true, title: 'Review Details' }} />
                   <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
                   <Stack.Screen name="SermonDetail" component={SermonDetailScreen} options={{ headerShown: true, title: 'Sermon' }} />
+                  <Stack.Screen name="SermonLibrary" component={SermonsScreen} options={{ headerShown: false }} />
                 </>
               )}
             </Stack.Navigator>

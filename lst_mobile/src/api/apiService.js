@@ -102,6 +102,7 @@ const apiService = {
   getChat: chatId => httpClient.get(`/chats/${chatId}`),
   getOrCreateChat: otherUser => httpClient.post(`/chats/with/${otherUser.id}`),
   getMessages: (chatId, page = 1) => httpClient.get(`/chats/${chatId}/messages?page=${page}`),
+  getMessage: (chatId, messageId) => httpClient.get(`/chats/${chatId}/messages/${messageId}`),
   sendMessage: (chatId, text, occasion = null, replyTo = null) => httpClient.post(`/chats/${chatId}/messages`, { text, occasion, reply_to: replyTo?.id || null }),
   editMessage: (chatId, messageId, text) => httpClient.patch(`/chats/${chatId}/messages/${messageId}`, { text }),
   deleteMessage: (chatId, messageId, scope) => httpClient.delete(`/chats/${chatId}/messages/${messageId}`, { body: { scope } }),
@@ -116,6 +117,15 @@ const apiService = {
   },
   getNotifications: (page = 1) => httpClient.get(`/notifications?page=${page}`),
   getFeedBanner: () => httpClient.get('/feed-banner'),
+  getStatuses: () => httpClient.get('/statuses'),
+  createTextStatus: text => httpClient.post('/statuses', { type: 'text', text }),
+  createImageStatus: (uri, fileName = 'status.jpg') => {
+    const form = new FormData();
+    form.append('type', 'image');
+    appendFile(form, 'image', { uri, fileName, mimeType: 'image/jpeg' }, fileName);
+    return httpClient.postForm('/statuses', form);
+  },
+  markStatusViewed: statusId => httpClient.post(`/statuses/${statusId}/view`),
   getSermons: (filters = {}, page = 1) => {
     const params = new URLSearchParams({ q: filters.query || '', title: filters.title || '', speaker: filters.speaker || '', category: filters.category || '', page: String(page) });
     return httpClient.get(`/sermons?${params.toString()}`);

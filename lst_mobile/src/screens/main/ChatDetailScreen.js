@@ -178,11 +178,11 @@ function ReplyableMessage({ disabled, onReply, children }) {
   return <View {...panResponder.panHandlers}>{children}</View>;
 }
 
-function ReplyPreview({ message, theme, mine = false, onCancel }) {
+function ReplyPreview({ message, theme, mine = false, onCancel, onPress }) {
   if (!message) return null;
   const text = message.type === 'voice' ? 'Voice message' : message.text || 'Message';
   const color = mine ? 'rgba(255,255,255,0.78)' : theme.secondaryText;
-  return (
+  const content = (
     <View style={[styles.replyPreview, { borderLeftColor: mine ? 'rgba(255,255,255,0.72)' : theme.primary, backgroundColor: mine ? 'rgba(255,255,255,0.11)' : theme.primarySoft }]}>
       <View style={styles.replyPreviewCopy}>
         <Text style={[styles.replyPreviewLabel, { color: mine ? '#FFFFFF' : theme.primary }]}>Replying to message</Text>
@@ -191,6 +191,8 @@ function ReplyPreview({ message, theme, mine = false, onCancel }) {
       {onCancel ? <TouchableOpacity onPress={onCancel} style={styles.replyCancel} accessibilityLabel="Cancel reply"><AppIcon name="close" size={16} color={theme.secondaryText} /></TouchableOpacity> : null}
     </View>
   );
+  if (!onPress) return content;
+  return <TouchableOpacity activeOpacity={0.7} onPress={onPress} accessibilityRole="button" accessibilityLabel="Go to referenced message">{content}</TouchableOpacity>;
 }
 
 export default function ChatDetailScreen({ route, navigation }) {
@@ -214,6 +216,8 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [editText, setEditText] = useState('');
   const [messageActionPending, setMessageActionPending] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [messageToScrollTo, setMessageToScrollTo] = useState(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -224,6 +228,18 @@ export default function ChatDetailScreen({ route, navigation }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { refreshUnreadChats } = useChatUnread();
+
+  useEffect(() => {
+    if (!messageToScrollTo) return;
+    const index = messages.findIndex(message => String(message.id) === String(messageToScrollTo));
+    if (index < 0) return;
+
+    requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 }));
+    setHighlightedMessageId(messageToScrollTo);
+    const timer = setTimeout(() => setHighlightedMessageId(null), 1400);
+    setMessageToScrollTo(null);
+    return () => clearTimeout(timer);
+  }, [messageToScrollTo, messages]);
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', event => {
@@ -352,6 +368,26 @@ export default function ChatDetailScreen({ route, navigation }) {
     setReplyingTo(message);
     setSelectedMessage(null);
     setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const openReferencedMessage = async replyTo => {
+    if (!replyTo?.id) return;
+    const loadedMessage = messages.find(message => String(message.id) === String(replyTo.id));
+    if (loadedMessage) {
+      setMessageToScrollTo(loadedMessage.id);
+      return;
+    }
+
+    try {
+      const referencedMessage = await apiService.getMessage(chatId, replyTo.id);
+      setMessages(current => {
+        if (current.some(message => String(message.id) === String(referencedMessage.id))) return current;
+        return [...current, referencedMessage].sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
+      });
+      setMessageToScrollTo(referencedMessage.id);
+    } catch (error) {
+      Alert.alert('Message unavailable', 'This referenced message is no longer available in this chat.');
+    }
   };
 
   const saveEditedMessage = async () => {
@@ -483,6 +519,10 @@ export default function ChatDetailScreen({ route, navigation }) {
         contentContainerStyle={styles.messages}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={loadingMessages ? <View style={styles.loadingConversation}><ActivityIndicator color={theme.primary} /><Text style={[styles.loadingConversationText, { color: theme.secondaryText }]}>Loading messages…</Text></View> : <View style={styles.emptyConversation}><View style={[styles.emptyConversationIcon, { backgroundColor: theme.primarySoft }]}><AppIcon name="chatbubbles-outline" size={24} color={theme.primary} /></View><Text style={[styles.emptyConversationTitle, { color: theme.text }]}>Start the conversation</Text><Text style={[styles.emptyConversationText, { color: theme.secondaryText }]}>Send a kind message, an emoji, or a voice note.</Text></View>}
+        onScrollToIndexFailed={({ index, averageItemLength }) => {
+          listRef.current?.scrollToOffset({ offset: Math.max(0, index * averageItemLength), animated: true });
+          setTimeout(() => listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 }), 150);
+        }}
         renderItem={({ item, index }) => {
           const mine = String(item.senderId) === String(user.id);
           const newerMessage = messages[index - 1];
@@ -503,10 +543,11 @@ export default function ChatDetailScreen({ route, navigation }) {
                     sameAsOlder && (mine ? styles.mineJoinedTop : styles.otherJoinedTop),
                     sameAsNewer && (mine ? styles.mineJoinedBottom : styles.otherJoinedBottom),
                     item.type === 'voice' && styles.voiceBubble,
+                    String(item.id) === String(highlightedMessageId) && { borderColor: theme.accent, borderWidth: 2 },
                     { backgroundColor: mine ? theme.primary : theme.card, borderColor: mine ? theme.primary : theme.border },
                   ]}
                 >
-                  {item.replyTo ? <ReplyPreview message={item.replyTo} theme={theme} mine={mine} /> : null}
+                  {item.replyTo ? <ReplyPreview message={item.replyTo} theme={theme} mine={mine} onPress={() => openReferencedMessage(item.replyTo)} /> : null}
                   {item.occasion === 'birthday_wish' ? <View style={styles.occasionLabel}><AppIcon name="gift-outline" size={11} color={mine ? '#FFFFFF' : theme.primary} /><Text style={[styles.occasionText, { color: mine ? '#FFFFFF' : theme.primary }]}>Birthday wish</Text></View> : null}
                   {item.type === 'voice' ? <VoiceNote message={item} mine={mine} theme={theme} activeVoiceId={activeVoiceId} onActivate={setActiveVoiceId} /> : <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>}
                   {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><Text style={styles.reactionEmoji}>{reaction.emoji}</Text>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}

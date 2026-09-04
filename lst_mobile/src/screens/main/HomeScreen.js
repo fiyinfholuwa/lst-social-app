@@ -171,6 +171,11 @@ const fallbackFeedBanner = {
                   </LinearGradient>
                 </TouchableOpacity>
               ) : null}
+              <TouchableOpacity style={[styles.statusShortcut, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => navigation.navigate('Statuses')} accessibilityLabel="View friend statuses">
+                <View style={[styles.statusShortcutIcon, { backgroundColor: theme.primarySoft }]}><Icon name="time-outline" size={18} color={theme.primary} /></View>
+                <View style={{ flex: 1 }}><Text style={[styles.statusShortcutTitle, { color: theme.text }]}>Friend statuses</Text><Text style={[styles.statusShortcutText, { color: theme.secondaryText }]}>Share text or photos that disappear in 24 hours</Text></View>
+                <Icon name="chevron-right" size={18} color={theme.primary} />
+              </TouchableOpacity>
               <FlatList
                 data={visiblePosts}
                 keyExtractor={(item) => String(item.id)}
@@ -258,6 +263,10 @@ const fallbackFeedBanner = {
           container: { flex: 1 },
           loadingFooter: { paddingVertical: 20, alignItems: 'center' },
           bannerWrap: { marginHorizontal: 14, marginBottom: 8 },
+          statusShortcut: { marginHorizontal: 14, marginBottom: 10, padding: 11, borderWidth: 1, borderRadius: 15, flexDirection: 'row', alignItems: 'center', gap: 10 },
+          statusShortcutIcon: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+          statusShortcutTitle: { fontSize: 12, fontWeight: '800' },
+          statusShortcutText: { fontSize: 10, marginTop: 2 },
           compactBanner: { minHeight: 52, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
           bannerIcon: { width: 29, height: 29, borderRadius: 10, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' },
           bannerCopy: { flex: 1, minWidth: 0 },

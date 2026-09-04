@@ -30,6 +30,7 @@ import SharePostScreen from '../screens/main/SharePostScreen';
 import SermonDetailScreen from '../screens/main/SermonDetailScreen';
 import SermonsScreen from '../screens/main/SermonsScreen';
 import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
+import StatusesScreen from '../screens/main/StatusesScreen';
 
         const Stack = createNativeStackNavigator();
 
@@ -81,6 +82,7 @@ import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
                   <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
                   <Stack.Screen name="SermonDetail" component={SermonDetailScreen} options={{ headerShown: true, title: 'Sermon' }} />
                   <Stack.Screen name="SermonLibrary" component={SermonsScreen} options={{ headerShown: false }} />
+                  <Stack.Screen name="Statuses" component={StatusesScreen} options={{ headerShown: false }} />
                 </>
               )}
             </Stack.Navigator>

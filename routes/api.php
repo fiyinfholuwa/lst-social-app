@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AppVersionController;
 use App\Http\Controllers\Api\ConnectionController;
 use App\Http\Controllers\Api\SocialController;
 use App\Http\Controllers\Api\PushTokenController;
+use App\Http\Controllers\Api\StatusController;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,9 @@ Route::middleware(['auth:sanctum', 'last-seen'])->group(function () {
     Route::get('/users/{user}/posts', [SocialController::class, 'userPosts']);
     Route::get('/posts', [SocialController::class, 'posts']);
     Route::get('/feed-banner', [SocialController::class, 'feedBanner']);
+    Route::get('/statuses', [StatusController::class, 'index']);
+    Route::post('/statuses', [StatusController::class, 'store'])->middleware('throttle:media-uploads');
+    Route::post('/statuses/{status}/view', [StatusController::class, 'view'])->middleware('throttle:social-interactions');
     Route::get('/sermons', [SocialController::class, 'sermons']);
     Route::get('/sermons/{sermon}', [SocialController::class, 'sermon']);
     Route::get('/sermons/{sermon}/likes', [SocialController::class, 'sermonLikes']);
@@ -87,6 +91,7 @@ Route::middleware(['auth:sanctum', 'last-seen'])->group(function () {
     Route::post('/chats/with/{user}', [ConnectionController::class, 'createChat'])->middleware('throttle:relationship-writes');
     Route::get('/chats/{chat}', [ConnectionController::class, 'chat']);
     Route::get('/chats/{chat}/messages', [ConnectionController::class, 'messages']);
+    Route::get('/chats/{chat}/messages/{message}', [ConnectionController::class, 'message']);
     Route::post('/chats/{chat}/messages', [ConnectionController::class, 'send'])->middleware('throttle:message-sends');
     Route::patch('/chats/{chat}/messages/{message}', [ConnectionController::class, 'updateMessage'])->middleware('throttle:social-writes');
     Route::delete('/chats/{chat}/messages/{message}', [ConnectionController::class, 'deleteMessage'])->middleware('throttle:social-writes');

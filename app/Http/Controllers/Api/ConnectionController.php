@@ -167,6 +167,15 @@ class ConnectionController extends Controller
         return response()->json($messages->map(fn (Message $message) => $this->messageData($message)));
     }
 
+    public function message(Request $r, Chat $chat, Message $message)
+    {
+        $this->repo->chat($r->user(), $chat);
+        abort_unless($message->chat_id === $chat->id, 404);
+        abort_if($message->deletions()->where('user_id', $r->user()->id)->exists(), 404);
+
+        return response()->json($this->messageData($message->load(['reactions', 'parentMessage'])));
+    }
+
     public function send(Request $r, Chat $chat)
     {
         $d = $r->validate([

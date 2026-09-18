@@ -51,13 +51,13 @@
           "defaultChannel": "default"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-status-bar"
     ],
     "ios": {
       "bundleIdentifier": "com.fiyinfholuwa.lstsocial",
       "supportsTablet": true,
       "associatedDomains": [
-        "applinks:social.lovestraighttalks.com",
         "applinks:social.lovestraighttalks.com"
       ],
       "infoPlist": {

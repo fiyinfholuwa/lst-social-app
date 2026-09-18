@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, FlatList, Keyboard, Modal, PanResponder, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, PanResponder, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import {
   AudioModule,
@@ -210,7 +210,6 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [sending, setSending] = useState(false);
   const [reportingMessage, setReportingMessage] = useState(null);
-  const [keyboardOverlap, setKeyboardOverlap] = useState(0);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState('');
@@ -240,23 +239,6 @@ export default function ChatDetailScreen({ route, navigation }) {
     setMessageToScrollTo(null);
     return () => clearTimeout(timer);
   }, [messageToScrollTo, messages]);
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', event => {
-      if (Platform.OS === 'android') {
-        const windowHeight = Dimensions.get('window').height;
-        const keyboardTop = event.endCoordinates?.screenY ?? windowHeight;
-        setKeyboardOverlap(Math.max(0, windowHeight - keyboardTop));
-      }
-      requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
-    });
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardOverlap(0));
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -469,7 +451,7 @@ export default function ChatDetailScreen({ route, navigation }) {
     <KeyboardSafeView
       style={[styles.container, { backgroundColor: theme.surface }]}
       keyboardVerticalOffset={0}
-      androidBehavior="none"
+      androidBehavior="padding"
     >
       <View style={[styles.conversationHeader, { backgroundColor: theme.card, borderColor: theme.border, paddingTop: insets.top + 7 }]}>
         <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.background }]} onPress={navigation.goBack} accessibilityLabel="Back to messages">
@@ -565,7 +547,7 @@ export default function ChatDetailScreen({ route, navigation }) {
 
       {recording ? (
         <View
-          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14), marginBottom: keyboardOverlap }]}
+          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14) }]}
         >
           <View style={[styles.recordingBar, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <TouchableOpacity style={styles.recordingAction} onPress={() => finishRecording(false)} accessibilityLabel="Cancel voice note">
@@ -581,7 +563,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         </View>
       ) : (
         <View
-          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14), marginBottom: keyboardOverlap }]}
+          style={[styles.composerArea, { borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 4, 14) }]}
         >
           {occasion === 'birthday_wish' ? <View style={[styles.occasionComposer, { backgroundColor: theme.primarySoft }]}><AppIcon name="gift-outline" size={14} color={theme.primary} /><Text style={[styles.occasionComposerText, { color: theme.primary }]}>Write your birthday wish</Text><TouchableOpacity onPress={() => setOccasion(null)} accessibilityLabel="Cancel birthday wish"><AppIcon name="close" size={16} color={theme.primary} /></TouchableOpacity></View> : null}
           {replyingTo ? <ReplyPreview message={replyingTo} theme={theme} onCancel={() => setReplyingTo(null)} /> : null}
@@ -676,12 +658,12 @@ const styles = StyleSheet.create({
   messages: { flexGrow: 1, paddingVertical: 12 },
   olderMessagesButton: { alignSelf: 'center', minHeight: 38, marginVertical: 12, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderRadius: 19, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   olderMessagesText: { fontSize: 11, fontWeight: '800' },
-  messageRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  messageRow: { width: '100%', flexDirection: 'row', alignItems: 'flex-end' },
   groupedRow: { marginTop: 2 },
   groupEndRow: { marginTop: 9 },
   myMessage: { justifyContent: 'flex-end' },
   otherMessage: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '84%', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 5, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
+  bubble: { maxWidth: '84%', minWidth: 54, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 5, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
   mineBubble: { borderBottomRightRadius: 5 },
   otherBubble: { borderBottomLeftRadius: 5 },
   mineJoinedTop: { borderTopRightRadius: 7 },
@@ -689,7 +671,7 @@ const styles = StyleSheet.create({
   otherJoinedTop: { borderTopLeftRadius: 7 },
   otherJoinedBottom: { borderBottomLeftRadius: 7 },
   voiceBubble: { width: 225 },
-  messageText: { fontSize: 14, lineHeight: 19 },
+  messageText: { flexShrink: 1, fontSize: 14, lineHeight: 19 },
   occasionLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
   occasionText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
   messageMeta: { minHeight: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 2 },
@@ -700,7 +682,7 @@ const styles = StyleSheet.create({
   occasionComposerText: { flex: 1, fontSize: 12, fontWeight: '800' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   inputPill: { flex: 1, minHeight: 48, maxHeight: 108, borderWidth: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },
-  input: { flex: 1, minHeight: 45, maxHeight: 107, paddingRight: 14, paddingTop: 12, paddingBottom: 11, fontSize: 14 },
+  input: { flex: 1, minHeight: 45, maxHeight: 107, paddingRight: 14, paddingTop: 12, paddingBottom: 11, fontSize: 14, textAlignVertical: 'top' },
   emojiButton: { width: 40, height: 45, alignItems: 'center', justifyContent: 'center' },
   roundAction: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   loadingConversation: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 50 },

@@ -20,6 +20,27 @@ class ConnectionController extends Controller
 {
     public function __construct(private ConnectionRepository $repo, private ConnectionService $service, private UploadService $uploads, private NotificationRepository $notifications) {}
 
+    private function normalizeEmojiAliases(?string $value): ?string
+    {
+        if ($value === null || $value === '') return $value;
+
+        return strtr($value, [
+            ':happy-outline:' => '😀', ':happy:' => '😄', ':heart:' => '❤️', ':heart-outline:' => '💖',
+            ':thumbs-up:' => '👍', ':thumbs-down:' => '👎', ':hand-left-outline:' => '👋',
+            ':star-outline:' => '✨', ':star:' => '⭐', ':sunny-outline:' => '☀️', ':moon-outline:' => '🌙',
+            ':rainy-outline:' => '🌧️', ':flower-outline:' => '🌸', ':leaf-outline:' => '🌿',
+            ':flame-outline:' => '🔥', ':water-outline:' => '💧', ':chatbubble-outline:' => '💬',
+            ':mail-outline:' => '✉️', ':gift-outline:' => '🎁', ':color-palette-outline:' => '🎈',
+            ':musical-notes-outline:' => '🎵', ':camera-outline:' => '📷', ':images-outline:' => '🖼️',
+            ':book-outline:' => '📚', ':rocket-outline:' => '🚀', ':airplane-outline:' => '✈️',
+            ':car-outline:' => '🚗', ':home-outline:' => '🏠', ':people-outline:' => '👥',
+            ':person-outline:' => '🙂', ':paw-outline:' => '🐾', ':restaurant-outline:' => '🍽️',
+            ':cafe-outline:' => '☕', ':wine-outline:' => '🥂', ':football-outline:' => '⚽',
+            ':game-controller-outline:' => '🎮', ':bulb-outline:' => '💡', ':checkmark-circle-outline:' => '✅',
+            ':alert-circle-outline:' => '❗', ':help-circle-outline:' => '❓',
+        ]);
+    }
+
     public function friendships(Request $r)
     {
         return response()->json($this->service->friendshipState($r->user()));
@@ -208,7 +229,7 @@ class ConnectionController extends Controller
         }
 
         $m = $this->repo->send($r->user(), $chat, [
-            'text' => $d['text'] ?? null,
+            'text' => $this->normalizeEmojiAliases($d['text'] ?? null),
             'type' => $d['type'] ?? 'text',
             'audio_uri' => $audioPath,
             'duration' => $d['duration'] ?? null,
@@ -236,7 +257,7 @@ class ConnectionController extends Controller
         $this->authorizeMessageEdit($r, $chat, $message);
         abort_unless($message->type === 'text', 422, 'Only text messages can be edited.');
         $data = $r->validate(['text' => 'required|string|max:5000']);
-        $message->update(['text' => trim($data['text']), 'edited_at' => now()]);
+        $message->update(['text' => $this->normalizeEmojiAliases(trim($data['text'])), 'edited_at' => now()]);
         $this->service->invalidateChat($chat);
 
         return response()->json($this->messageData($message->load('reactions')));
@@ -294,7 +315,7 @@ class ConnectionController extends Controller
         return [
             'id' => (string) $message->id,
             'senderId' => (string) $message->sender_id,
-            'text' => $message->text,
+            'text' => $this->normalizeEmojiAliases($message->text),
             'type' => $message->type,
             'audioUri' => $message->audio_uri
                 ? $this->uploads->url($message->audio_uri)
@@ -308,7 +329,7 @@ class ConnectionController extends Controller
             'replyTo' => $message->parentMessage ? [
                 'id' => (string) $message->parentMessage->id,
                 'senderId' => (string) $message->parentMessage->sender_id,
-                'text' => $message->parentMessage->text,
+                'text' => $this->normalizeEmojiAliases($message->parentMessage->text),
                 'type' => $message->parentMessage->type,
             ] : null,
             'reactions' => $reactions->groupBy('emoji')->map(fn ($items, $emoji) => [

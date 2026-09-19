@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,11 +9,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../../components/Avatar';
 import Icon from '../../components/AppIcon';
-import EmojiInput from '../../components/EmojiInput';
-import EmojiPicker from '../../components/EmojiPicker';
 import { resolveMediaUri } from '../../utils/mediaUrl';
 
-const extraStyles = StyleSheet.create({ sheetHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:14},wordCount:{fontSize:11,fontWeight:'700'},statusInputContainer:{minHeight:120},statusInputOverlay:{padding:12},statusInputOverlayText:{fontSize:14,lineHeight:20},selectedImageWrap:{height:150,marginTop:12,borderRadius:15,overflow:'hidden'},selectedImage:{width:'100%',height:'100%'},removeImage:{position:'absolute',top:8,right:8,width:30,height:30,borderRadius:15,backgroundColor:'rgba(0,0,0,.65)',alignItems:'center',justifyContent:'center'},composerActions:{flexDirection:'row',gap:8,marginTop:12},actionButton:{minHeight:40,borderRadius:12,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:6},actionText:{fontSize:12,fontWeight:'800'},imageStatus:{flex:1,position:'relative'},imageCaption:{position:'absolute',left:16,right:16,bottom:18,borderRadius:14,paddingHorizontal:14,paddingVertical:10,backgroundColor:'rgba(0,0,0,.55)'} });
+const extraStyles = StyleSheet.create({ sheetHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:14},wordCount:{fontSize:11,fontWeight:'700'},selectedImageWrap:{height:150,marginTop:12,borderRadius:15,overflow:'hidden'},selectedImage:{width:'100%',height:'100%'},removeImage:{position:'absolute',top:8,right:8,width:30,height:30,borderRadius:15,backgroundColor:'rgba(0,0,0,.65)',alignItems:'center',justifyContent:'center'},composerActions:{flexDirection:'row',gap:8,marginTop:12},actionButton:{minHeight:40,borderRadius:12,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:6},actionText:{fontSize:12,fontWeight:'800'},imageStatus:{flex:1,position:'relative'},imageCaption:{position:'absolute',left:16,right:16,bottom:18,borderRadius:14,paddingHorizontal:14,paddingVertical:10,backgroundColor:'rgba(0,0,0,.55)'} });
 
 extraStyles.expandedCaption = { maxHeight: 260 };
 extraStyles.readMore = { color: '#FFFFFF', fontSize: 12, fontWeight: '800', marginTop: 8 };
@@ -33,9 +31,6 @@ export default function StatusesScreen({ navigation }) {
   const [composer, setComposer] = useState(false);
   const [text, setText] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
-  const inputRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [viewer, setViewer] = useState(null);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -51,24 +46,9 @@ export default function StatusesScreen({ navigation }) {
   const statusFontSize = Math.max(14, 18 - Math.floor(text.length / 180));
   const statusLineHeight = Math.round(statusFontSize * 1.35);
 
-  const insertEmoji = emoji => {
-    const start = Math.min(selection.start ?? text.length, text.length);
-    const end = Math.min(Math.max(selection.end ?? start, start), text.length);
-    const nextText = `${text.slice(0, start)}${emoji}${text.slice(end)}`;
-    setText(nextText);
-    const cursor = start + emoji.length;
-    setSelection({ start: cursor, end: cursor });
-    setShowEmojiPicker(false);
-    setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.setNativeProps({ selection: { start: cursor, end: cursor } });
-    }, 250);
-  };
-
   const resetComposer = () => {
     setText('');
     setSelectedImage(null);
-    setShowEmojiPicker(false);
     setComposer(false);
   };
 
@@ -128,26 +108,19 @@ export default function StatusesScreen({ navigation }) {
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={[styles.sheet, { backgroundColor: theme.card }]}>
           <View style={extraStyles.sheetHeader}><Text style={[styles.sheetTitle, { color: theme.text }]}>{saving ? 'Uploading status…' : 'Add to your status'}</Text><Text style={[extraStyles.wordCount, { color: wordCount > 250 ? theme.danger : theme.secondaryText }]}>{wordCount} words · {text.length}/2000</Text></View>
-          <EmojiInput
-            ref={inputRef}
+          <TextInput
             value={text}
             onChangeText={setText}
-            onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
             multiline
             scrollEnabled
             maxLength={2000}
             placeholder="Write a short update…"
             placeholderTextColor={theme.secondaryText}
-            textColor={theme.text}
-            inputStyle={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, fontSize: statusFontSize, lineHeight: statusLineHeight, maxHeight: 190 }]}
-            containerStyle={[extraStyles.statusInputContainer, { maxHeight: 190 }]}
-            overlayStyle={extraStyles.statusInputOverlay}
-            overlayTextStyle={[extraStyles.statusInputOverlayText, { fontSize: statusFontSize, lineHeight: statusLineHeight }]}
+            style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, fontSize: statusFontSize, lineHeight: statusLineHeight, maxHeight: 190 }]}
             editable={!saving}
           />
           {selectedImage ? <View style={extraStyles.selectedImageWrap}><Image source={{ uri: selectedImage.uri }} style={extraStyles.selectedImage} /><TouchableOpacity style={extraStyles.removeImage} onPress={() => setSelectedImage(null)} disabled={saving}><Icon name="close" size={15} color="#FFFFFF" /></TouchableOpacity></View> : null}
-          {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
-          <View style={extraStyles.composerActions}><TouchableOpacity style={[extraStyles.actionButton, { backgroundColor: theme.primarySoft }]} onPress={() => setShowEmojiPicker(value => !value)} disabled={saving}><Icon name="happy" size={18} color={theme.primary} /><Text style={[extraStyles.actionText, { color: theme.primary }]}>Add emoji</Text></TouchableOpacity><TouchableOpacity style={[extraStyles.actionButton, { backgroundColor: theme.primarySoft }]} onPress={publishImage} disabled={saving}><Icon name="image-outline" size={18} color={theme.primary} /><Text style={[extraStyles.actionText, { color: theme.primary }]}>{selectedImage ? 'Change image' : 'Add image'}</Text></TouchableOpacity></View>
+          <View style={extraStyles.composerActions}><TouchableOpacity style={[extraStyles.actionButton, { backgroundColor: theme.primarySoft }]} onPress={publishImage} disabled={saving}><Icon name="image-outline" size={18} color={theme.primary} /><Text style={[extraStyles.actionText, { color: theme.primary }]}>{selectedImage ? 'Change image' : 'Add image'}</Text></TouchableOpacity></View>
           <TouchableOpacity style={[styles.publish, { backgroundColor: theme.primary, opacity: text.trim() || selectedImage ? 1 : 0.5 }]} onPress={publishStatus} disabled={(!text.trim() && !selectedImage) || saving}>{saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.publishText}>Post status</Text>}</TouchableOpacity>
           <TouchableOpacity onPress={resetComposer} style={styles.cancel} disabled={saving}><Text style={{ color: theme.secondaryText }}>Cancel</Text></TouchableOpacity>
         </View>

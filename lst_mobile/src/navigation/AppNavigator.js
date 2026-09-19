@@ -40,7 +40,9 @@ import StatusesScreen from '../screens/main/StatusesScreen';
           const { theme } = useTheme();
 
           if (loading || hasCompletedOnboarding === null) return <Loader />;
-          if (!hasCompletedOnboarding) return <OnboardingScreen />;
+          // Returning members should go straight back to the app even if an
+          // older build did not persist the onboarding flag correctly.
+          if (!hasCompletedOnboarding && !user) return <OnboardingScreen />;
 
           return (
             <Stack.Navigator

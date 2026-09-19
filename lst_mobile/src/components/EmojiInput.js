@@ -4,6 +4,7 @@ import EmojiText from './EmojiText';
 
 const EmojiInput = forwardRef(function EmojiInput({ value, inputStyle, containerStyle, overlayStyle, overlayTextStyle, textColor, ...props }, ref) {
   const hasEmoji = /\p{Extended_Pictographic}/u.test(String(value || ''));
+  const useEmojiOverlay = Platform.OS === 'ios' && hasEmoji;
   const [focused, setFocused] = useState(false);
   const [overlayWidth, setOverlayWidth] = useState(0);
   const fontSize = overlayTextStyle?.fontSize || 14;
@@ -28,7 +29,7 @@ const EmojiInput = forwardRef(function EmojiInput({ value, inputStyle, container
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {hasEmoji ? (
+      {useEmojiOverlay ? (
         <View pointerEvents="none" style={[styles.overlay, overlayStyle]}>
           <View
             style={styles.overlayContent}
@@ -43,8 +44,8 @@ const EmojiInput = forwardRef(function EmojiInput({ value, inputStyle, container
         ref={ref}
         {...props}
         value={value}
-        style={[inputStyle, hasEmoji ? styles.transparentText : null]}
-        caretHidden={hasEmoji}
+        style={[inputStyle, useEmojiOverlay ? styles.transparentText : null]}
+        caretHidden={useEmojiOverlay}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onSelectionChange={handleSelectionChange}
@@ -62,5 +63,7 @@ const styles = StyleSheet.create({
   overlayContent: { alignSelf: 'flex-start' },
   overlayText: { fontSize: 14, lineHeight: 20 },
   caret: { position: 'absolute', top: 0, width: 2 },
-  transparentText: Platform.select({ ios: { color: 'transparent' }, default: {} }),
+  // The overlay is used only on iOS, where it keeps custom emoji assets
+  // aligned with the text baseline.
+  transparentText: { color: 'transparent' },
 });

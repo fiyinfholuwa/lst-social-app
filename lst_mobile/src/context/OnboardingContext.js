@@ -8,14 +8,6 @@ export function OnboardingProvider({ children }) {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(null);
 
   useEffect(() => {
-    // Keep onboarding available on every development launch so visual changes
-    // can be previewed without clearing AsyncStorage. Production keeps the
-    // normal one-time onboarding behavior.
-    if (__DEV__) {
-      setHasCompletedOnboarding(false);
-      return;
-    }
-
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then(value => setHasCompletedOnboarding(value === 'true'))
       .catch(() => setHasCompletedOnboarding(false));

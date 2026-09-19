@@ -53,7 +53,7 @@ export default function PasswordFlowScreen({ navigation }) {
     <View style={[styles.orb, styles.orbSide, { backgroundColor: theme.secondaryAccent }]} />
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {!changing ? <>
-        <BrandLogo width={142} style={styles.logo} />
+        <BrandLogo width={72} style={styles.logo} />
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Back to sign in" style={[styles.back, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => navigation.goBack()}>
           <AppIcon name="arrow-back" size={18} color={theme.text} />
           <Text style={[styles.backText, { color: theme.text }]}>Back to sign in</Text>

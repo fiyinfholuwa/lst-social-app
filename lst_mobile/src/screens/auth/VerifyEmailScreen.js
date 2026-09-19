@@ -99,7 +99,7 @@ export default function VerifyEmailScreen({ navigation }) {
         </View>
       ) : null}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <BrandLogo width={150} />
+          <BrandLogo width={72} />
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <View style={[styles.icon, { backgroundColor: theme.primarySoft }]}><AppIcon name="mail-outline" size={30} color={theme.primary} /></View>
           <Text style={[styles.eyebrow, { color: theme.primary }]}>ONE LAST STEP</Text>

@@ -50,7 +50,7 @@ export default function LoginScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
         <View style={styles.brandRow}>
-          <BrandLogo width={156} />
+          <BrandLogo width={72} />
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>

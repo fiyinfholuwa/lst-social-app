@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from '../../components/AppIcon';
 import BrandLogo from '../../components/BrandLogo';
 import { useOnboarding } from '../../context/OnboardingContext';
@@ -14,43 +12,32 @@ const slides = [
     title: 'A family that\ngrows together.',
     body: 'Build meaningful relationships, strengthen your home, and walk with people who genuinely care.',
     icon: 'heart-outline',
-    video: require('../../../assets/onboarding-love.mp4'),
+    image: require('../../../assets/onboarding-family.png'),
+    darkImage: require('../../../assets/onboarding-family-dark.png'),
   },
   {
     eyebrow: 'SPIRITUAL GROWTH',
     title: 'Go deeper in\nyour walk with God.',
     body: 'Find prayer, discipleship, honest encouragement, and practical support for every season of faith.',
     icon: 'leaf-outline',
-    video: require('../../../assets/onboarding-growth-ng.m4v'),
+    image: require('../../../assets/onboarding-growth.png'),
+    darkImage: require('../../../assets/onboarding-growth-dark.png'),
   },
   {
     eyebrow: 'LOVE & CONNECTION',
     title: 'Love people.\nLive with purpose.',
     body: 'Share life, celebrate progress, offer support, and form safe connections rooted in genuine love.',
     icon: 'heart',
-    video: require('../../../assets/onboarding-love-ng.m4v'),
+    image: require('../../../assets/onboarding-connection.png'),
+    darkImage: require('../../../assets/onboarding-connection-dark.png'),
   },
 ];
-
-function BackgroundVideo({ source, active }) {
-  const player = useVideoPlayer(source, instance => {
-    instance.loop = true;
-    instance.muted = true;
-  });
-
-  useEffect(() => {
-    if (active) player.play();
-    else player.pause();
-  }, [active, player]);
-
-  return <VideoView player={player} style={baseStyles.slideVideo} contentFit="cover" nativeControls={false} />;
-}
 
 export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
   const listRef = useRef(null);
   const { completeOnboarding } = useOnboarding();
-  const { theme } = useTheme();
+  const { isDark, theme } = useTheme();
   const styles = getStyles(theme);
 
   useEffect(() => {
@@ -74,7 +61,7 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.brandRow}>
-        <BrandLogo width={132} style={styles.brandLogo} />
+        <BrandLogo width={64} style={styles.brandLogo} />
         <TouchableOpacity style={styles.skipButton} onPress={completeOnboarding} hitSlop={12}>
           <Text style={styles.skip}>Skip</Text>
           <Icon name="arrow-right" size={11} color={theme.text} />
@@ -89,20 +76,9 @@ export default function OnboardingScreen() {
         keyExtractor={item => item.title}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={event => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
-        renderItem={({ item, index: slideIndex }) => (
+        renderItem={({ item }) => (
           <View style={styles.slide}>
-            <BackgroundVideo source={item.video} active={slideIndex === index} />
-            <LinearGradient
-              colors={['rgba(0,0,0,0.04)', `${theme.background}99`, theme.background]}
-              locations={[0, 0.55, 0.88]}
-              style={styles.slideOverlay}
-            />
-            <View style={styles.slideContent}>
-              <View style={styles.iconWrap}><Icon name={item.icon} size={24} color={theme.primary} /></View>
-              <Text style={styles.eyebrow}>{item.eyebrow}</Text>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.body}>{item.body}</Text>
-            </View>
+            <Image source={isDark ? item.darkImage : item.image} style={baseStyles.slideImage} resizeMode="cover" accessibilityLabel={item.title.replace('\n', ' ')} />
           </View>
         )}
       />
@@ -124,7 +100,7 @@ export default function OnboardingScreen() {
 }
 
 const baseStyles = StyleSheet.create({
-  slideVideo: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  slideImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
 });
 
 const getStyles = theme => StyleSheet.create({
@@ -134,12 +110,6 @@ const getStyles = theme => StyleSheet.create({
   skipButton: { minHeight: 38, paddingHorizontal: 13, borderRadius: 19, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
   skip: { color: theme.text, fontSize: 13, fontWeight: '700' },
   slide: { width, flex: 1, backgroundColor: theme.background },
-  slideOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 1 },
-  slideContent: { flex: 1, zIndex: 2, paddingHorizontal: 28, justifyContent: 'flex-end', paddingBottom: 225 },
-  iconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: theme.primarySoft, borderWidth: 1, borderColor: theme.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  eyebrow: { color: theme.primary, fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 12 },
-  title: { color: theme.text, fontSize: 43, lineHeight: 48, fontWeight: '700', letterSpacing: -1.5 },
-  body: { color: theme.secondaryText, fontSize: 17, lineHeight: 26, marginTop: 17, maxWidth: 345 },
   footer: { position: 'absolute', left: 24, right: 24, bottom: 28 },
   dots: { flexDirection: 'row', marginBottom: 20 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.border, marginRight: 8 },

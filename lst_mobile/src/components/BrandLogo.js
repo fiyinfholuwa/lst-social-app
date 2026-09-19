@@ -10,11 +10,11 @@ export default function BrandLogo({ width = 164, style, accessibilityLabel = 'Lo
       resizeMode="contain"
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
-      style={[styles.logo, { width, height: width }, style]}
+      style={[styles.logo, { width, height: width, borderRadius: width * 0.22 }, style]}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  logo: { flexShrink: 0 },
+  logo: { flexShrink: 0, overflow: 'hidden' },
 });

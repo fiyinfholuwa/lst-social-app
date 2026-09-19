@@ -75,7 +75,7 @@ export default function RegisterScreen({ navigation }) {
             <Icon name="arrow-back" size={19} color={theme.text} />
           </TouchableOpacity>
           <View style={styles.brandRow}>
-            <BrandLogo width={118} />
+            <BrandLogo width={64} />
           </View>
           <View style={styles.topSpacer} />
         </View>

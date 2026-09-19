@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   inputContainer: { width: '100%', height: 190 },
   // The native transparent editor on iOS adds a multiline baseline inset;
   // align its caret with the visible EmojiText overlay.
-  input: { width: '100%', height: 190, paddingTop: 0, paddingBottom: 0, fontSize: 17, lineHeight: 25, textAlignVertical: 'top', transform: [{ translateY: -25 }] },
+  input: { width: '100%', height: 190, paddingTop: 0, paddingBottom: 0, fontSize: 17, lineHeight: 25, textAlignVertical: 'top', transform: [{ translateX: -45 }, { translateY: -25 }] },
   inputOverlay: { paddingTop: 0, paddingBottom: 0 },
   inputOverlayText: { fontSize: 17, lineHeight: 25 },
   images: { gap: 9, paddingVertical: 14 },

@@ -17,16 +17,16 @@ class StatusController extends Controller
     public function index(Request $request)
     {
         $viewer = $request->user();
-        $friendIds = Friendship::query()->where('status', 'accepted')->where(fn ($q) => $q->where('sender_id', $viewer->id)->orWhere('receiver_id', $viewer->id))->get()
-            ->map(fn ($friendship) => $friendship->sender_id === $viewer->id ? $friendship->receiver_id : $friendship->sender_id);
+        $friendIds = Friendship::query()->where('status', 'accepted')->where(fn($q) => $q->where('sender_id', $viewer->id)->orWhere('receiver_id', $viewer->id))->get()
+            ->map(fn($friendship) => $friendship->sender_id === $viewer->id ? $friendship->receiver_id : $friendship->sender_id);
         $userIds = $friendIds->push($viewer->id);
         $statuses = Status::query()->with(['user', 'views.user'])->whereIn('user_id', $userIds)->where('expires_at', '>', now())->oldest()->get()->groupBy('user_id');
 
-        return response()->json($statuses->map(fn ($items) => [
+        return response()->json($statuses->map(fn($items) => [
             'user' => ['id' => (string) $items->first()->user->id, 'name' => $items->first()->user->name, 'avatar' => $this->uploads->url($items->first()->user->avatar)],
             'isMine' => $items->first()->user_id === $viewer->id,
-            'hasUnseen' => $items->first()->user_id !== $viewer->id && $items->contains(fn ($status) => ! $status->views()->where('user_id', $viewer->id)->exists()),
-            'statuses' => $items->map(fn ($status) => $this->data($status, $status->user_id === $viewer->id))->values(),
+            'hasUnseen' => $items->first()->user_id !== $viewer->id && $items->contains(fn($status) => ! $status->views()->where('user_id', $viewer->id)->exists()),
+            'statuses' => $items->map(fn($status) => $this->data($status, $status->user_id === $viewer->id))->values(),
         ])->values());
     }
 
@@ -42,7 +42,7 @@ class StatusController extends Controller
     {
         abort_if($status->expires_at->isPast(), 404);
         $viewer = $request->user();
-        abort_unless($status->user_id === $viewer->id || Friendship::where('status', 'accepted')->where(fn ($q) => $q->where(['sender_id' => $viewer->id, 'receiver_id' => $status->user_id])->orWhere(['sender_id' => $status->user_id, 'receiver_id' => $viewer->id]))->exists(), 403);
+        abort_unless($status->user_id === $viewer->id || Friendship::where('status', 'accepted')->where(fn($q) => $q->where(['sender_id' => $viewer->id, 'receiver_id' => $status->user_id])->orWhere(['sender_id' => $status->user_id, 'receiver_id' => $viewer->id]))->exists(), 403);
         if ($status->user_id !== $viewer->id) StatusView::firstOrCreate(['status_id' => $status->id, 'user_id' => $viewer->id], ['viewed_at' => now()]);
         return response()->noContent();
     }
@@ -65,7 +65,7 @@ class StatusController extends Controller
             'image' => $this->uploads->url($status->image),
             'createdAt' => $status->created_at->toIso8601String(),
             'expiresAt' => $status->expires_at->toIso8601String(),
-            'viewers' => $includeViewers ? $status->views->map(fn ($view) => [
+            'viewers' => $includeViewers ? $status->views->map(fn($view) => [
                 'id' => (string) $view->user->id,
                 'name' => $view->user->name,
                 'avatar' => $this->uploads->url($view->user->avatar),

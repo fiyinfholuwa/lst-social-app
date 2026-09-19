@@ -132,7 +132,6 @@ export default function EditPostScreen({ route, navigation }) {
           onChangeText={setContent}
           onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
           multiline
-          scrollEnabled={false}
           maxLength={10000}
           autoFocus
           textColor={theme.text}
@@ -185,10 +184,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, lineHeight: 35, fontWeight: '800', letterSpacing: -0.8 },
   subtitle: { fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 20 },
   card: { borderWidth: 1, borderRadius: 22, padding: 16 },
-  inputContainer: { width: '100%', height: 190 },
-  // The native transparent editor on iOS adds a multiline baseline inset;
-  // align its caret with the visible EmojiText overlay.
-  input: { width: '100%', height: 190, paddingTop: 0, paddingBottom: 0, fontSize: 17, lineHeight: 25, textAlignVertical: 'top', transform: [{ translateX: -45 }, { translateY: -25 }] },
+  inputContainer: { width: '100%', minHeight: 190 },
+  input: { width: '100%', minHeight: 190, paddingTop: 0, paddingBottom: 0, fontSize: 17, lineHeight: 25, textAlignVertical: 'top' },
   inputOverlay: { paddingTop: 0, paddingBottom: 0 },
   inputOverlayText: { fontSize: 17, lineHeight: 25 },
   images: { gap: 9, paddingVertical: 14 },

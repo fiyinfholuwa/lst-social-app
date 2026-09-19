@@ -32,9 +32,9 @@ class StatusController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate(['type' => 'required|in:text,image', 'text' => 'nullable|required_if:type,text|string|max:2000', 'image' => 'nullable|required_if:type,image|image|max:10240']);
+        $data = $request->validate(['type' => 'required|in:text,image', 'text' => 'nullable|string|max:2000', 'image' => 'nullable|required_if:type,image|image|max:10240']);
         $image = $request->hasFile('image') ? $this->uploads->storeOptimizedImage($request->file('image'), 'statuses') : null;
-        $status = Status::create(['user_id' => $request->user()->id, 'type' => $data['type'], 'text' => $data['type'] === 'text' ? trim($data['text']) : null, 'image' => $image, 'expires_at' => now()->addDay()]);
+        $status = Status::create(['user_id' => $request->user()->id, 'type' => $data['type'], 'text' => isset($data['text']) ? trim($data['text']) : null, 'image' => $image, 'expires_at' => now()->addDay()]);
         return response()->json($this->data($status->load('user')), 201);
     }
 

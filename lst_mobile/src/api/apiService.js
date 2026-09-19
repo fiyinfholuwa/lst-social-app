@@ -119,6 +119,13 @@ const apiService = {
   getFeedBanner: () => httpClient.get('/feed-banner'),
   getStatuses: () => httpClient.get('/statuses'),
   createTextStatus: text => httpClient.post('/statuses', { type: 'text', text }),
+  createStatus: (text, imageUri = null, fileName = 'status.jpg') => {
+    const form = new FormData();
+    form.append('type', imageUri ? 'image' : 'text');
+    if (text?.trim()) form.append('text', text.trim());
+    if (imageUri) appendFile(form, 'image', { uri: imageUri, fileName, mimeType: 'image/jpeg' }, fileName);
+    return httpClient.postForm('/statuses', form);
+  },
   createImageStatus: (uri, fileName = 'status.jpg') => {
     const form = new FormData();
     form.append('type', 'image');

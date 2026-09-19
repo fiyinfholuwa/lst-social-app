@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -14,6 +14,9 @@ import EmojiPicker from '../../components/EmojiPicker';
 import { resolveMediaUri } from '../../utils/mediaUrl';
 
 const extraStyles = StyleSheet.create({ sheetHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:14},wordCount:{fontSize:11,fontWeight:'700'},statusInputContainer:{minHeight:120},statusInputOverlay:{padding:12},statusInputOverlayText:{fontSize:14,lineHeight:20},selectedImageWrap:{height:150,marginTop:12,borderRadius:15,overflow:'hidden'},selectedImage:{width:'100%',height:'100%'},removeImage:{position:'absolute',top:8,right:8,width:30,height:30,borderRadius:15,backgroundColor:'rgba(0,0,0,.65)',alignItems:'center',justifyContent:'center'},composerActions:{flexDirection:'row',gap:8,marginTop:12},actionButton:{minHeight:40,borderRadius:12,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:6},actionText:{fontSize:12,fontWeight:'800'},imageStatus:{flex:1,position:'relative'},imageCaption:{position:'absolute',left:16,right:16,bottom:18,borderRadius:14,paddingHorizontal:14,paddingVertical:10,backgroundColor:'rgba(0,0,0,.55)'} });
+
+extraStyles.expandedCaption = { maxHeight: 260 };
+extraStyles.readMore = { color: '#FFFFFF', fontSize: 12, fontWeight: '800', marginTop: 8 };
 
 const timeLeft = expiresAt => {
   const hours = Math.max(0, Math.ceil((new Date(expiresAt) - Date.now()) / 3600000));
@@ -36,6 +39,7 @@ export default function StatusesScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [viewer, setViewer] = useState(null);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [expandedStatus, setExpandedStatus] = useState(false);
 
   const load = useCallback(async () => {
     try { setGroups(await apiService.getStatuses()); } catch (error) { Alert.alert('Couldn’t load statuses', error.message || 'Please try again.'); }
@@ -44,6 +48,8 @@ export default function StatusesScreen({ navigation }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const statusFontSize = Math.max(14, 18 - Math.floor(text.length / 180));
+  const statusLineHeight = Math.round(statusFontSize * 1.35);
 
   const insertEmoji = emoji => {
     const start = Math.min(selection.start ?? text.length, text.length);
@@ -95,7 +101,7 @@ export default function StatusesScreen({ navigation }) {
     setSelectedImage(result.assets[0]);
   };
   const openGroup = async group => {
-    setViewer(group); setViewerIndex(0);
+    setViewer(group); setViewerIndex(0); setExpandedStatus(false);
     if (!group.isMine) await Promise.all(group.statuses.map(status => apiService.markStatusViewed(status.id).catch(() => {})));
     setGroups(current => current.map(item => item.user.id === group.user.id ? { ...item, hasUnseen: false } : item));
   };
@@ -128,14 +134,15 @@ export default function StatusesScreen({ navigation }) {
             onChangeText={setText}
             onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
             multiline
+            scrollEnabled
             maxLength={2000}
             placeholder="Write a short update…"
             placeholderTextColor={theme.secondaryText}
             textColor={theme.text}
-            inputStyle={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
-            containerStyle={extraStyles.statusInputContainer}
+            inputStyle={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, fontSize: statusFontSize, lineHeight: statusLineHeight, maxHeight: 190 }]}
+            containerStyle={[extraStyles.statusInputContainer, { maxHeight: 190 }]}
             overlayStyle={extraStyles.statusInputOverlay}
-            overlayTextStyle={extraStyles.statusInputOverlayText}
+            overlayTextStyle={[extraStyles.statusInputOverlayText, { fontSize: statusFontSize, lineHeight: statusLineHeight }]}
             editable={!saving}
           />
           {selectedImage ? <View style={extraStyles.selectedImageWrap}><Image source={{ uri: selectedImage.uri }} style={extraStyles.selectedImage} /><TouchableOpacity style={extraStyles.removeImage} onPress={() => setSelectedImage(null)} disabled={saving}><Icon name="close" size={15} color="#FFFFFF" /></TouchableOpacity></View> : null}
@@ -146,7 +153,7 @@ export default function StatusesScreen({ navigation }) {
         </View>
       </KeyboardAvoidingView>
     </Modal>
-    <Modal visible={Boolean(viewer)} animationType="fade" onRequestClose={() => setViewer(null)}><View style={[styles.viewer, { backgroundColor: '#161218', paddingTop: insets.top + 12 }]}>{status ? <><View style={styles.progress}>{viewer.statuses.map((item, index) => <View key={item.id} style={[styles.progressLine, { backgroundColor: index <= viewerIndex ? '#fff' : 'rgba(255,255,255,.35)' }]} />)}</View><View style={styles.viewerHead}><View style={styles.viewerPerson}><Avatar uri={viewer.user.avatar} size={38} /><View><Text style={styles.viewerName}>{viewer.isMine ? 'My status' : viewer.user.name}</Text><Text style={styles.viewerTime}>{timeLeft(status.expiresAt)}</Text></View></View><TouchableOpacity onPress={() => setViewer(null)}><Icon name="close" size={26} color="#fff" /></TouchableOpacity></View>{status.type === 'image' ? <View style={extraStyles.imageStatus}><Image source={{ uri: resolveMediaUri(status.image) }} resizeMode="contain" style={styles.statusImage} />{status.text ? <View style={extraStyles.imageCaption}><Text style={styles.statusText}>{status.text}</Text></View> : null}</View> : <View style={[styles.textStatus, { backgroundColor: theme.primary }]}><Text style={styles.statusText}>{status.text}</Text></View>}<View style={styles.viewerActions}><TouchableOpacity disabled={viewerIndex === 0} onPress={() => setViewerIndex(value => value - 1)}><Text style={[styles.viewerButton, { opacity: viewerIndex === 0 ? .3 : 1 }]}>Previous</Text></TouchableOpacity><TouchableOpacity onPress={() => viewerIndex + 1 < viewer.statuses.length ? setViewerIndex(value => value + 1) : setViewer(null)}><Text style={styles.viewerButton}>{viewerIndex + 1 < viewer.statuses.length ? 'Next' : 'Done'}</Text></TouchableOpacity></View></> : null}</View></Modal>
+    <Modal visible={Boolean(viewer)} animationType="fade" onRequestClose={() => setViewer(null)}><View style={[styles.viewer, { backgroundColor: '#161218', paddingTop: insets.top + 12 }]}>{status ? <><View style={styles.progress}>{viewer.statuses.map((item, index) => <View key={item.id} style={[styles.progressLine, { backgroundColor: index <= viewerIndex ? '#fff' : 'rgba(255,255,255,.35)' }]} />)}</View><View style={styles.viewerHead}><View style={styles.viewerPerson}><Avatar uri={viewer.user.avatar} size={38} /><View><Text style={styles.viewerName}>{viewer.isMine ? 'My status' : viewer.user.name}</Text><Text style={styles.viewerTime}>{timeLeft(status.expiresAt)}</Text></View></View><TouchableOpacity onPress={() => setViewer(null)}><Icon name="close" size={26} color="#fff" /></TouchableOpacity></View>{status.type === 'image' ? <View style={extraStyles.imageStatus}><Image source={{ uri: resolveMediaUri(status.image) }} resizeMode="contain" style={styles.statusImage} />{status.text ? <View style={extraStyles.imageCaption}>{expandedStatus ? <ScrollView style={extraStyles.expandedCaption}><Text style={styles.statusText}>{status.text}</Text></ScrollView> : <Text numberOfLines={4} style={styles.statusText}>{status.text}</Text>}{status.text.length > 180 && !expandedStatus ? <TouchableOpacity onPress={() => setExpandedStatus(true)}><Text style={extraStyles.readMore}>Read more</Text></TouchableOpacity> : null}</View> : null}</View> : <ScrollView contentContainerStyle={[styles.textStatus, { backgroundColor: theme.primary }]}><Text style={styles.statusText}>{status.text}</Text></ScrollView>}<View style={styles.viewerActions}><TouchableOpacity disabled={viewerIndex === 0} onPress={() => setViewerIndex(value => value - 1)}><Text style={[styles.viewerButton, { opacity: viewerIndex === 0 ? .3 : 1 }]}>Previous</Text></TouchableOpacity><TouchableOpacity onPress={() => viewerIndex + 1 < viewer.statuses.length ? setViewerIndex(value => value + 1) : setViewer(null)}><Text style={styles.viewerButton}>{viewerIndex + 1 < viewer.statuses.length ? 'Next' : 'Done'}</Text></TouchableOpacity></View></> : null}</View></Modal>
   </View>;
 }
 

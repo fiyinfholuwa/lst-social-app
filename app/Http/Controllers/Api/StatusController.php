@@ -20,7 +20,7 @@ class StatusController extends Controller
         $friendIds = Friendship::query()->where('status', 'accepted')->where(fn ($q) => $q->where('sender_id', $viewer->id)->orWhere('receiver_id', $viewer->id))->get()
             ->map(fn ($friendship) => $friendship->sender_id === $viewer->id ? $friendship->receiver_id : $friendship->sender_id);
         $userIds = $friendIds->push($viewer->id);
-        $statuses = Status::query()->with('user')->whereIn('user_id', $userIds)->where('expires_at', '>', now())->latest()->get()->groupBy('user_id');
+        $statuses = Status::query()->with('user')->whereIn('user_id', $userIds)->where('expires_at', '>', now())->oldest()->get()->groupBy('user_id');
 
         return response()->json($statuses->map(fn ($items) => [
             'user' => ['id' => (string) $items->first()->user->id, 'name' => $items->first()->user->name, 'avatar' => $this->uploads->url($items->first()->user->avatar)],

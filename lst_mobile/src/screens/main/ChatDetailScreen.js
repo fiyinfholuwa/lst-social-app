@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
   groupEndRow: { marginTop: 9 },
   myMessage: { justifyContent: 'flex-end' },
   otherMessage: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '84%', minWidth: 54, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 5, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
+  bubble: { alignSelf: 'flex-start', flexGrow: 0, flexShrink: 1, maxWidth: '84%', minWidth: 54, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 5, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
   mineBubble: { borderBottomRightRadius: 5 },
   otherBubble: { borderBottomLeftRadius: 5 },
   mineJoinedTop: { borderTopRightRadius: 7 },

@@ -67,6 +67,6 @@ export default function EmojiText({ children, style, emojiScale = 1, ...props })
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
+  container: { alignSelf: 'flex-start', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', maxWidth: '100%' },
   emojiFont: Platform.select({ ios: { fontFamily: 'AppleColorEmoji' }, default: {} }),
 });

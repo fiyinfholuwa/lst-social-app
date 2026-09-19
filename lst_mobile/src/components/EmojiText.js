@@ -37,7 +37,7 @@ const getFontSize = style => {
   return Number(fontSize) || 14;
 };
 
-export default function EmojiText({ children, style, emojiScale = 1, ...props }) {
+export default function EmojiText({ children, style, emojiScale = 1, noWrap = false, ...props }) {
   const value = replaceLegacyAliases(String(children ?? ''));
   const parts = splitEmoji(value);
 
@@ -48,7 +48,7 @@ export default function EmojiText({ children, style, emojiScale = 1, ...props })
   const fontSize = getFontSize(style);
   const emojiSize = Math.max(14, fontSize * emojiScale);
   return (
-    <View {...props} style={[styles.container, style]}>
+    <View {...props} style={[styles.container, noWrap && styles.noWrap, style]}>
       {parts.map((part, index) => part.emoji ? (
         <Image
           key={`emoji-${index}`}
@@ -68,5 +68,6 @@ export default function EmojiText({ children, style, emojiScale = 1, ...props })
 
 const styles = StyleSheet.create({
   container: { alignSelf: 'flex-start', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', maxWidth: '100%' },
+  noWrap: { flexWrap: 'nowrap', flexShrink: 0 },
   emojiFont: Platform.select({ ios: { fontFamily: 'AppleColorEmoji' }, default: {} }),
 });

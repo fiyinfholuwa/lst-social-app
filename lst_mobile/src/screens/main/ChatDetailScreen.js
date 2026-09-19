@@ -522,6 +522,7 @@ export default function ChatDetailScreen({ route, navigation }) {
           const olderMessage = messages[index + 1];
           const sameAsNewer = messagesBelongTogether(item, newerMessage);
           const sameAsOlder = messagesBelongTogether(item, olderMessage);
+          const messageHasEmoji = /\p{Extended_Pictographic}/u.test(String(item.text || ''));
           return (
             <View style={[styles.messageRow, sameAsNewer ? styles.groupedRow : styles.groupEndRow, mine ? styles.myMessage : styles.otherMessage]}>
               <ReplyableMessage disabled={item.pending} onReply={() => beginReply(item)}>
@@ -532,6 +533,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                   accessibilityHint="Long press for message options"
                   style={[
                     styles.bubble,
+                    messageHasEmoji && styles.emojiBubble,
                     mine ? styles.mineBubble : styles.otherBubble,
                     sameAsOlder && (mine ? styles.mineJoinedTop : styles.otherJoinedTop),
                     sameAsNewer && (mine ? styles.mineJoinedBottom : styles.otherJoinedBottom),
@@ -542,11 +544,11 @@ export default function ChatDetailScreen({ route, navigation }) {
                 >
                   {item.replyTo ? <ReplyPreview message={item.replyTo} theme={theme} mine={mine} onPress={() => openReferencedMessage(item.replyTo)} /> : null}
                   {item.occasion === 'birthday_wish' ? <View style={styles.occasionLabel}><AppIcon name="gift-outline" size={11} color={mine ? '#FFFFFF' : theme.primary} /><Text style={[styles.occasionText, { color: mine ? '#FFFFFF' : theme.primary }]}>Birthday wish</Text></View> : null}
-                  {item.type === 'voice' ? <VoiceNote message={item} mine={mine} theme={theme} activeVoiceId={activeVoiceId} onActivate={setActiveVoiceId} /> : <EmojiText style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>}
+                  {item.type === 'voice' ? <VoiceNote message={item} mine={mine} theme={theme} activeVoiceId={activeVoiceId} onActivate={setActiveVoiceId} /> : <EmojiText noWrap={messageHasEmoji && String(item.text || '').length < 24} style={[styles.messageText, { color: mine ? '#FFFFFF' : theme.text }]}>{item.text}</EmojiText>}
                   {item.reactions?.length ? <View style={styles.reactionSummary}>{item.reactions.map(reaction => <View key={reaction.emoji} style={[styles.reactionBadge, { backgroundColor: mine ? 'rgba(255,255,255,0.18)' : theme.primarySoft }]}><EmojiText style={styles.reactionEmoji}>{reaction.emoji}</EmojiText>{reaction.count > 1 ? <Text style={[styles.reactionCount, { color: mine ? '#FFFFFF' : theme.primary }]}>{reaction.count}</Text> : null}</View>)}</View> : null}
                   <View style={styles.messageMeta}>
-                  {item.edited ? <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>edited</Text> : null}
-                  <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.7)' : theme.secondaryText }]}>{formatMessageTime(item)}</Text>
+                  {item.edited ? <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.86)' : theme.secondaryText }]}>edited</Text> : null}
+                  <Text style={[styles.messageTime, { color: mine ? 'rgba(255,255,255,0.86)' : theme.secondaryText }]}>{formatMessageTime(item)}</Text>
                   {mine ? <MessageReceipt pending={item.pending} read={item.read} /> : null}
                 </View>
               </TouchableOpacity>
@@ -686,7 +688,8 @@ const styles = StyleSheet.create({
   groupEndRow: { marginTop: 9 },
   myMessage: { justifyContent: 'flex-end' },
   otherMessage: { justifyContent: 'flex-start' },
-  bubble: { alignSelf: 'flex-start', flexGrow: 0, flexShrink: 1, maxWidth: '84%', minWidth: 54, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 5, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
+  bubble: { alignSelf: 'flex-start', flexGrow: 0, flexShrink: 1, maxWidth: '84%', minWidth: 54, paddingHorizontal: 13, paddingTop: 9, paddingBottom: 8, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
+  emojiBubble: { minWidth: 86 },
   mineBubble: { borderBottomRightRadius: 5 },
   otherBubble: { borderBottomLeftRadius: 5 },
   mineJoinedTop: { borderTopRightRadius: 7 },
@@ -697,8 +700,8 @@ const styles = StyleSheet.create({
   messageText: { flexShrink: 1, fontSize: 14, lineHeight: 19 },
   occasionLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
   occasionText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-  messageMeta: { minHeight: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 2 },
-  messageTime: { fontSize: 9 },
+  messageMeta: { minHeight: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 4 },
+  messageTime: { fontSize: 10, lineHeight: 13, fontWeight: '600' },
   receipt: { width: 18, height: 15, alignItems: 'center', justifyContent: 'center' },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: -14, paddingHorizontal: 12, paddingTop: 10 },
   occasionComposer: { minHeight: 36, borderRadius: 12, paddingHorizontal: 11, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 7 },

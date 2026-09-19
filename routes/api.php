@@ -40,6 +40,7 @@ Route::middleware(['auth:sanctum', 'last-seen'])->group(function () {
     Route::get('/statuses', [StatusController::class, 'index']);
     Route::post('/statuses', [StatusController::class, 'store'])->middleware('throttle:media-uploads');
     Route::post('/statuses/{status}/view', [StatusController::class, 'view'])->middleware('throttle:social-interactions');
+    Route::delete('/statuses/{status}', [StatusController::class, 'destroy'])->middleware('throttle:social-writes');
     Route::get('/sermons', [SocialController::class, 'sermons']);
     Route::get('/sermons/{sermon}', [SocialController::class, 'sermon']);
     Route::get('/sermons/{sermon}/likes', [SocialController::class, 'sermonLikes']);

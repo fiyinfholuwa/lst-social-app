@@ -133,6 +133,7 @@ const apiService = {
     return httpClient.postForm('/statuses', form);
   },
   markStatusViewed: statusId => httpClient.post(`/statuses/${statusId}/view`),
+  deleteStatus: statusId => httpClient.delete(`/statuses/${statusId}`),
   getSermons: (filters = {}, page = 1) => {
     const params = new URLSearchParams({ q: filters.query || '', title: filters.title || '', speaker: filters.speaker || '', category: filters.category || '', page: String(page) });
     return httpClient.get(`/sermons?${params.toString()}`);

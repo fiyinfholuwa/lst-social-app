@@ -20,13 +20,13 @@ class StatusController extends Controller
         $friendIds = Friendship::query()->where('status', 'accepted')->where(fn ($q) => $q->where('sender_id', $viewer->id)->orWhere('receiver_id', $viewer->id))->get()
             ->map(fn ($friendship) => $friendship->sender_id === $viewer->id ? $friendship->receiver_id : $friendship->sender_id);
         $userIds = $friendIds->push($viewer->id);
-        $statuses = Status::query()->with('user')->whereIn('user_id', $userIds)->where('expires_at', '>', now())->oldest()->get()->groupBy('user_id');
+        $statuses = Status::query()->with(['user', 'views.user'])->whereIn('user_id', $userIds)->where('expires_at', '>', now())->oldest()->get()->groupBy('user_id');
 
         return response()->json($statuses->map(fn ($items) => [
             'user' => ['id' => (string) $items->first()->user->id, 'name' => $items->first()->user->name, 'avatar' => $this->uploads->url($items->first()->user->avatar)],
             'isMine' => $items->first()->user_id === $viewer->id,
             'hasUnseen' => $items->first()->user_id !== $viewer->id && $items->contains(fn ($status) => ! $status->views()->where('user_id', $viewer->id)->exists()),
-            'statuses' => $items->map(fn ($status) => $this->data($status))->values(),
+            'statuses' => $items->map(fn ($status) => $this->data($status, $status->user_id === $viewer->id))->values(),
         ])->values());
     }
 
@@ -47,5 +47,30 @@ class StatusController extends Controller
         return response()->noContent();
     }
 
-    private function data(Status $status): array { return ['id' => (string) $status->id, 'type' => $status->type, 'text' => $status->text, 'image' => $this->uploads->url($status->image), 'createdAt' => $status->created_at->toIso8601String(), 'expiresAt' => $status->expires_at->toIso8601String()]; }
+    public function destroy(Request $request, Status $status)
+    {
+        abort_unless($status->user_id === $request->user()->id, 403);
+        $this->uploads->delete($status->image, 'statuses');
+        $status->delete();
+
+        return response()->noContent();
+    }
+
+    private function data(Status $status, bool $includeViewers = false): array
+    {
+        return [
+            'id' => (string) $status->id,
+            'type' => $status->type,
+            'text' => $status->text,
+            'image' => $this->uploads->url($status->image),
+            'createdAt' => $status->created_at->toIso8601String(),
+            'expiresAt' => $status->expires_at->toIso8601String(),
+            'viewers' => $includeViewers ? $status->views->map(fn ($view) => [
+                'id' => (string) $view->user->id,
+                'name' => $view->user->name,
+                'avatar' => $this->uploads->url($view->user->avatar),
+                'viewedAt' => $view->viewed_at?->toIso8601String(),
+            ])->values() : [],
+        ];
+    }
 }

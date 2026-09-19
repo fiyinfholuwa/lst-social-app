@@ -10,6 +10,7 @@ const resources = [
   { title: 'Audio', description: 'Short teachings, conversations, and faith-filled encouragement.', icon: 'headset-outline' },
   { title: 'Live sessions', description: 'Join live gatherings, prayer, and community conversations.', icon: 'radio-outline' },
   { title: 'Learnings', description: 'Grow at your own pace with practical guided lessons.', icon: 'school-outline' },
+  { title: 'Book Stores', description: 'Discover books and resources to support your faith journey.', icon: 'book-outline' },
 ];
 
 export default function ResourcesScreen({ navigation }) {

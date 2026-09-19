@@ -9,6 +9,7 @@ import AppIcon from '../../components/AppIcon';
 import Loader from '../../components/Loader';
 import EmojiPicker from '../../components/EmojiPicker';
 import KeyboardSafeView from '../../components/KeyboardSafeView';
+import EmojiInput from '../../components/EmojiInput';
 import { useTheme } from '../../context/ThemeContext';
 
 const MAX_IMAGES = 6;
@@ -29,7 +30,9 @@ export default function EditPostScreen({ route, navigation }) {
   useEffect(() => {
     apiService.getPost(postId).then(data => {
       setPost(data);
-      setContent(data.content);
+      // A trailing newline is invisible in the emoji overlay, but the native
+      // multiline input still places the caret after it on the next line.
+      setContent(String(data.content || '').replace(/[\r\n]+$/, ''));
       setImages(uniqueImages((data.images?.length ? data.images : data.image ? [data.image] : []).map(uri => ({ uri, existing: true }))));
     }).catch(error => Alert.alert('Couldn’t load post', error.message));
   }, [postId]);
@@ -123,15 +126,19 @@ export default function EditPostScreen({ route, navigation }) {
       <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Update your words and photos before sharing the changes.</Text>
 
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <TextInput
+        <EmojiInput
           ref={inputRef}
-          style={[styles.input, { color: theme.text }]}
           value={content}
           onChangeText={setContent}
           onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
           multiline
           maxLength={10000}
           autoFocus
+          textColor={theme.text}
+          inputStyle={[styles.input, { color: theme.text }]}
+          containerStyle={styles.inputContainer}
+          overlayStyle={styles.inputOverlay}
+          overlayTextStyle={styles.inputOverlayText}
         />
         <TouchableOpacity style={[styles.emojiButton, { backgroundColor: theme.primarySoft }]} onPress={() => setShowEmojiPicker(value => !value)} accessibilityLabel="Add emoji">
           <View style={styles.emojiButtonContent}><AppIcon name="happy" size={18} color={theme.primary} /><Text style={[styles.emojiButtonText, { color: theme.primary }]}>Add emoji</Text></View>
@@ -177,7 +184,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, lineHeight: 35, fontWeight: '800', letterSpacing: -0.8 },
   subtitle: { fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 20 },
   card: { borderWidth: 1, borderRadius: 22, padding: 16 },
-  input: { minHeight: 190, fontSize: 17, lineHeight: 25, textAlignVertical: 'top' },
+  inputContainer: { width: '100%', minHeight: 190 },
+  input: { width: '100%', minHeight: 190, paddingTop: 0, paddingBottom: 0, fontSize: 17, lineHeight: 25, textAlignVertical: 'top' },
+  inputOverlay: { paddingTop: 0, paddingBottom: 0 },
+  inputOverlayText: { fontSize: 17, lineHeight: 25 },
   images: { gap: 9, paddingVertical: 14 },
   imageWrap: { width: 112, height: 112 },
   image: { width: '100%', height: '100%', borderRadius: 14 },

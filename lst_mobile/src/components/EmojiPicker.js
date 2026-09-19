@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { EMOJIS } from './emojiCatalog';
 
 export default function EmojiPicker({ onSelect, onClose, theme }) {
@@ -40,7 +40,7 @@ export default function EmojiPicker({ onSelect, onClose, theme }) {
               onPress={() => onSelect(item.unicode)}
               accessibilityLabel={`Add ${item.keywords} emoji`}
             >
-              <Text style={styles.emoji}>{item.unicode}</Text>
+              <Image source={item.image} style={styles.emoji} resizeMode="contain" />
             </TouchableOpacity>
           )}
         />
@@ -57,5 +57,5 @@ const styles = StyleSheet.create({
   search: { height: 42, borderWidth: 1, borderRadius: 12, margin: 14, paddingHorizontal: 13, fontSize: 15 },
   grid: { paddingHorizontal: 10, paddingBottom: 24 },
   emojiButton: { width: '14.2857%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 30, lineHeight: 36, textAlign: 'center', includeFontPadding: false },
+  emoji: { width: 34, height: 34 },
 });

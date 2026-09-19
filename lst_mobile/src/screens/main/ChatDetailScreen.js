@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, PanResponder, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, PanResponder, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import {
   AudioModule,
@@ -15,6 +15,7 @@ import apiService from '../../api/apiService';
 import AppIcon from '../../components/AppIcon';
 import KeyboardSafeView from '../../components/KeyboardSafeView';
 import EmojiText from '../../components/EmojiText';
+import EmojiInput from '../../components/EmojiInput';
 import EmojiPicker from '../../components/EmojiPicker';
 import Avatar from '../../components/Avatar';
 import ReportModal from '../../components/ReportModal';
@@ -207,7 +208,8 @@ export default function ChatDetailScreen({ route, navigation }) {
   const [chat, setChat] = useState(null);
   const [activeVoiceId, setActiveVoiceId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const selectionRef = useRef({ start: 0, end: 0 });
+  const emojiSelectionRef = useRef(null);
   const [sending, setSending] = useState(false);
   const [reportingMessage, setReportingMessage] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -291,7 +293,7 @@ export default function ChatDetailScreen({ route, navigation }) {
     setSending(true);
     setMessages(current => [optimisticMessage, ...current]);
     setInputText('');
-    setSelection({ start: 0, end: 0 });
+    selectionRef.current = { start: 0, end: 0 };
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
     try {
       const sentMessage = await apiService.sendMessage(chatId, text, occasion, replyingTo);
@@ -309,13 +311,22 @@ export default function ChatDetailScreen({ route, navigation }) {
   };
 
   const insertEmoji = emoji => {
-    const start = selection.start ?? inputText.length;
-    const end = selection.end ?? start;
+    // Keep the selection outside React state as well. On iOS, dismissing the
+    // keyboard to present the picker can trigger a delayed selection event and
+    // overwrite the state value before the emoji is inserted.
+    const currentSelection = emojiSelectionRef.current || selectionRef.current;
+    const start = Math.min(currentSelection.start ?? inputText.length, inputText.length);
+    const end = Math.min(Math.max(currentSelection.end ?? start, start), inputText.length);
     setInputText(`${inputText.slice(0, start)}${emoji}${inputText.slice(end)}`);
     const cursor = start + emoji.length;
-    setSelection({ start: cursor, end: cursor });
+    const nextSelection = { start: cursor, end: cursor };
+    selectionRef.current = nextSelection;
+    emojiSelectionRef.current = null;
     setShowEmojiPicker(false);
-    setTimeout(() => inputRef.current?.focus(), 250);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setNativeProps({ selection: nextSelection });
+    }, 250);
   };
 
   const replaceMessage = updated => setMessages(current => current.map(message => String(message.id) === String(updated.id) ? updated : message));
@@ -571,19 +582,31 @@ export default function ChatDetailScreen({ route, navigation }) {
             <View style={[styles.inputPill, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <TouchableOpacity
                 style={styles.emojiButton}
-                onPress={() => { Keyboard.dismiss(); setShowEmojiPicker(true); }}
+                onPress={() => {
+                  // Capture the cursor before iOS dismisses the keyboard. The
+                  // native input may report a temporary selection of 0,0 while
+                  // the picker modal is being presented.
+                  emojiSelectionRef.current = selectionRef.current;
+                  Keyboard.dismiss();
+                  setShowEmojiPicker(true);
+                }}
                 accessibilityLabel="Add emoji"
               >
                 <AppIcon name="happy" size={20} color={theme.primary} />
               </TouchableOpacity>
-              <TextInput
+              <EmojiInput
                 ref={inputRef}
-                style={[styles.input, { color: theme.text }]}
+                containerStyle={styles.inputContainer}
+                inputStyle={styles.input}
+                overlayStyle={styles.inputOverlay}
+                textColor={theme.text}
                 placeholder={occasion === 'birthday_wish' ? 'Write a birthday message...' : 'Message...'}
                 placeholderTextColor={theme.secondaryText}
                 value={inputText}
                 onChangeText={setInputText}
-                onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
+                onSelectionChange={({ nativeEvent }) => {
+                  selectionRef.current = nativeEvent.selection;
+                }}
                 multiline
                 maxLength={5000}
               />
@@ -617,7 +640,7 @@ export default function ChatDetailScreen({ route, navigation }) {
           <Pressable style={[styles.actionSheet, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
             <View style={[styles.actionHandle, { backgroundColor: theme.border }]} />
             <Text style={[styles.actionTitle, { color: theme.text }]}>Message options</Text>
-            <View style={styles.reactionPicker}>{MESSAGE_REACTIONS.map(emoji => <TouchableOpacity key={emoji} style={[styles.reactionChoice, selectedMessage?.reactions?.some(reaction => reaction.emoji === emoji && reaction.reactedByCurrentUser) && { backgroundColor: theme.primarySoft, borderColor: theme.primary }]} onPress={() => reactToMessage(emoji)} disabled={messageActionPending}><Text style={styles.reactionChoiceText}>{emoji}</Text></TouchableOpacity>)}</View>
+            <View style={styles.reactionPicker}>{MESSAGE_REACTIONS.map(emoji => <TouchableOpacity key={emoji} style={[styles.reactionChoice, selectedMessage?.reactions?.some(reaction => reaction.emoji === emoji && reaction.reactedByCurrentUser) && { backgroundColor: theme.primarySoft, borderColor: theme.primary }]} onPress={() => reactToMessage(emoji)} disabled={messageActionPending}><EmojiText style={styles.reactionChoiceText}>{emoji}</EmojiText></TouchableOpacity>)}</View>
             {selectedMessage?.text ? <TouchableOpacity style={styles.actionRow} onPress={copyMessage}><AppIcon name="copy-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Copy message</Text></TouchableOpacity> : null}
             {selectedMessage ? <TouchableOpacity style={styles.actionRow} onPress={() => beginReply(selectedMessage)}><AppIcon name="arrow-undo-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Reply</Text></TouchableOpacity> : null}
             {selectedMessage && String(selectedMessage.senderId) === String(user.id) && selectedMessage.type === 'text' && canModifyMessage(selectedMessage) ? <TouchableOpacity style={styles.actionRow} onPress={beginEditMessage}><AppIcon name="create-outline" size={19} color={theme.primary} /><Text style={[styles.actionText, { color: theme.text }]}>Edit message</Text></TouchableOpacity> : null}
@@ -632,7 +655,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         <Pressable style={styles.editBackdrop} onPress={() => !messageActionPending && setEditingMessage(null)}>
           <Pressable style={[styles.editDialog, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => {}}>
             <Text style={[styles.editTitle, { color: theme.text }]}>Edit message</Text>
-            <TextInput autoFocus multiline value={editText} onChangeText={setEditText} maxLength={5000} style={[styles.editInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]} />
+            <TextInput autoFocus multiline value={editText} onChangeText={setEditText} maxLength={5000} style={[styles.editInput, styles.emojiInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]} />
             <Text style={[styles.editHint, { color: theme.secondaryText }]}>Messages can be edited for 15 minutes after sending.</Text>
             <View style={styles.editActions}><TouchableOpacity style={[styles.editCancel, { borderColor: theme.border }]} onPress={() => setEditingMessage(null)} disabled={messageActionPending}><Text style={[styles.editCancelText, { color: theme.text }]}>Cancel</Text></TouchableOpacity><TouchableOpacity style={[styles.editSave, { backgroundColor: theme.primary }]} onPress={saveEditedMessage} disabled={!editText.trim() || messageActionPending}>{messageActionPending ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.editSaveText}>Save</Text>}</TouchableOpacity></View>
           </Pressable>
@@ -682,7 +705,12 @@ const styles = StyleSheet.create({
   occasionComposerText: { flex: 1, fontSize: 12, fontWeight: '800' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   inputPill: { flex: 1, minHeight: 48, maxHeight: 108, borderWidth: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3 },
+  inputContainer: { flex: 1, minHeight: 45, maxHeight: 107 },
   input: { flex: 1, minHeight: 45, maxHeight: 107, paddingRight: 14, paddingTop: 12, paddingBottom: 11, fontSize: 14, textAlignVertical: 'top' },
+  emojiInput: Platform.select({ ios: { fontFamily: 'AppleColorEmoji' }, default: {} }),
+  // EmojiInput is already positioned after the emoji button, so the overlay
+  // must start at the same x-coordinate as the native TextInput.
+  inputOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, paddingRight: 14, paddingTop: 12, paddingBottom: 11, justifyContent: 'flex-start' },
   emojiButton: { width: 40, height: 45, alignItems: 'center', justifyContent: 'center' },
   roundAction: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   loadingConversation: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 50 },

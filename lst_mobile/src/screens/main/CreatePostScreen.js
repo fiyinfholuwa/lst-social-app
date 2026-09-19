@@ -11,6 +11,7 @@ import Icon from '../../components/AppIcon';
 import Avatar from '../../components/Avatar';
 import EmojiPicker from '../../components/EmojiPicker';
 import KeyboardSafeView from '../../components/KeyboardSafeView';
+import EmojiInput from '../../components/EmojiInput';
 
 const MAX_IMAGES = 6;
 
@@ -140,9 +141,8 @@ export default function CreatePostScreen({ navigation, route }) {
           </View>
         </View>
 
-        <TextInput
+        <EmojiInput
           ref={inputRef}
-          style={[styles.input, { color: theme.text }]}
           placeholder="Start a conversation..."
           placeholderTextColor={theme.secondaryText}
           multiline
@@ -151,6 +151,11 @@ export default function CreatePostScreen({ navigation, route }) {
           onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
           maxLength={10000}
           autoFocus
+          textColor={theme.text}
+          inputStyle={[styles.input, { color: theme.text }]}
+          containerStyle={styles.inputContainer}
+          overlayStyle={{ paddingVertical: 20 }}
+          overlayTextStyle={styles.inputOverlayText}
         />
 
         {showEmojiPicker ? <EmojiPicker theme={theme} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} /> : null}
@@ -218,6 +223,8 @@ const styles = StyleSheet.create({
   audience: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   audienceText: { fontSize: 11, fontWeight: '600' },
   input: { minHeight: 170, paddingVertical: 20, fontSize: 17, lineHeight: 25, textAlignVertical: 'top' },
+  inputOverlayText: { fontSize: 17, lineHeight: 25 },
+  inputContainer: { minHeight: 170 },
   previewRow: { gap: 10, paddingBottom: 16 },
   previewWrap: { width: 132, height: 132 },
   preview: { width: '100%', height: '100%', borderRadius: 16, resizeMode: 'cover' },

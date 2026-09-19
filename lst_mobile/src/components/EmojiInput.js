@@ -8,6 +8,9 @@ const EmojiInput = forwardRef(function EmojiInput({ value, inputStyle, container
   const [overlayWidth, setOverlayWidth] = useState(0);
   const fontSize = overlayTextStyle?.fontSize || 14;
   const lineHeight = overlayTextStyle?.lineHeight || fontSize * 1.25;
+  const overlayMetrics = StyleSheet.flatten(overlayStyle) || {};
+  const overlayPaddingTop = overlayMetrics.paddingTop ?? overlayMetrics.paddingVertical ?? 0;
+  const overlayPaddingLeft = overlayMetrics.paddingLeft ?? overlayMetrics.paddingHorizontal ?? 0;
 
   const handleFocus = event => {
     setFocused(true);
@@ -33,7 +36,7 @@ const EmojiInput = forwardRef(function EmojiInput({ value, inputStyle, container
           >
             <EmojiText style={[styles.overlayText, overlayTextStyle, { color: textColor }]}>{value}</EmojiText>
           </View>
-          {focused ? <View style={[styles.caret, { left: overlayWidth, top: overlayStyle?.paddingTop || 0, height: lineHeight, backgroundColor: textColor }]} /> : null}
+          {focused ? <View style={[styles.caret, { left: overlayWidth + overlayPaddingLeft, top: overlayPaddingTop, height: lineHeight, backgroundColor: textColor }]} /> : null}
         </View>
       ) : null}
       <TextInput

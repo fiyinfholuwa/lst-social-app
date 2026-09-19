@@ -12,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -26,6 +25,7 @@ import PostOptionsMenu from '../../components/PostOptionsMenu';
 import { useSavedPosts } from '../../context/SavedPostsContext';
 import EmojiPicker from '../../components/EmojiPicker';
 import EmojiText from '../../components/EmojiText';
+import EmojiInput from '../../components/EmojiInput';
 import ReportModal from '../../components/ReportModal';
 import LikersModal from '../../components/LikersModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -480,9 +480,12 @@ export default function PostScreen({ route, navigation }) {
         <Avatar uri={user?.avatar} size={34} style={styles.composerAvatar} accessibilityLabel="Your profile avatar" />
         <View style={styles.inputWrap}>
           {replyTo || editingComment ? <View style={[styles.replyingTo, { backgroundColor: theme.primarySoft }]}><Text style={[styles.replyingText, { color: theme.primary }]}>{editingComment ? 'Editing your comment' : `Replying to ${replyTo.userName}`}</Text><TouchableOpacity onPress={() => { setReplyTo(null); setEditingComment(null); setCommentText(''); }} accessibilityLabel={editingComment ? 'Cancel editing' : 'Cancel reply'}><AppIcon name="times" size={13} color={theme.primary} /></TouchableOpacity></View> : null}
-          <TextInput
+          <EmojiInput
             ref={inputRef}
-            style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+            inputStyle={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+            textColor={theme.text}
+            overlayStyle={styles.inputOverlay}
+            overlayTextStyle={styles.inputOverlayText}
             placeholder={editingComment ? 'Update your comment...' : replyTo ? `Reply to ${replyTo.userName}...` : 'Write an encouraging comment...'}
             placeholderTextColor={theme.secondaryText}
             value={commentText}
@@ -598,6 +601,8 @@ const styles = StyleSheet.create({
   replyingTo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 9, paddingHorizontal: 9, paddingVertical: 5, marginBottom: 5 },
   replyingText: { fontSize: 11, fontWeight: '700' },
   input: { flex: 1, minHeight: 42, maxHeight: 100, borderWidth: 1, borderRadius: 16, paddingHorizontal: 13, paddingTop: 11, paddingBottom: 10, fontSize: 13 },
+  inputOverlay: { paddingHorizontal: 13, paddingTop: 11, paddingBottom: 10 },
+  inputOverlayText: { fontSize: 13, lineHeight: 19 },
   emojiButton: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sendButton: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });
